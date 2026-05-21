@@ -5,11 +5,11 @@ import {
   faTruck, faIdCard, faUsers, faBuilding,
   faFileContract, faClipboardList, faArrowRight,
   faExclamationTriangle, faTimes, faMapMarkerAlt,
-  faCalendarAlt, faUser, faWrench,
+  faCalendarAlt, faUser, faPlus,
 } from "@fortawesome/free-solid-svg-icons";
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend,
+  PieChart, Pie, Cell,
 } from "recharts";
 import Navbar from "../../Components/Navbar/Navbar";
 import { getName } from "../../Helpers/Utils/Common";
@@ -17,27 +17,30 @@ import "./Dashboard.css";
 
 // ── Summary cards ─────────────────────────────────────────────
 const DASH_CARDS = [
-  { icon: faTruck,         label: "Active Trucks",    value: "—", sub: "status = active" },
-  { icon: faIdCard,        label: "Active Drivers",   value: "—", sub: "status = active" },
-  { icon: faUsers,         label: "Active Helpers",   value: "—", sub: "status = active" },
-  { icon: faBuilding,      label: "Customers",        value: "—", sub: "total clients" },
-  { icon: faFileContract,  label: "Active Contracts", value: "—", sub: "currently running" },
-  { icon: faClipboardList, label: "Trips This Month", value: "—", sub: "dispatched so far" },
+  { icon: faTruck,        label: "Active Trucks",    value: "—", sub: "status = active" },
+  { icon: faIdCard,       label: "Active Drivers",   value: "—", sub: "status = active" },
+  { icon: faUsers,        label: "Active Helpers",   value: "—", sub: "status = active" },
+  { icon: faBuilding,     label: "Customers",        value: "—", sub: "total clients" },
+  { icon: faFileContract, label: "Active Contracts", value: "—", sub: "currently running" },
+];
+
+// ── Quick actions ─────────────────────────────────────────────
+const QUICK_ACTIONS = [
+  { label: "Log a Trip",   icon: faClipboardList, to: "/trips" },
+  { label: "New Contract", icon: faFileContract,  to: "/contracts" },
+  { label: "Add Driver",   icon: faIdCard,        to: "/drivers" },
+  { label: "Add Truck",    icon: faTruck,         to: "/trucks" },
 ];
 
 // ── Placeholder: this month mini stats ────────────────────────
 const MONTH_STATS = [
-  { label: "Active Contracts",  value: "—" },
-  { label: "Total Trips",       value: "—" },
-  { label: "Excess Trips",      value: "—" },
+  { label: "Active Contracts", value: "—" },
+  { label: "Total Trips",      value: "—" },
+  { label: "Excess Trips",     value: "—" },
 ];
 
-// ── Placeholder: line chart data (trips per day) ──────────────
-const TRIP_LINE_DATA = [
-  // { day: "01", trips: 0 }, { day: "05", trips: 2 }, ...
-  // will be replaced by API: SELECT trip_date, COUNT(*) FROM trip
-  // WHERE MONTH(trip_date)=MONTH(NOW()) GROUP BY trip_date
-];
+// ── Placeholder: line chart data ──────────────────────────────
+const TRIP_LINE_DATA = [];
 
 // ── Placeholder: donut chart data ────────────────────────────
 const DONUT_DATA = [
@@ -46,19 +49,10 @@ const DONUT_DATA = [
 ];
 
 // ── Placeholder: recent trips ─────────────────────────────────
-const RECENT_TRIPS = [
-  // will be replaced by API join:
-  // trip + contract + contract_route + truck + driver + customer
-  // {
-  //   id, trip_date, customer_name, origin, destination,
-  //   plate_number, truck_type, driver_name, contract_id
-  // }
-];
+const RECENT_TRIPS = [];
 
 // ── Placeholder: contract alerts ──────────────────────────────
-const CONTRACT_ALERTS = [
-  // { id, customer_name, end_date, days_remaining }
-];
+const CONTRACT_ALERTS = [];
 
 // ── Custom donut label ────────────────────────────────────────
 const DonutLabel = ({ cx, cy, total }) => (
@@ -75,11 +69,11 @@ const DonutLabel = ({ cx, cy, total }) => (
 );
 
 export default function Dashboard() {
-  const [inactive, set_inactive]         = useState(false);
-  const [show_modal, set_show_modal]     = useState(false);
+  const [inactive, set_inactive]           = useState(false);
+  const [show_modal, set_show_modal]       = useState(false);
   const [selected_trip, set_selected_trip] = useState(null);
-  const navigate = useNavigate();
-  const user_name = getName() || "User";
+  const navigate   = useNavigate();
+  const user_name  = getName() || "User";
 
   const today = new Date().toLocaleDateString("en-PH", {
     weekday: "long", year: "numeric", month: "long", day: "numeric",
@@ -143,6 +137,19 @@ export default function Dashboard() {
             ))}
           </div>
 
+          {/* ── Quick actions ── */}
+          <div className="dashboard-quicknav">
+            {QUICK_ACTIONS.map((link, idx) => (
+              <button key={idx} className="quicknav-btn" onClick={() => navigate(link.to)}>
+                <span className="quicknav-plus">
+                  <FontAwesomeIcon icon={faPlus} />
+                </span>
+                <FontAwesomeIcon icon={link.icon} />
+                {link.label}
+              </button>
+            ))}
+          </div>
+
           {/* ── Middle row: stats+chart | donut ── */}
           <div className="dashboard-middle">
 
@@ -167,9 +174,7 @@ export default function Dashboard() {
                       </div>
                     </div>
                   ))}
-                  <div className="stats-comparison">
-                    vs last month — data pending
-                  </div>
+                  <div className="stats-comparison">vs last month — data pending</div>
                 </div>
                 <div className="stats-chart">
                   <ResponsiveContainer width="100%" height={120}>
@@ -179,14 +184,7 @@ export default function Dashboard() {
                       <Tooltip
                         contentStyle={{ fontFamily: "var(--primary-font-medium)", fontSize: 12, borderRadius: 8, border: "none", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}
                       />
-                      <Line
-                        type="monotone"
-                        dataKey="trips"
-                        stroke="#5ac8e1"
-                        strokeWidth={2.5}
-                        dot={false}
-                        activeDot={{ r: 4, fill: "#5ac8e1" }}
-                      />
+                      <Line type="monotone" dataKey="trips" stroke="#5ac8e1" strokeWidth={2.5} dot={false} activeDot={{ r: 4, fill: "#5ac8e1" }} />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
@@ -210,10 +208,7 @@ export default function Dashboard() {
                     dataKey="value"
                     startAngle={90} endAngle={-270}
                   >
-                    {(donut_total === 0
-                      ? [{ color: "#edf0f4" }]
-                      : DONUT_DATA
-                    ).map((entry, idx) => (
+                    {(donut_total === 0 ? [{ color: "#edf0f4" }] : DONUT_DATA).map((entry, idx) => (
                       <Cell key={idx} fill={entry.color} strokeWidth={0} />
                     ))}
                   </Pie>
@@ -255,11 +250,7 @@ export default function Dashboard() {
                   <div className="panel-empty">No trips recorded yet.</div>
                 ) : (
                   RECENT_TRIPS.map((trip, idx) => (
-                    <div
-                      className="trip-card"
-                      key={idx}
-                      onClick={() => handle_trip_click(trip)}
-                    >
+                    <div className="trip-card" key={idx} onClick={() => handle_trip_click(trip)}>
                       <div className="trip-card-header">
                         <span className="trip-card-id">TRIP-{String(trip.id).padStart(4, "0")}</span>
                         <span className="trip-card-date">{trip.trip_date}</span>
@@ -322,24 +313,6 @@ export default function Dashboard() {
 
           </div>
 
-          {/* ── Quick actions ── */}
-          <div className="dashboard-quicknav">
-            <span className="panel-title">Quick Actions</span>
-            <div className="quicknav-buttons">
-              {[
-                { label: "Log a Trip",   icon: faClipboardList, to: "/trips" },
-                { label: "New Contract", icon: faFileContract,  to: "/contracts" },
-                { label: "Add Driver",   icon: faIdCard,        to: "/drivers" },
-                { label: "Add Truck",    icon: faTruck,         to: "/trucks" },
-              ].map((link, idx) => (
-                <button key={idx} className="quicknav-btn" onClick={() => navigate(link.to)}>
-                  <FontAwesomeIcon icon={link.icon} />
-                  {link.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
         </div>
       </div>
 
@@ -355,9 +328,7 @@ export default function Dashboard() {
                 <FontAwesomeIcon icon={faTimes} />
               </button>
             </div>
-
             <div className="trip-modal-body">
-              {/* Details */}
               <div className="trip-modal-details">
                 <div className="trip-detail-row">
                   <FontAwesomeIcon icon={faCalendarAlt} className="detail-icon" />
@@ -377,18 +348,14 @@ export default function Dashboard() {
                   <FontAwesomeIcon icon={faMapMarkerAlt} className="detail-icon" />
                   <div>
                     <span className="detail-label">Route</span>
-                    <span className="detail-value">
-                      {selected_trip.origin} → {selected_trip.destination}
-                    </span>
+                    <span className="detail-value">{selected_trip.origin} → {selected_trip.destination}</span>
                   </div>
                 </div>
                 <div className="trip-detail-row">
                   <FontAwesomeIcon icon={faTruck} className="detail-icon" />
                   <div>
                     <span className="detail-label">Truck</span>
-                    <span className="detail-value">
-                      {selected_trip.plate_number} — {selected_trip.truck_type}
-                    </span>
+                    <span className="detail-value">{selected_trip.plate_number} — {selected_trip.truck_type}</span>
                   </div>
                 </div>
                 <div className="trip-detail-row">
@@ -399,8 +366,6 @@ export default function Dashboard() {
                   </div>
                 </div>
               </div>
-
-              {/* Map */}
               <div className="trip-modal-map">
                 {process.env.REACT_APP_GOOGLE_MAPS_KEY ? (
                   <iframe
@@ -415,12 +380,8 @@ export default function Dashboard() {
                 ) : (
                   <div className="map-placeholder">
                     <FontAwesomeIcon icon={faMapMarkerAlt} className="map-placeholder-icon" />
-                    <span className="map-placeholder-text">
-                      {selected_trip.origin} → {selected_trip.destination}
-                    </span>
-                    <span className="map-placeholder-sub">
-                      Add REACT_APP_GOOGLE_MAPS_KEY to .env to enable map
-                    </span>
+                    <span className="map-placeholder-text">{selected_trip.origin} → {selected_trip.destination}</span>
+                    <span className="map-placeholder-sub">Add REACT_APP_GOOGLE_MAPS_KEY to .env to enable map</span>
                   </div>
                 )}
               </div>

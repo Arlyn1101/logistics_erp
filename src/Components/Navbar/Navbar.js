@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faTachometerAlt,
+  faHome,
   faTruck,
   faIdCard,
   faUsers,
@@ -23,15 +23,22 @@ const MENU_SECTIONS = [
   {
     section: "OVERVIEW",
     items: [
-      { name: "DASHBOARD", to: "/dashboard", icon: faTachometerAlt, subMenus: [] },
+      { name: "DASHBOARD", to: "/dashboard", icon: faHome, subMenus: [] },
     ],
   },
   {
     section: "FLEET",
     items: [
-      { name: "TRUCKS",  to: "/trucks",  icon: faTruck,  subMenus: [] },
-      { name: "DRIVERS", to: "/drivers", icon: faIdCard, subMenus: [] },
-      { name: "HELPERS", to: "/helpers", icon: faUsers,  subMenus: [] },
+      {
+        name: "FLEET",
+        to: "/",
+        icon: faTruck,
+        subMenus: [
+          { name: "TRUCKS",  to: "/trucks" },
+          { name: "DRIVERS", to: "/drivers" },
+          { name: "HELPERS", to: "/helpers" },
+        ],
+      },
     ],
   },
   {
@@ -43,8 +50,15 @@ const MENU_SECTIONS = [
   {
     section: "CONTRACTS",
     items: [
-      { name: "CONTRACTS",       to: "/contracts",       icon: faFileContract, subMenus: [] },
-      { name: "CONTRACT ROUTES", to: "/contract-routes", icon: faRoute,        subMenus: [] },
+      {
+        name: "CONTRACTS",
+        to: "/",
+        icon: faFileContract,
+        subMenus: [
+          { name: "CONTRACTS",       to: "/contracts" },
+          { name: "CONTRACT ROUTES", to: "/contract-routes" },
+        ],
+      },
     ],
   },
   {
@@ -56,8 +70,15 @@ const MENU_SECTIONS = [
   {
     section: "SYSTEM",
     items: [
-      { name: "USERS",       to: "/users",  icon: faUserCog, subMenus: [] },
-      { name: "AUDIT TRAIL", to: "/trail",  icon: faHistory, subMenus: [] },
+      {
+        name: "SYSTEM",
+        to: "/",
+        icon: faUserCog,
+        subMenus: [
+          { name: "USERS",       to: "/users" },
+          { name: "AUDIT TRAIL", to: "/trail" },
+        ],
+      },
     ],
   },
 ];
@@ -65,9 +86,17 @@ const MENU_SECTIONS = [
 // Shared ref that survives navigation — tracks hover state globally
 // so re-mount doesn't reset it
 let global_is_hovered = false;
+let global_expanded = null;
 
 const Navbar = ({ onCollapse }) => {
   const [inactive, set_inactive] = useState(!global_is_hovered);
+  const [expanded_index, set_expanded_index] = useState(global_expanded);
+
+  function handle_expand(key) {
+    const next = global_expanded === key ? null : key;
+    global_expanded = next;
+    set_expanded_index(next);
+  }
   const location = useLocation();
 
   const user_name = getName() || "User";
@@ -124,9 +153,6 @@ const Navbar = ({ onCollapse }) => {
       <div className={`main-menu ${inactive ? "" : "active-menu"}`}>
         {MENU_SECTIONS.map((section, s_idx) => (
           <div key={s_idx} className="menu-section">
-            {!inactive && (
-              <div className="menu-section-title">{section.section}</div>
-            )}
             <ul className="section-list">
               {section.items.map((item, i_idx) => (
                 <MenuItem
@@ -135,11 +161,13 @@ const Navbar = ({ onCollapse }) => {
                   to={item.to}
                   icon={item.icon}
                   subMenus={item.subMenus}
-                  activeSub={is_active(item.to)}
+                  activeSub={item.subMenus.length > 0 
+                    ? item.subMenus.some(sub => is_active(sub.to))
+                    : is_active(item.to)}
                   inactive={inactive}
                   exact="true"
-                  expandManage={true}
-                  setExpandManage={() => {}}
+                  expandManage={expanded_index !== s_idx + "_" + i_idx}
+                  setExpandManage={() => handle_expand(s_idx + "_" + i_idx)}
                   index={i_idx}
                   onClick={() => {}}
                 />

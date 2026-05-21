@@ -188,13 +188,14 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px;         /* fixed width keeps text aligned */
+  width: 36px;
+  height: 36px;
   flex-shrink: 0;
 }
 
 .fa-icon {
-  font-size: 14px;
-  width: 14px;
+  font-size: 20px;
+  width: 20px;
   text-align: center;
 }
 
@@ -365,6 +366,7 @@
   transition: margin-left 0.22s ease-in;
   min-height: 100vh;
   box-sizing: border-box;
+  background: #f2f4f7;
 }
 
 .manager-container.inactive {
@@ -377,4 +379,19 @@
   .side-menu.inactive { width: 56px; }
   .manager-container { margin-left: 200px; }
   .manager-container.inactive { margin-left: 56px; }
+}
+
+.side-menu.inactive .menu-item {
+  padding: 10px 0;
+  justify-content: center;
+}
+
+.side-menu.inactive .menu-icon {
+  width: 36px;
+  justify-content: center;
+}
+
+.side-menu.inactive .logout-cont {
+  padding: 10px 0;
+  justify-content: center;
 }
