@@ -1,0 +1,372 @@
+.page-title {
+  font-family: var(--primary-font-medium);
+  font-size: 28px;
+  line-height: 1.2;
+  color: #5E5E5E;
+  text-transform: uppercase;
+  margin-top: 0;
+  margin-bottom: 4px;
+}
+
+.add-btn {
+  font-family: var(--primary-font-medium);
+  height: 38px;
+  padding: 0 22px;
+  background: #5ac8e1 !important;
+  border: none;
+  border-radius: 10px;
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+  margin-left: 12px;
+  transition: background 0.15s;
+}
+
+.add-btn:hover {
+  background: #3fb8d4 !important;
+}
+
+.search-bar {
+  font-family: var(--primary-font-medium);
+  font-size: 14px;
+  border: none !important;
+  background: #fff;
+  box-shadow: 0 0 1px 1px rgba(0,0,0,0.15);
+  border-radius: 20px;
+  width: 260px;
+  padding: 8px 16px 8px 36px;
+  background-image: url("../../Assets/Images/Navbar/search.png");
+  background-repeat: no-repeat;
+  background-position: 10px 50%;
+  background-size: 15px;
+  outline: none;
+}
+
+.manager-container {
+  padding: 28px;
+}
+
+.manager-container.active {
+  margin-left: 240px;
+  transition: margin-left 0.25s ease;
+}
+
+.manager-container.inactive {
+  margin-left: 64px;
+  transition: margin-left 0.25s ease;
+}
+
+.tab-content {
+  margin-top: 16px;
+}
+
+.PO-select-action {
+  font-family: var(--primary-font-regular);
+  border-radius: 7px !important;
+  max-height: 35px !important;
+  color: #5ac8e1;
+  box-shadow: none !important;
+  border: solid 1px #b3b3b3 !important;
+  background-color: transparent;
+  width: auto !important;
+  font-size: 13px;
+  padding: 2px 8px;
+}
+
+.form-select {
+  display: inline-block !important;
+  font-family: var(--primary-font-regular);
+  border-radius: 7px !important;
+  max-height: 35px !important;
+  color: #5ac8e1;
+  box-shadow: none !important;
+  border: solid 1px #b3b3b3 !important;
+  background-size: 15px !important;
+  background-color: transparent;
+  width: auto !important;
+}
+
+.color-options {
+  color: #333;
+}
+
+.color-red {
+  color: #DC3545;
+}
+
+.required-icon {
+  color: #DC3545;
+  margin-left: 2px;
+}
+
+/* Form labels inside modals */
+.nc-modal-custom-row label,
+.nc-modal-custom-row > span:first-child {
+  font-family: var(--primary-font-bold);
+  font-size: 12px;
+  color: #5E5E5E;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.page-subtitle {
+  font-family: var(--primary-font-light);
+  font-size: 13px;
+  color: #8a9ab0;
+  margin: 0;
+}
+ 
+/* Filter tabs — All / Active / Inactive */
+.filter-tabs {
+  display: flex;
+  gap: 8px;
+}
+ 
+.filter-tab-btn {
+  font-family: var(--primary-font-medium);
+  font-size: 13px;
+  padding: 6px 16px;
+  border-radius: 20px;
+  border: 1.5px solid #d0d7de;
+  background: #fff;
+  color: #8a9ab0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s;
+}
+ 
+.filter-tab-btn:hover {
+  border-color: #5ac8e1;
+  color: #5ac8e1;
+}
+ 
+.filter-tab-btn.active {
+  background: #5ac8e1;
+  border-color: #5ac8e1;
+  color: #fff;
+}
+ 
+.tab-count {
+  font-family: var(--primary-font-bold);
+  font-size: 11px;
+  background: rgba(255, 255, 255, 0.25);
+  padding: 1px 7px;
+  border-radius: 20px;
+}
+ 
+.filter-tab-btn:not(.active) .tab-count {
+  background: #f0f4f8;
+  color: #5ac8e1;
+}
+
+/* ── PASTE THESE AT THE BOTTOM OF YOUR EXISTING Manage.css ── */
+
+.page-subtitle {
+  font-family: var(--primary-font-light);
+  font-size: 13px;
+  color: #8a9ab0;
+  margin: 0;
+}
+
+/* ── Filter tabs ── */
+.filter-tabs {
+  display: flex;
+  gap: 8px;
+}
+
+.filter-tab-btn {
+  font-family: var(--primary-font-medium);
+  font-size: 13px;
+  padding: 6px 16px;
+  border-radius: 20px;
+  border: 1.5px solid #d0d7de;
+  background: #fff;
+  color: #8a9ab0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s;
+}
+
+.filter-tab-btn:hover {
+  border-color: #5ac8e1;
+  color: #5ac8e1;
+}
+
+.filter-tab-btn.active {
+  background: #5ac8e1;
+  border-color: #5ac8e1;
+  color: #fff;
+}
+
+.tab-count {
+  font-family: var(--primary-font-bold);
+  font-size: 11px;
+  background: rgba(255, 255, 255, 0.25);
+  padding: 1px 7px;
+  border-radius: 20px;
+}
+
+.filter-tab-btn:not(.active) .tab-count {
+  background: #f0f4f8;
+  color: #5ac8e1;
+}
+
+/* ── Add / Edit form enhancements ── */
+.truck-form-section-label {
+  font-family: var(--primary-font-bold);
+  font-size: 11px;
+  color: #5ac8e1;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 8px;
+  margin-top: 4px;
+  border-bottom: 1px solid #edf0f4;
+  padding-bottom: 4px;
+}
+
+.truck-input-suffix-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.truck-input-suffix-wrap .nc-modal-custom-input {
+  padding-right: 48px;
+}
+
+.truck-input-suffix {
+  position: absolute;
+  right: 12px;
+  font-family: var(--primary-font-medium);
+  font-size: 12px;
+  color: #8a9ab0;
+  pointer-events: none;
+}
+
+.truck-field-hint {
+  font-family: var(--primary-font-light);
+  font-size: 11px;
+  color: #8a9ab0;
+  display: block;
+  margin-top: 3px;
+}
+
+.truck-status-select-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.truck-status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.truck-status-dot.active  { background: #27ae60; }
+.truck-status-dot.inactive { background: #e74c3c; }
+
+/* ── View modal — fleet record card ── */
+.truck-view-wrapper {
+  padding: 8px 4px;
+}
+
+.truck-view-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  background: #f7fbfd;
+  border: 1px solid #edf0f4;
+  border-radius: 10px;
+  padding: 16px 20px;
+  margin-bottom: 16px;
+}
+
+.truck-view-unit {
+  font-family: var(--primary-font-bold);
+  font-size: 22px;
+  color: #1a2e40;
+  line-height: 1.1;
+}
+
+.truck-view-plate {
+  font-family: var(--primary-font-medium);
+  font-size: 14px;
+  color: #5ac8e1;
+  margin-top: 4px;
+  letter-spacing: 0.06em;
+}
+
+/* Spec strip — 3 cards side by side */
+.truck-spec-strip {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.truck-spec-card {
+  flex: 1;
+  background: #2d3e4e;
+  border-radius: 10px;
+  padding: 14px 16px;
+  text-align: center;
+  border-left: 3px solid #5ac8e1;
+}
+
+.truck-spec-value {
+  font-family: var(--primary-font-bold);
+  font-size: 20px;
+  color: #fff;
+  line-height: 1.2;
+}
+
+.truck-spec-label {
+  font-family: var(--primary-font-light);
+  font-size: 11px;
+  color: #78dbf9;
+  margin-top: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* Detail rows */
+.truck-view-details {
+  background: #fff;
+  border: 1px solid #edf0f4;
+  border-radius: 10px;
+  padding: 14px 20px;
+}
+
+.truck-view-detail-row {
+  display: flex;
+  gap: 16px;
+  padding: 8px 0;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.truck-view-detail-row:last-child {
+  border-bottom: none;
+}
+
+.truck-view-detail-label {
+  font-family: var(--primary-font-bold);
+  font-size: 12px;
+  color: #8a9ab0;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  min-width: 100px;
+}
+
+.truck-view-detail-value {
+  font-family: var(--primary-font-medium);
+  font-size: 13px;
+  color: #2d3e4e;
+}

@@ -1,0 +1,80 @@
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
+import { loginUser } from "../../Helpers/apiCalls/authApi";
+import { setUserSession, toastStyle } from "../../Helpers/Utils/Common";
+import "./Login.css";
+
+export default function Login() {
+  const navigate = useNavigate();
+  const [username, set_username] = useState("");
+  const [password, set_password] = useState("");
+  const [is_loading, set_is_loading] = useState(false);
+  const [error_msg, set_error_msg] = useState("");
+
+  async function handle_login(e) {
+    e.preventDefault();
+    if (!username || !password) {
+      set_error_msg("Please enter your username and password.");
+      return;
+    }
+    set_is_loading(true);
+    set_error_msg("");
+
+    const response = await loginUser(username, password);
+    if (response.data && response.data.status === "success") {
+      setUserSession(response.data.data.token, response.data.data);
+      toast.success("Welcome back!", { style: toastStyle() });
+      navigate("/dashboard");
+    } else {
+      set_error_msg("Invalid username or password.");
+    }
+    set_is_loading(false);
+  }
+
+  return (
+    <div className="login-page">
+      <div className="login-card">
+        <div className="login-logo-section">
+          <span className="login-truck-icon">🚚</span>
+          <h1 className="login-title">Logistics ERP</h1>
+          <p className="login-subtitle">Trucking Management System</p>
+        </div>
+
+        <form onSubmit={handle_login}>
+          <div className="login-form-group">
+            <label className="login-form-label">Username</label>
+            <input
+              type="text"
+              className="login-form-input"
+              placeholder="Enter username"
+              value={username}
+              onChange={(e) => set_username(e.target.value)}
+              autoFocus
+            />
+          </div>
+          <div className="login-form-group">
+            <label className="login-form-label">Password</label>
+            <input
+              type="password"
+              className="login-form-input"
+              placeholder="Enter password"
+              value={password}
+              onChange={(e) => set_password(e.target.value)}
+            />
+          </div>
+
+          {error_msg && <div className="login-error">{error_msg}</div>}
+
+          <button type="submit" className="login-btn" disabled={is_loading}>
+            {is_loading ? "Signing in..." : "Sign In"}
+          </button>
+        </form>
+
+        <div className="login-footer">
+          © 2025 Logistics ERP · All rights reserved
+        </div>
+      </div>
+    </div>
+  );
+}

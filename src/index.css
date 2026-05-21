@@ -1,0 +1,37 @@
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+:root {
+  --primary-color: #5ac8e1;
+  --primary-font-light: 'Gotham-Rounded-Light';
+  --primary-font-regular: 'Varela-Rounded-Regular';
+  --primary-font-medium: 'Gotham-Rounded-Medium';
+  --primary-font-bold: 'Gotham-Rounded-Bold';
+}
+
+/**FONTS**/
+@font-face {
+  font-family: 'Gotham-Rounded-Medium';
+  src: url('./Assets/Fonts/GothamRoundedRegular/GothamRounded-Medium.otf');
+}
+
+@font-face {
+  font-family: 'Gotham-Rounded-Bold';
+  src: url('./Assets/Fonts/GothamBold/GothamRoundedBold_21016.ttf');
+}
+
+@font-face {
+  font-family: 'Gotham-Rounded-Light';
+  src: url('./Assets/Fonts/GothamRoundedLight/Gotham-Rounded-Light.otf');
+}
+
+@font-face {
+  font-family: 'Varela-Rounded-Regular';
+  src: url('./Assets/Fonts/VerelaRoundRegular/VarelaRound-Regular.ttf');
+}

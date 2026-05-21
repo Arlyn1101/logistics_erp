@@ -1,0 +1,21 @@
+.page-title-edit {
+  font-family: var(--primary-font-bold);
+  color: #5ac8e1;
+  letter-spacing: 0.05em;
+  font-size: 1.2rem;
+}
+
+.input-title {
+  text-transform: capitalize;
+  font-family: var(--primary-font-bold);
+  font-style: italic;
+  color: #5ac8e1;
+}
+
+.uppercase {
+  text-transform: uppercase;
+}
+
+.page {
+  font-family: var(--primary-font-medium), sans-serif;
+}

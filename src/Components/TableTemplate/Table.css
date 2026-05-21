@@ -1,0 +1,97 @@
+.table-wrapper {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+  overflow-x: auto;
+}
+
+.erp-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--primary-font-medium);
+  font-size: 14px;
+}
+
+.erp-table thead tr {
+  background: #5ac8e1;
+  color: #fff;
+}
+
+.erp-table thead th {
+  padding: 12px 16px;
+  text-align: left;
+  font-family: var(--primary-font-bold);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.erp-table tbody tr {
+  border-bottom: 1px solid #f0f0f0;
+  transition: background 0.15s;
+}
+
+.erp-table tbody tr:hover {
+  background: #f5fcfe;
+}
+
+.erp-table tbody td {
+  padding: 11px 16px;
+  color: #444;
+  vertical-align: middle;
+}
+
+.erp-table tbody .no-data-row td {
+  text-align: center;
+  color: #aaa;
+  padding: 40px;
+  font-style: italic;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-family: var(--primary-font-bold);
+  text-transform: capitalize;
+}
+
+.status-badge.active {
+  background: #e6f9ef;
+  color: #27ae60;
+}
+
+.status-badge.inactive {
+  background: #fef0f0;
+  color: #e74c3c;
+}
+
+.status-badge.expired {
+  background: #fef0f0;
+  color: #e74c3c;
+}
+
+.status-badge.terminated {
+  background: #f5f5f5;
+  color: #888;
+}
+
+.table-loader {
+  text-align: center;
+  padding: 40px;
+  color: #5ac8e1;
+}
+
+.PO-select-action {
+  font-family: var(--primary-font-regular);
+  border-radius: 7px !important;
+  max-height: 35px !important;
+  color: #5ac8e1;
+  box-shadow: none !important;
+  border: solid 1px #b3b3b3 !important;
+  background-size: 15px !important;
+  background-color: transparent;
+  width: auto !important;
+  font-size: 13px;
+}
