@@ -7,7 +7,7 @@ import EditModal from "../../Components/Modals/EditModal";
 import ViewModal from "../../Components/Modals/ViewModal";
 import DeleteModal from "../../Components/Modals/DeleteModal";
 import InputError from "../../Components/InputError/InputError";
-import { getAllContracts, createContract, updateContract, deleteContract } from "../../Helpers/apiCalls/Contracts/contractApi";
+import { getAllContracts, searchContracts, createContract, updateContract, deleteContract } from "../../Helpers/apiCalls/Contracts/contractApi";
 import { getAllCustomers } from "../../Helpers/apiCalls/Manage/customerApi";
 import { validateContract } from "../../Helpers/Validation/Contracts/contractValidation";
 import { toastStyle, formatAmount } from "../../Helpers/Utils/Common";
@@ -93,7 +93,9 @@ export default function Contracts() {
 
   async function fetch_contracts() {
     set_show_loader(true);
-    const response = await getAllContracts(search_text);
+    const response = search_text
+      ? await searchContracts(search_text)
+      : await getAllContracts();
     if (response.data && response.data.data) {
       const result = response.data.data.map((a) => ({
         ...a,

@@ -7,7 +7,7 @@ import EditModal from "../../Components/Modals/EditModal";
 import ViewModal from "../../Components/Modals/ViewModal";
 import DeleteModal from "../../Components/Modals/DeleteModal";
 import InputError from "../../Components/InputError/InputError";
-import { getAllDrivers, createDriver, updateDriver, deleteDriver } from "../../Helpers/apiCalls/Manage/driverApi";
+import { getAllDrivers, searchDrivers, createDriver, updateDriver, deleteDriver } from "../../Helpers/apiCalls/Manage/driverApi";
 import { validateDriver } from "../../Helpers/Validation/Manage/driverValidation";
 import { toastStyle } from "../../Helpers/Utils/Common";
 import toast from "react-hot-toast";
@@ -122,7 +122,9 @@ export default function Drivers() {
 
   async function fetch_drivers() {
     set_show_loader(true);
-    const response = await getAllDrivers(search_text);
+    const response = search_text
+      ? await searchDrivers(search_text)
+      : await getAllDrivers();
     if (response.data && response.data.data) {
       const result = response.data.data.map((a) => ({
         ...a,

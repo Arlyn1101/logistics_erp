@@ -58,8 +58,8 @@ export const getType = () => {
 export const setUserSession = (token, user) => {
   localStorage.setItem("token", token);
   localStorage.setItem("user_id", user.id);
-  localStorage.setItem("name", user.name || user.username);
-  localStorage.setItem("type", user.type);
+  localStorage.setItem("name", user.first_name + " " + user.last_name);
+  localStorage.setItem("type", user.role);
 };
 
 export const removeUserSession = () => {

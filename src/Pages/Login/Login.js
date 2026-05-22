@@ -22,8 +22,8 @@ export default function Login() {
     set_error_msg("");
 
     const response = await loginUser(username, password);
-    if (response.data && response.data.status === "success") {
-      setUserSession(response.data.data.token, response.data.data);
+    if (response.data && response.data.token) {   // ← check for token instead
+      setUserSession(response.data.token, response.data);
       toast.success("Welcome back!", { style: toastStyle() });
       navigate("/dashboard");
     } else {

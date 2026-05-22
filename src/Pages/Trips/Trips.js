@@ -7,7 +7,7 @@ import EditModal from "../../Components/Modals/EditModal";
 import ViewModal from "../../Components/Modals/ViewModal";
 import DeleteModal from "../../Components/Modals/DeleteModal";
 import InputError from "../../Components/InputError/InputError";
-import { getAllTrips, createTrip, updateTrip, deleteTrip } from "../../Helpers/apiCalls/Trips/tripApi";
+import { getAllTrips, searchTrips, createTrip, updateTrip, deleteTrip } from "../../Helpers/apiCalls/Trips/tripApi";
 import { getAllContracts, getAllContractRoutes } from "../../Helpers/apiCalls/Contracts/contractApi";
 import { getAllTrucks } from "../../Helpers/apiCalls/Manage/truckApi";
 import { getAllDrivers } from "../../Helpers/apiCalls/Manage/driverApi";
@@ -140,7 +140,9 @@ export default function Trips() {
 
   async function fetch_trips() {
     set_show_loader(true);
-    const response = await getAllTrips(search_text);
+    const response = search_text
+      ? await searchTrips(search_text)
+      : await getAllTrips();
     if (response.data && response.data.data) {
       const result = response.data.data.map((a) => ({
         ...a,
