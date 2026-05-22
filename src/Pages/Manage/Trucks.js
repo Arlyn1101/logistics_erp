@@ -7,7 +7,7 @@ import EditModal from "../../Components/Modals/EditModal";
 import ViewModal from "../../Components/Modals/ViewModal";
 import DeleteModal from "../../Components/Modals/DeleteModal";
 import InputError from "../../Components/InputError/InputError";
-import { getAllTrucks, createTruck, updateTruck, deleteTruck } from "../../Helpers/apiCalls/Manage/truckApi";
+import { getAllTrucks, searchTrucks, createTruck, updateTruck, deleteTruck } from "../../Helpers/apiCalls/Manage/truckApi";
 import { validateTruck } from "../../Helpers/Validation/Manage/truckValidation";
 import { toastStyle } from "../../Helpers/Utils/Common";
 import toast from "react-hot-toast";
@@ -93,7 +93,9 @@ export default function Trucks() {
 
   async function fetch_trucks() {
     set_show_loader(true);
-    const response = await getAllTrucks(search_text);
+    const response = search_text
+      ? await searchTrucks(search_text)  
+      : await getAllTrucks();     
     if (response.data && response.data.data) {
       const result = response.data.data.map((a) => ({
         ...a,

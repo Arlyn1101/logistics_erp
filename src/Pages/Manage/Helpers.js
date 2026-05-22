@@ -7,7 +7,7 @@ import EditModal from "../../Components/Modals/EditModal";
 import ViewModal from "../../Components/Modals/ViewModal";
 import DeleteModal from "../../Components/Modals/DeleteModal";
 import InputError from "../../Components/InputError/InputError";
-import { getAllHelpers, createHelper, updateHelper, deleteHelper } from "../../Helpers/apiCalls/Manage/helperApi";
+import { getAllHelpers, searchHelpers, createHelper, updateHelper, deleteHelper } from "../../Helpers/apiCalls/Manage/helperApi";
 import { validateHelper } from "../../Helpers/Validation/Manage/helperValidation";
 import { toastStyle } from "../../Helpers/Utils/Common";
 import toast from "react-hot-toast";
@@ -97,7 +97,9 @@ export default function Helpers() {
 
   async function fetch_helpers() {
     set_show_loader(true);
-    const response = await getAllHelpers(search_text);
+    const response = search_text
+      ? await searchHelpers(search_text)
+      : await getAllHelpers();
     if (response.data && response.data.data) {
       const result = response.data.data.map((a) => ({
         ...a,

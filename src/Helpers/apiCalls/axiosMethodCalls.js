@@ -22,10 +22,11 @@ axios.interceptors.response.use(
 );
 
 const get_api_key = () => localStorage.getItem("token") || null;
+const get_user_id = () => localStorage.getItem("user_id") || null;
 
 var get_config = () => ({
   "api-key": "logistics-erp-api-key",
-  "user-key": get_api_key(),
+  "user-key": get_user_id(),
   "Content-Type": "application/json",
 });
 
