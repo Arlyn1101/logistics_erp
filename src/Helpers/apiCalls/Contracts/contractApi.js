@@ -1,35 +1,74 @@
 import { getAPICall, postAPICall, BASE_URL } from "../axiosMethodCalls";
 
-export const getAllContracts = async (search = "") => {
+const get_token = () => localStorage.getItem("token") || null;
+
+export const getAllContracts = async () => {
   try {
-    const response = await getAPICall(`${BASE_URL}/contract/get_all`, { search });
+    const response = await getAPICall(`${BASE_URL}/contracts/index`, {
+      token: get_token(),
+    });
     return { data: response.data };
   } catch (error) {
     return { error: error.response };
   }
 };
 
-export const createContract = async (payload) => {
+export const searchContracts = async (name = null, status = null) => {
   try {
-    const response = await postAPICall(`${BASE_URL}/contract/create`, payload);
+    const response = await getAPICall(`${BASE_URL}/contracts/search`, {
+      token: get_token(),
+      name,
+      status,
+    });
     return { data: response.data };
   } catch (error) {
     return { error: error.response };
   }
 };
 
-export const updateContract = async (payload) => {
+export const getContractDetails = async (contract_id) => {
   try {
-    const response = await postAPICall(`${BASE_URL}/contract/update`, payload);
+    const response = await getAPICall(`${BASE_URL}/contracts/details`, {
+      token: get_token(),
+      contract_id,
+    });
     return { data: response.data };
   } catch (error) {
     return { error: error.response };
   }
 };
 
-export const deleteContract = async (id) => {
+export const createContract = async (form) => {
   try {
-    const response = await postAPICall(`${BASE_URL}/contract/delete`, { id });
+    const response = await postAPICall(`${BASE_URL}/contracts/create`, {
+      token: get_token(),
+      ...form,
+    });
+    return { data: response.data };
+  } catch (error) {
+    return { error: error.response };
+  }
+};
+
+export const updateContract = async (form) => {
+  try {
+    const response = await postAPICall(`${BASE_URL}/contracts/update`, {
+      token: get_token(),
+      contract_id: form.id,
+      ...form,
+    });
+    return { data: response.data };
+  } catch (error) {
+    return { error: error.response };
+  }
+};
+
+export const deleteContract = async (contract_id) => {
+  try {
+    const response = await postAPICall(`${BASE_URL}/contracts/delete`, {
+      token: get_token(),
+      contract_id,
+    });
     return { data: response.data };
   } catch (error) {
     return { error: error.response };
@@ -39,34 +78,47 @@ export const deleteContract = async (id) => {
 // Contract Routes
 export const getAllContractRoutes = async (contract_id) => {
   try {
-    const response = await getAPICall(`${BASE_URL}/contract_route/get_all`, { contract_id });
+    const response = await getAPICall(`${BASE_URL}/contract_routes/index`, {
+      token: get_token(),
+      contract_id,
+    });
     return { data: response.data };
   } catch (error) {
     return { error: error.response };
   }
 };
 
-export const createContractRoute = async (payload) => {
+export const createContractRoute = async (form) => {
   try {
-    const response = await postAPICall(`${BASE_URL}/contract_route/create`, payload);
+    const response = await postAPICall(`${BASE_URL}/contract_routes/create`, {
+      token: get_token(),
+      ...form,
+    });
     return { data: response.data };
   } catch (error) {
     return { error: error.response };
   }
 };
 
-export const updateContractRoute = async (payload) => {
+export const updateContractRoute = async (form) => {
   try {
-    const response = await postAPICall(`${BASE_URL}/contract_route/update`, payload);
+    const response = await postAPICall(`${BASE_URL}/contract_routes/update`, {
+      token: get_token(),
+      contract_route_id: form.id,
+      ...form,
+    });
     return { data: response.data };
   } catch (error) {
     return { error: error.response };
   }
 };
 
-export const deleteContractRoute = async (id) => {
+export const deleteContractRoute = async (contract_route_id) => {
   try {
-    const response = await postAPICall(`${BASE_URL}/contract_route/delete`, { id });
+    const response = await postAPICall(`${BASE_URL}/contract_routes/delete`, {
+      token: get_token(),
+      contract_route_id,
+    });
     return { data: response.data };
   } catch (error) {
     return { error: error.response };

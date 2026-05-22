@@ -7,6 +7,7 @@ import EditModal from "../../Components/Modals/EditModal";
 import DeleteModal from "../../Components/Modals/DeleteModal";
 import InputError from "../../Components/InputError/InputError";
 import { getAPICall, postAPICall, BASE_URL } from "../../Helpers/apiCalls/axiosMethodCalls";
+import { getAllUsers, createUser, updateUser, deleteUser } from "../../Helpers/apiCalls/Manage/userApi";
 import { toastStyle } from "../../Helpers/Utils/Common";
 import toast from "react-hot-toast";
 import "../Manage/Manage.css";
@@ -79,36 +80,33 @@ export default function Users() {
 
   async function fetch_users() {
     set_show_loader(true);
-    try {
-      const response = await getAPICall(`${BASE_URL}/user/get_all`, { search: search_text });
-      if (response.data && response.data.data) {
-        const result = response.data.data.map((a) => ({
-          ...a,
-          status_badge: StatusBadge(a.status),
-          action_btn: ActionBtn(a),
-        }));
-        set_user_data(result);
-      } else {
-        set_user_data([]);
-      }
-    } catch { set_user_data([]); }
+    const response = await getAllUsers();
+    if (response.data && response.data.data) {
+      const result = response.data.data.map((a) => ({
+        ...a,
+        full_name: `${a.first_name} ${a.last_name}`,
+        status_badge: StatusBadge(a.role),
+        action_btn: ActionBtn(a),
+      }));
+      set_user_data(result);
+    } else {
+      set_user_data([]);
+    }
     set_show_loader(false);
   }
 
   async function handle_create() {
     if (validate_user(add_form)) {
       set_is_clicked(true);
-      try {
-        const response = await postAPICall(`${BASE_URL}/user/create`, add_form);
-        if (response.data && response.data.status === "success") {
-          toast.success("User added successfully!", { style: toastStyle() });
-          set_show_add_modal(false);
-          set_add_form({ ...empty_form });
-          fetch_users();
-        } else {
-          toast.error("Failed to add user.", { style: toastStyle() });
-        }
-      } catch { toast.error("Error adding user.", { style: toastStyle() }); }
+      const response = await createUser(add_form);
+      if (response.data && response.data.status === "success") {
+        toast.success("User added successfully!", { style: toastStyle() });
+        set_show_add_modal(false);
+        set_add_form({ ...empty_form });
+        fetch_users();
+      } else {
+        toast.error("Failed to add user.", { style: toastStyle() });
+      }
       set_is_clicked(false);
     }
   }
@@ -116,31 +114,27 @@ export default function Users() {
   async function handle_update() {
     if (validate_user(edit_form, true)) {
       set_is_clicked(true);
-      try {
-        const response = await postAPICall(`${BASE_URL}/user/update`, edit_form);
-        if (response.data && response.data.status === "success") {
-          toast.success("User updated successfully!", { style: toastStyle() });
-          set_show_edit_modal(false);
-          fetch_users();
-        } else {
-          toast.error("Failed to update user.", { style: toastStyle() });
-        }
-      } catch { toast.error("Error updating user.", { style: toastStyle() }); }
+      const response = await updateUser(edit_form);
+      if (response.data && response.data.status === "success") {
+        toast.success("User updated successfully!", { style: toastStyle() });
+        set_show_edit_modal(false);
+        fetch_users();
+      } else {
+        toast.error("Failed to update user.", { style: toastStyle() });
+      }
       set_is_clicked(false);
     }
   }
 
   async function handle_delete() {
-    try {
-      const response = await postAPICall(`${BASE_URL}/user/delete`, { id: selected_row.id });
-      if (response.data && response.data.status === "success") {
-        toast.success("User deleted.", { style: toastStyle() });
-        set_show_delete_modal(false);
-        fetch_users();
-      } else {
-        toast.error("Failed to delete user.", { style: toastStyle() });
-      }
-    } catch { toast.error("Error deleting user.", { style: toastStyle() }); }
+    const response = await deleteUser(selected_row.id);
+    if (response.data && response.data.status === "success") {
+      toast.success("User deleted.", { style: toastStyle() });
+      set_show_delete_modal(false);
+      fetch_users();
+    } else {
+      toast.error("Failed to delete user.", { style: toastStyle() });
+    }
   }
 
   React.useEffect(() => { fetch_users(); }, []);
