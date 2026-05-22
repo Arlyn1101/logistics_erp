@@ -3,7 +3,7 @@ import { getAPICall, postAPICall, BASE_URL } from "./axiosMethodCalls";
 export const loginUser = async (username, password) => {
   try {
     const response = await postAPICall(`${BASE_URL}/login`, {
-      username,
+      email: username,
       password,
     });
     return { data: response.data };
