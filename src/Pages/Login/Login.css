@@ -12,7 +12,7 @@
   border-radius: 16px;
   padding: 48px 40px 40px;
   width: 100%;
-  max-width: 400px;
+  max-width: 560px;
   box-shadow: 0 8px 32px rgba(0,0,0,0.18);
 }
 
@@ -22,7 +22,8 @@
 }
 
 .login-truck-icon {
-  font-size: 48px;
+  font-size: 40px;
+  color: #5ac8e1;
   display: block;
   margin-bottom: 8px;
 }
@@ -114,4 +115,27 @@
   font-size: 12px;
   color: #aaa;
   font-family: var(--primary-font-light);
+}
+
+.login-password-wrap {
+  position: relative;
+}
+
+.login-password-wrap .login-form-input {
+  padding-right: 42px;
+}
+
+.login-eye-btn {
+  position: absolute;
+  right: 13px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #8a9ab0;
+  cursor: pointer;
+  font-size: 15px;
+  transition: color 0.15s;
+}
+
+.login-eye-btn:hover {
+  color: #5ac8e1;
 }

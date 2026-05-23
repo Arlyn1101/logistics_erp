@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faTruck, faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
 import toast from "react-hot-toast";
 import { loginUser } from "../../Helpers/apiCalls/authApi";
 import { setUserSession, toastStyle } from "../../Helpers/Utils/Common";
@@ -11,6 +13,7 @@ export default function Login() {
   const [password, set_password] = useState("");
   const [is_loading, set_is_loading] = useState(false);
   const [error_msg, set_error_msg] = useState("");
+  const [show_password, set_show_password] = useState(false);
 
   async function handle_login(e) {
     e.preventDefault();
@@ -36,7 +39,6 @@ export default function Login() {
     <div className="login-page">
       <div className="login-card">
         <div className="login-logo-section">
-          <span className="login-truck-icon">🚚</span>
           <h1 className="login-title">Logistics ERP</h1>
           <p className="login-subtitle">Trucking Management System</p>
         </div>
@@ -55,13 +57,18 @@ export default function Login() {
           </div>
           <div className="login-form-group">
             <label className="login-form-label">Password</label>
+            <div className="login-password-wrap">
             <input
-              type="password"
+              type={show_password ? "text" : "password"}
               className="login-form-input"
               placeholder="Enter password"
               value={password}
               onChange={(e) => set_password(e.target.value)}
             />
+            <span className="login-eye-btn" onClick={() => set_show_password(!show_password)}>
+              <FontAwesomeIcon icon={show_password ? faEyeSlash : faEye} />
+            </span>
+          </div>
           </div>
 
           {error_msg && <div className="login-error">{error_msg}</div>}

@@ -21,31 +21,51 @@
   gap: 8px;
 }
 
+.dashboard-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 .dashboard-header .page-title {
   font-family: var(--primary-font-bold);
-  font-size: 26px;
+  font-size: 22px;
   color: #1a2e40;
-  text-transform: uppercase;
-  margin: 0 0 4px;
+  margin: 0 0 2px;
 }
 
 .dashboard-date {
   font-family: var(--primary-font-light);
-  font-size: 13px;
+  font-size: 12px;
   color: #8a9ab0;
   margin: 0;
 }
 
-.dashboard-welcome {
-  font-family: var(--primary-font-medium);
-  font-size: 13px;
-  color: #5a6a7a;
-  align-self: center;
+.dashboard-datetime-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  background: #ffffff;
+  border: 1.5px solid #edf0f4;
+  border-radius: 12px;
+  padding: 10px 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  gap: 2px;
 }
 
-.dashboard-welcome strong {
+.datetime-time {
   font-family: var(--primary-font-bold);
+  font-size: 22px;
   color: #1a2e40;
+  line-height: 1;
+}
+
+.datetime-date {
+  font-family: var(--primary-font-light);
+  font-size: 11px;
+  color: #8a9ab0;
+  white-space: nowrap;
 }
 
 /* ── Summary cards ── */

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -13,18 +13,10 @@ import {
 } from "recharts";
 import Navbar from "../../Components/Navbar/Navbar";
 import { getName } from "../../Helpers/Utils/Common";
+import { getAllTrucks } from "../../Helpers/apiCalls/Manage/truckApi";
 import "./Dashboard.css";
 
-// ── Summary cards ─────────────────────────────────────────────
-const DASH_CARDS = [
-  { icon: faTruck,        label: "Active Trucks",    value: "—", sub: "status = active" },
-  { icon: faIdCard,       label: "Active Drivers",   value: "—", sub: "status = active" },
-  { icon: faUsers,        label: "Active Helpers",   value: "—", sub: "status = active" },
-  { icon: faBuilding,     label: "Customers",        value: "—", sub: "total clients" },
-  { icon: faFileContract, label: "Active Contracts", value: "—", sub: "currently running" },
-];
-
-// ── Quick actions ─────────────────────────────────────────────
+// ── Static data (safe outside component) ─────────────────────
 const QUICK_ACTIONS = [
   { label: "Log a Trip",   icon: faClipboardList, to: "/trips" },
   { label: "New Contract", icon: faFileContract,  to: "/contracts" },
@@ -32,29 +24,22 @@ const QUICK_ACTIONS = [
   { label: "Add Truck",    icon: faTruck,         to: "/trucks" },
 ];
 
-// ── Placeholder: this month mini stats ────────────────────────
 const MONTH_STATS = [
   { label: "Active Contracts", value: "—" },
   { label: "Total Trips",      value: "—" },
   { label: "Excess Trips",     value: "—" },
 ];
 
-// ── Placeholder: line chart data ──────────────────────────────
 const TRIP_LINE_DATA = [];
 
-// ── Placeholder: donut chart data ────────────────────────────
 const DONUT_DATA = [
   { name: "Within Limit", value: 0, color: "#5ac8e1" },
   { name: "Excess Trips", value: 0, color: "#1a2e40" },
 ];
 
-// ── Placeholder: recent trips ─────────────────────────────────
 const RECENT_TRIPS = [];
-
-// ── Placeholder: contract alerts ──────────────────────────────
 const CONTRACT_ALERTS = [];
 
-// ── Custom donut label ────────────────────────────────────────
 const DonutLabel = ({ cx, cy, total }) => (
   <>
     <text x={cx} y={cy - 8} textAnchor="middle"
@@ -72,12 +57,40 @@ export default function Dashboard() {
   const [inactive, set_inactive]           = useState(false);
   const [show_modal, set_show_modal]       = useState(false);
   const [selected_trip, set_selected_trip] = useState(null);
-  const navigate   = useNavigate();
-  const user_name  = getName() || "User";
+  const [counts, set_counts]               = useState({
+    trucks: "—",
+    drivers: "—",
+    helpers: "—",
+    customers: "—",
+    contracts: "—",
+  });
+
+  const navigate  = useNavigate();
+  const user_name = getName() || "User";
 
   const today = new Date().toLocaleDateString("en-PH", {
     weekday: "long", year: "numeric", month: "long", day: "numeric",
   });
+
+  useEffect(() => {
+    fetch_counts();
+  }, []);
+
+  async function fetch_counts() {
+    const trucks_res = await getAllTrucks();
+    if (trucks_res.data) {
+      const active_trucks = trucks_res.data.data.filter(t => t.status === "active").length;
+      set_counts(prev => ({ ...prev, trucks: active_trucks }));
+    }
+  }
+
+  const DASH_CARDS = [
+    { icon: faTruck,        label: "Active Trucks",    value: counts.trucks,    sub: "status = active" },
+    { icon: faIdCard,       label: "Active Drivers",   value: counts.drivers,   sub: "status = active" },
+    { icon: faUsers,        label: "Active Helpers",   value: counts.helpers,   sub: "status = active" },
+    { icon: faBuilding,     label: "Customers",        value: counts.customers, sub: "total clients" },
+    { icon: faFileContract, label: "Active Contracts", value: counts.contracts, sub: "currently running" },
+  ];
 
   const donut_total = DONUT_DATA.reduce((sum, d) => sum + d.value, 0);
 
@@ -111,15 +124,19 @@ export default function Dashboard() {
         <div className="dashboard-content">
 
           {/* ── Page header ── */}
-          <div className="dashboard-header">
-            <div>
-              <h1 className="page-title">Dashboard</h1>
-              <p className="dashboard-date">{today}</p>
-            </div>
-            <div className="dashboard-welcome">
-              Welcome back, <strong>{user_name}</strong>
-            </div>
+        <div className="dashboard-header">
+          <div className="dashboard-header-left">
+          <h1 className="page-title">Welcome back, {user_name}!</h1>
           </div>
+          <div className="dashboard-datetime-card">
+            <span className="datetime-time">
+              {new Date().toLocaleTimeString("en-PH", { hour: "2-digit", minute: "2-digit" })}
+            </span>
+            <span className="datetime-date">
+              {new Date().toLocaleDateString("en-PH", { weekday: "long", month: "long", day: "numeric", year: "numeric" })}
+            </span>
+          </div>
+        </div>
 
           {/* ── Summary cards ── */}
           <div className="dashboard-cards">
@@ -153,7 +170,6 @@ export default function Dashboard() {
           {/* ── Middle row: stats+chart | donut ── */}
           <div className="dashboard-middle">
 
-            {/* Left: this month stats + line chart */}
             <div className="dashboard-panel panel-stats">
               <div className="panel-header">
                 <span className="panel-title">This Month's Trips</span>
@@ -181,9 +197,7 @@ export default function Dashboard() {
                     <LineChart data={TRIP_LINE_DATA}>
                       <XAxis dataKey="day" tick={{ fontSize: 10, fill: "#aab2bc" }} axisLine={false} tickLine={false} />
                       <YAxis hide />
-                      <Tooltip
-                        contentStyle={{ fontFamily: "var(--primary-font-medium)", fontSize: 12, borderRadius: 8, border: "none", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}
-                      />
+                      <Tooltip contentStyle={{ fontFamily: "var(--primary-font-medium)", fontSize: 12, borderRadius: 8, border: "none", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }} />
                       <Line type="monotone" dataKey="trips" stroke="#5ac8e1" strokeWidth={2.5} dot={false} activeDot={{ r: 4, fill: "#5ac8e1" }} />
                     </LineChart>
                   </ResponsiveContainer>
@@ -191,7 +205,6 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Right: trip breakdown donut */}
             <div className="dashboard-panel panel-donut">
               <div className="panel-header">
                 <span className="panel-title">Trip Breakdown</span>
@@ -237,7 +250,6 @@ export default function Dashboard() {
           {/* ── Bottom row: recent trips | contract alerts ── */}
           <div className="dashboard-bottom">
 
-            {/* Recent trip cards */}
             <div className="dashboard-panel panel-trips">
               <div className="panel-header">
                 <span className="panel-title">Recent Trips</span>
@@ -278,7 +290,6 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Contract alerts */}
             <div className="dashboard-panel panel-alerts">
               <div className="panel-header">
                 <span className="panel-title">
@@ -316,7 +327,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ── Trip detail modal with map ── */}
       {show_modal && selected_trip && (
         <div className="trip-modal-overlay" onClick={handle_close_modal}>
           <div className="trip-modal" onClick={(e) => e.stopPropagation()}>
