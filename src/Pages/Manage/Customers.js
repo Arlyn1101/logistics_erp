@@ -95,7 +95,7 @@ export default function Customers() {
     if (validateCustomer(add_form, set_is_error)) {
       set_is_clicked(true);
       const response = await createCustomer(add_form);
-      if (response.data && response.data.status === "success") {
+      if (response.data && response.data.response) {
         toast.success("Customer added successfully!", { style: toastStyle() });
         set_show_add_modal(false);
         set_add_form({ ...empty_form });
@@ -111,7 +111,7 @@ export default function Customers() {
     if (validateCustomer(edit_form, set_is_error)) {
       set_is_clicked(true);
       const response = await updateCustomer(edit_form);
-      if (response.data && response.data.status === "success") {
+      if (response.data && response.data.response) {
         toast.success("Customer updated successfully!", { style: toastStyle() });
         set_show_edit_modal(false);
         fetch_customers();
@@ -124,7 +124,7 @@ export default function Customers() {
 
   async function handle_delete() {
     const response = await deleteCustomer(selected_row.id);
-    if (response.data && response.data.status === "success") {
+    if (response.data && response.data.response) {
       toast.success("Customer deleted.", { style: toastStyle() });
       set_show_delete_modal(false);
       fetch_customers();
