@@ -7,7 +7,13 @@ import EditModal from "../../Components/Modals/EditModal";
 import ViewModal from "../../Components/Modals/ViewModal";
 import DeleteModal from "../../Components/Modals/DeleteModal";
 import InputError from "../../Components/InputError/InputError";
-import { getAllCustomers, searchCustomers, createCustomer, updateCustomer, deleteCustomer } from "../../Helpers/apiCalls/Manage/customerApi";
+import {
+  getAllCustomers,
+  searchCustomers,
+  createCustomer,
+  updateCustomer,
+  deleteCustomer,
+} from "../../Helpers/apiCalls/Manage/customerApi";
 import { validateCustomer } from "../../Helpers/Validation/Manage/customerValidation";
 import { toastStyle } from "../../Helpers/Utils/Common";
 import toast from "react-hot-toast";
@@ -66,10 +72,18 @@ export default function Customers() {
         onChange={(e) => handle_select_change(e, row)}
         value={""}
       >
-        <option defaultValue selected hidden>Select</option>
-        <option value="view-customer" className="color-options">View</option>
-        <option value="edit-customer" className="color-options">Edit</option>
-        <option value="delete-customer" className="color-red">Delete</option>
+        <option defaultValue selected hidden>
+          Select
+        </option>
+        <option value="view-customer" className="color-options">
+          View
+        </option>
+        <option value="edit-customer" className="color-options">
+          Edit
+        </option>
+        <option value="delete-customer" className="color-red">
+          Delete
+        </option>
       </Form.Select>
     );
   }
@@ -112,7 +126,9 @@ export default function Customers() {
       set_is_clicked(true);
       const response = await updateCustomer(edit_form);
       if (response.data && response.data.response) {
-        toast.success("Customer updated successfully!", { style: toastStyle() });
+        toast.success("Customer updated successfully!", {
+          style: toastStyle(),
+        });
         set_show_edit_modal(false);
         fetch_customers();
       } else {
@@ -152,7 +168,10 @@ export default function Customers() {
             className="nc-modal-custom-input"
             onChange={handle_change}
           />
-          <InputError isValid={is_error.name} message="Customer name is required" />
+          <InputError
+            isValid={is_error.name}
+            message="Customer name is required"
+          />
         </Col>
         <Col>
           CONTACT PERSON
@@ -214,31 +233,48 @@ export default function Customers() {
         <div className="view-header">
           <div className="view-header-left">
             <span className="view-title">{form.name || "—"}</span>
-            <span className="view-subtitle">{form.contact_person || "No contact person"}</span>
+            <span className="view-subtitle">
+              {form.contact_person || "No contact person"}
+            </span>
           </div>
         </div>
 
-        {/* Spec strip */}
-        <div className="spec-strip">
-          <div className="spec-card">
-            <span className="spec-value">{form.contact_person || "—"}</span>
-            <span className="spec-label">Contact Person</span>
-          </div>
-          <div className="spec-card">
-            <span className="spec-value">{form.contact_number || "—"}</span>
-            <span className="spec-label">Contact No.</span>
-          </div>
-          <div className="spec-card">
-            <span className="spec-value" style={{ fontSize: "14px" }}>{form.email || "—"}</span>
-            <span className="spec-label">Email</span>
-          </div>
-        </div>
-
-        {/* Detail rows */}
         <div className="view-details">
           <div className="view-detail-row">
+            <span className="view-detail-label">CONTACT PERSON</span>
+            <span
+              className={
+                form.contact_person ? "view-detail-value" : "view-empty-value"
+              }
+            >
+              {form.contact_person || "—"}
+            </span>
+          </div>
+          <div className="view-detail-row">
+            <span className="view-detail-label">CONTACT NO.</span>
+            <span
+              className={
+                form.contact_number ? "view-detail-value" : "view-empty-value"
+              }
+            >
+              {form.contact_number || "—"}
+            </span>
+          </div>
+          <div className="view-detail-row">
+            <span className="view-detail-label">EMAIL</span>
+            <span
+              className={form.email ? "view-detail-value" : "view-empty-value"}
+            >
+              {form.email || "—"}
+            </span>
+          </div>
+          <div className="view-detail-row">
             <span className="view-detail-label">ADDRESS</span>
-            <span className={form.address ? "view-detail-value" : "view-empty-value"}>
+            <span
+              className={
+                form.address ? "view-detail-value" : "view-empty-value"
+              }
+            >
               {form.address || "No address on record"}
             </span>
           </div>
@@ -250,14 +286,19 @@ export default function Customers() {
   return (
     <div>
       <div className="page">
-        <Navbar onCollapse={(is_inactive) => set_inactive(is_inactive)} active={"CUSTOMERS"} />
+        <Navbar
+          onCollapse={(is_inactive) => set_inactive(is_inactive)}
+          active={"CUSTOMERS"}
+        />
       </div>
 
       <div className={`manager-container ${inactive ? "inactive" : "active"}`}>
         <Row className="mb-4">
           <Col xs={6}>
             <h1 className="page-title">Customers</h1>
-            <p className="page-subtitle">Manage customer accounts and contact details</p>
+            <p className="page-subtitle">
+              Manage customer accounts and contact details
+            </p>
           </Col>
           <Col className="d-flex justify-content-end align-items-center">
             <input
@@ -267,16 +308,37 @@ export default function Customers() {
               value={search_text}
               onChange={(e) => set_search_text(e.target.value)}
               className="search-bar"
-              onKeyDown={(e) => { if (e.key === "Enter") fetch_customers(); }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") fetch_customers();
+              }}
             />
-            <button className="add-btn" onClick={() => set_show_add_modal(true)}>Add</button>
+            <button
+              className="add-btn"
+              onClick={() => set_show_add_modal(true)}
+            >
+              Add
+            </button>
           </Col>
         </Row>
 
         <div className="tab-content">
           <Table
-            tableHeaders={["CUSTOMER NAME", "CONTACT PERSON", "CONTACT NO.", "EMAIL", "ADDRESS", "ACTIONS"]}
-            headerSelector={["name", "contact_person", "contact_number", "email", "address", "action_btn"]}
+            tableHeaders={[
+              "CUSTOMER NAME",
+              "CONTACT PERSON",
+              "CONTACT NO.",
+              "EMAIL",
+              "ADDRESS",
+              "ACTIONS",
+            ]}
+            headerSelector={[
+              "name",
+              "contact_person",
+              "contact_number",
+              "email",
+              "address",
+              "action_btn",
+            ]}
             tableData={customer_data}
             showLoader={show_loader}
             withActionData={true}
@@ -288,7 +350,10 @@ export default function Customers() {
         title="CUSTOMER"
         size="lg"
         show={show_add_modal}
-        onHide={() => { set_show_add_modal(false); set_add_form({ ...empty_form }); }}
+        onHide={() => {
+          set_show_add_modal(false);
+          set_add_form({ ...empty_form });
+        }}
         onSave={handle_create}
         isClicked={is_clicked}
       >
@@ -312,7 +377,10 @@ export default function Customers() {
         withButtons
         show={show_view_modal}
         onHide={() => set_show_view_modal(false)}
-        onEdit={() => { set_show_edit_modal(true); set_show_view_modal(false); }}
+        onEdit={() => {
+          set_show_edit_modal(true);
+          set_show_view_modal(false);
+        }}
       >
         {view_content(edit_form)}
       </ViewModal>

@@ -7,7 +7,13 @@ import EditModal from "../../Components/Modals/EditModal";
 import ViewModal from "../../Components/Modals/ViewModal";
 import DeleteModal from "../../Components/Modals/DeleteModal";
 import InputError from "../../Components/InputError/InputError";
-import { getAllContracts, searchContracts, createContract, updateContract, deleteContract } from "../../Helpers/apiCalls/Contracts/contractApi";
+import {
+  getAllContracts,
+  searchContracts,
+  createContract,
+  updateContract,
+  deleteContract,
+} from "../../Helpers/apiCalls/Contracts/contractApi";
 import { getAllCustomers } from "../../Helpers/apiCalls/Manage/customerApi";
 import { validateContract } from "../../Helpers/Validation/Contracts/contractValidation";
 import { toastStyle, formatAmount } from "../../Helpers/Utils/Common";
@@ -24,6 +30,8 @@ export default function Contracts() {
   const [contract_data, set_contract_data] = useState([]);
   const [customer_options, set_customer_options] = useState([]);
   const [selected_row, set_selected_row] = useState({});
+  const [active_tab, set_active_tab] = useState("all");
+  const [filtered_data, set_filtered_data] = useState([]);
 
   const [show_add_modal, set_show_add_modal] = useState(false);
   const [show_edit_modal, set_show_edit_modal] = useState(false);
@@ -72,16 +80,39 @@ export default function Contracts() {
         onChange={(e) => handle_select_change(e, row)}
         value={""}
       >
-        <option defaultValue selected hidden>Select</option>
-        <option value="view-contract" className="color-options">View</option>
-        <option value="edit-contract" className="color-options">Edit</option>
-        <option value="delete-contract" className="color-red">Delete</option>
+        <option defaultValue selected hidden>
+          Select
+        </option>
+        <option value="view-contract" className="color-options">
+          View
+        </option>
+        <option value="edit-contract" className="color-options">
+          Edit
+        </option>
+        <option value="delete-contract" className="color-red">
+          Delete
+        </option>
       </Form.Select>
     );
   }
 
   function StatusBadge(status) {
     return <span className={`status-badge ${status}`}>{status}</span>;
+  }
+
+  function apply_tab_filter(data, tab) {
+    if (tab === "all") return data;
+    return data.filter((row) => row.status === tab);
+  }
+
+  function handle_tab_change(tab) {
+    set_active_tab(tab);
+    set_filtered_data(apply_tab_filter(contract_data, tab));
+  }
+
+  function get_tab_count(tab) {
+    if (tab === "all") return contract_data.length;
+    return contract_data.filter((row) => row.status === tab).length;
   }
 
   async function fetch_customers() {
@@ -106,8 +137,10 @@ export default function Contracts() {
         action_btn: ActionBtn(a),
       }));
       set_contract_data(result);
+      set_filtered_data(apply_tab_filter(result, active_tab));
     } else {
       set_contract_data([]);
+      set_filtered_data([]);
     }
     set_show_loader(false);
   }
@@ -133,7 +166,9 @@ export default function Contracts() {
       set_is_clicked(true);
       const response = await updateContract(edit_form);
       if (response.data && response.data.response) {
-        toast.success("Contract updated successfully!", { style: toastStyle() });
+        toast.success("Contract updated successfully!", {
+          style: toastStyle(),
+        });
         set_show_edit_modal(false);
         fetch_contracts();
       } else {
@@ -161,36 +196,34 @@ export default function Contracts() {
 
   const form_fields = (form, handle_change, disabled = false) => (
     <div className="mt-3">
+      <div className="form-section-label">Contract Information</div>
       <Row className="nc-modal-custom-row">
         <Col>
-          CUSTOMER <span className="required-icon">*</span>
-          {disabled ? (
-            <Form.Control
-              type="text"
-              value={customer_options.find((c) => String(c.id) === String(form.customer_id))?.name || form.customer_name || ""}
-              className="nc-modal-custom-input-edit"
-              disabled
-            />
-          ) : (
-            <Form.Select
-              name="customer_id"
-              value={form.customer_id}
-              className="nc-modal-custom-select"
-              onChange={handle_change}
-            >
-              <option value="">-- Select Customer --</option>
-              {customer_options.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </Form.Select>
-          )}
-          <InputError isValid={is_error.customer_id} message="Customer is required" />
+          <div>
+            CUSTOMER <span className="required-icon">*</span>
+          </div>
+          <Form.Select
+            name="customer_id"
+            value={form.customer_id}
+            className="nc-modal-custom-select"
+            onChange={handle_change}
+          >
+            <option value="">-- Select Customer --</option>
+            {customer_options.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </Form.Select>
+          <InputError
+            isValid={is_error.customer_id}
+            message="Customer is required"
+          />
         </Col>
         <Col>
-          STATUS
-          {disabled ? (
-            <Form.Control type="text" value={form.status} className="nc-modal-custom-input-edit" disabled />
-          ) : (
+          <div>STATUS</div>
+          <div className="status-select-wrap">
+            <span className={`status-dot ${form.status}`}></span>
             <Form.Select
               name="status"
               value={form.status}
@@ -201,10 +234,11 @@ export default function Contracts() {
               <option value="expired">Expired</option>
               <option value="terminated">Terminated</option>
             </Form.Select>
-          )}
+          </div>
         </Col>
       </Row>
 
+      <div className="form-section-label">Rate Details</div>
       <Row className="nc-modal-custom-row">
         <Col>
           MONTHLY RATE (₱) <span className="required-icon">*</span>
@@ -212,12 +246,17 @@ export default function Contracts() {
             type="number"
             name="monthly_rate"
             value={form.monthly_rate}
-            className={disabled ? "nc-modal-custom-input-edit" : "nc-modal-custom-input"}
+            className={
+              disabled ? "nc-modal-custom-input-edit" : "nc-modal-custom-input"
+            }
             onChange={handle_change}
             disabled={disabled}
             placeholder="e.g. 10000"
           />
-          <InputError isValid={is_error.monthly_rate} message="Monthly rate is required" />
+          <InputError
+            isValid={is_error.monthly_rate}
+            message="Monthly rate is required"
+          />
         </Col>
         <Col>
           INCLUDED TRIPS / MONTH <span className="required-icon">*</span>
@@ -225,12 +264,17 @@ export default function Contracts() {
             type="number"
             name="included_trips"
             value={form.included_trips}
-            className={disabled ? "nc-modal-custom-input-edit" : "nc-modal-custom-input"}
+            className={
+              disabled ? "nc-modal-custom-input-edit" : "nc-modal-custom-input"
+            }
             onChange={handle_change}
             disabled={disabled}
             placeholder="e.g. 4"
           />
-          <InputError isValid={is_error.included_trips} message="Included trips is required" />
+          <InputError
+            isValid={is_error.included_trips}
+            message="Included trips is required"
+          />
         </Col>
       </Row>
 
@@ -241,12 +285,17 @@ export default function Contracts() {
             type="number"
             name="excess_trip_charge"
             value={form.excess_trip_charge}
-            className={disabled ? "nc-modal-custom-input-edit" : "nc-modal-custom-input"}
+            className={
+              disabled ? "nc-modal-custom-input-edit" : "nc-modal-custom-input"
+            }
             onChange={handle_change}
             disabled={disabled}
             placeholder="Charge per trip beyond included"
           />
-          <InputError isValid={is_error.excess_trip_charge} message="Excess trip charge is required" />
+          <InputError
+            isValid={is_error.excess_trip_charge}
+            message="Excess trip charge is required"
+          />
         </Col>
         <Col>
           AGREED FUEL PRICE / LITER (₱) <span className="required-icon">*</span>
@@ -254,15 +303,21 @@ export default function Contracts() {
             type="number"
             name="fuel_price_per_liter"
             value={form.fuel_price_per_liter}
-            className={disabled ? "nc-modal-custom-input-edit" : "nc-modal-custom-input"}
+            className={
+              disabled ? "nc-modal-custom-input-edit" : "nc-modal-custom-input"
+            }
             onChange={handle_change}
             disabled={disabled}
             placeholder="e.g. 50"
           />
-          <InputError isValid={is_error.fuel_price_per_liter} message="Fuel price is required" />
+          <InputError
+            isValid={is_error.fuel_price_per_liter}
+            message="Fuel price is required"
+          />
         </Col>
       </Row>
 
+      <div className="form-section-label">Contract Period</div>
       <Row className="nc-modal-custom-row">
         <Col>
           START DATE <span className="required-icon">*</span>
@@ -270,19 +325,29 @@ export default function Contracts() {
             type="date"
             name="start_date"
             value={form.start_date}
-            className={disabled ? "nc-modal-custom-input-edit" : "nc-modal-custom-input"}
+            className={
+              disabled ? "nc-modal-custom-input-edit" : "nc-modal-custom-input"
+            }
             onChange={handle_change}
             disabled={disabled}
           />
-          <InputError isValid={is_error.start_date} message="Start date is required" />
+          <InputError
+            isValid={is_error.start_date}
+            message="Start date is required"
+          />
         </Col>
         <Col>
-          END DATE <span style={{ color: "#aaa", fontSize: 11, marginLeft: 4 }}>(leave blank if open-ended)</span>
+          END DATE{" "}
+          <span style={{ color: "#aaa", fontSize: 11, marginLeft: 4 }}>
+            (leave blank if open-ended)
+          </span>
           <Form.Control
             type="date"
             name="end_date"
             value={form.end_date || ""}
-            className={disabled ? "nc-modal-custom-input-edit" : "nc-modal-custom-input"}
+            className={
+              disabled ? "nc-modal-custom-input-edit" : "nc-modal-custom-input"
+            }
             onChange={handle_change}
             disabled={disabled}
           />
@@ -297,7 +362,9 @@ export default function Contracts() {
             rows={2}
             name="remarks"
             value={form.remarks || ""}
-            className={disabled ? "nc-modal-custom-input-edit" : "nc-modal-custom-input"}
+            className={
+              disabled ? "nc-modal-custom-input-edit" : "nc-modal-custom-input"
+            }
             onChange={handle_change}
             disabled={disabled}
           />
@@ -305,17 +372,21 @@ export default function Contracts() {
       </Row>
 
       {!disabled && (
-        <div style={{
-          background: "#f0fbfd",
-          border: "1px solid #c0eaf4",
-          borderRadius: 8,
-          padding: "10px 14px",
-          marginTop: 4,
-          fontSize: 12,
-          color: "#2a7a8c",
-          fontFamily: "var(--primary-font-medium)",
-        }}>
-          💡 <strong>Note:</strong> If actual fuel price exceeds the agreed rate, the difference will be billed to the customer based on the route distance and truck's km/liter.
+        <div
+          style={{
+            background: "#f0fbfd",
+            border: "1px solid #c0eaf4",
+            borderRadius: 8,
+            padding: "10px 14px",
+            marginTop: 4,
+            fontSize: 12,
+            color: "#2a7a8c",
+            fontFamily: "var(--primary-font-medium)",
+          }}
+        >
+          💡 <strong>Note:</strong> If actual fuel price exceeds the agreed
+          rate, the difference will be billed to the customer based on the route
+          distance and truck's km/liter.
         </div>
       )}
     </div>
@@ -324,11 +395,16 @@ export default function Contracts() {
   return (
     <div>
       <div className="page">
-        <Navbar onCollapse={(is_inactive) => set_inactive(is_inactive)} active={"CONTRACTS"} />
+        <Navbar
+          onCollapse={(is_inactive) => set_inactive(is_inactive)}
+          active={"CONTRACTS"}
+        />
       </div>
       <div className={`manager-container ${inactive ? "inactive" : "active"}`}>
         <Row className="mb-4">
-          <Col xs={6}><h1 className="page-title">Contracts</h1></Col>
+          <Col xs={6}>
+            <h1 className="page-title">Contracts</h1>
+          </Col>
           <Col className="d-flex justify-content-end align-items-center">
             <input
               type="search"
@@ -336,72 +412,186 @@ export default function Contracts() {
               value={search_text}
               onChange={(e) => set_search_text(e.target.value)}
               className="search-bar"
-              onKeyDown={(e) => { if (e.key === "Enter") fetch_contracts(); }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") fetch_contracts();
+              }}
             />
-            <button className="add-btn" onClick={() => set_show_add_modal(true)}>Add</button>
+            <button
+              className="add-btn"
+              onClick={() => set_show_add_modal(true)}
+            >
+              Add
+            </button>
           </Col>
         </Row>
+        <div className="filter-tabs mb-3">
+          {["all", "active", "expired", "terminated"].map((tab) => (
+            <button
+              key={tab}
+              className={`filter-tab-btn ${active_tab === tab ? "active" : ""}`}
+              onClick={() => handle_tab_change(tab)}
+            >
+              {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              <span className="tab-count">{get_tab_count(tab)}</span>
+            </button>
+          ))}
+        </div>
+
         <div className="tab-content">
           <Table
-            tableHeaders={["CUSTOMER", "MONTHLY RATE", "TRIPS INCL.", "EXCESS/TRIP", "FUEL PRICE", "START DATE", "END DATE", "STATUS", "ACTIONS"]}
-            headerSelector={["customer_name", "monthly_rate_fmt", "included_trips", "excess_fmt", "fuel_price_fmt", "start_date", "end_date", "status_badge", "action_btn"]}
-            tableData={contract_data}
+            tableHeaders={[
+              "CUSTOMER",
+              "MONTHLY RATE",
+              "TRIPS INCL.",
+              "EXCESS/TRIP",
+              "FUEL PRICE",
+              "START DATE",
+              "END DATE",
+              "STATUS",
+              "ACTIONS",
+            ]}
+            headerSelector={[
+              "customer_name",
+              "monthly_rate_fmt",
+              "included_trips",
+              "excess_fmt",
+              "fuel_price_fmt",
+              "start_date",
+              "end_date",
+              "status_badge",
+              "action_btn",
+            ]}
+            tableData={filtered_data}
             showLoader={show_loader}
             withActionData={true}
           />
         </div>
       </div>
 
-      <AddModal title="CONTRACT" size="lg" show={show_add_modal} onHide={() => set_show_add_modal(false)} onSave={handle_create} isClicked={is_clicked}>
+      <AddModal
+        title="CONTRACT"
+        size="lg"
+        show={show_add_modal}
+        onHide={() => set_show_add_modal(false)}
+        onSave={handle_create}
+        isClicked={is_clicked}
+      >
         {form_fields(add_form, handle_add_change)}
       </AddModal>
-      <EditModal title="CONTRACT" size="lg" show={show_edit_modal} onHide={() => set_show_edit_modal(false)} onSave={handle_update} isClicked={is_clicked}>
+      <EditModal
+        title="CONTRACT"
+        size="lg"
+        show={show_edit_modal}
+        onHide={() => set_show_edit_modal(false)}
+        onSave={handle_update}
+        isClicked={is_clicked}
+      >
         {form_fields(edit_form, handle_edit_change)}
       </EditModal>
-      <ViewModal title="CONTRACT DETAILS" size="lg" withButtons show={show_view_modal} onHide={() => set_show_view_modal(false)} onEdit={() => { set_show_edit_modal(true); set_show_view_modal(false); }}>
+      <ViewModal
+        title="CONTRACT DETAILS"
+        size="lg"
+        withButtons
+        show={show_view_modal}
+        onHide={() => set_show_view_modal(false)}
+        onEdit={() => {
+          set_show_edit_modal(true);
+          set_show_view_modal(false);
+        }}
+      >
         <div className="view-wrapper">
           <div className="view-header">
             <div className="view-header-left">
-              <span className="view-title">{customer_options.find((c) => String(c.id) === String(edit_form.customer_id))?.name || edit_form.customer_name || "—"}</span>
-              <span className="view-subtitle">{edit_form.start_date} — {edit_form.end_date || "Open-ended"}</span>
+              <span className="view-title">
+                {customer_options.find(
+                  (c) => String(c.id) === String(edit_form.customer_id),
+                )?.name ||
+                  edit_form.customer_name ||
+                  "—"}
+              </span>
+              <span className="view-subtitle">
+                {edit_form.start_date} — {edit_form.end_date || "Open-ended"}
+              </span>
             </div>
-            <span className={`status-badge ${edit_form.status}`} style={{ alignSelf: "center" }}>{edit_form.status}</span>
-          </div>
-          <div className="spec-strip">
-            <div className="spec-card">
-              <span className="spec-value">₱{edit_form.monthly_rate}</span>
-              <span className="spec-label">Monthly Rate</span>
-            </div>
-            <div className="spec-card">
-              <span className="spec-value">{edit_form.included_trips}</span>
-              <span className="spec-label">Included Trips</span>
-            </div>
-            <div className="spec-card">
-              <span className="spec-value">₱{edit_form.excess_trip_charge}</span>
-              <span className="spec-label">Excess/Trip</span>
-            </div>
-            <div className="spec-card">
-              <span className="spec-value">₱{edit_form.fuel_price_per_liter}</span>
-              <span className="spec-label">Fuel Price/L</span>
-            </div>
+            <span
+              className={`status-badge ${edit_form.status}`}
+              style={{ alignSelf: "center" }}
+            >
+              {edit_form.status}
+            </span>
           </div>
           <div className="view-details">
             <div className="view-detail-row">
+              <span className="view-detail-label">MONTHLY RATE</span>
+              <span className="view-detail-value">
+                ₱{edit_form.monthly_rate || "—"}
+              </span>
+            </div>
+            <div className="view-detail-row">
+              <span className="view-detail-label">INCLUDED TRIPS</span>
+              <span className="view-detail-value">
+                {edit_form.included_trips || "—"}
+              </span>
+            </div>
+            <div className="view-detail-row">
+              <span className="view-detail-label">EXCESS/TRIP</span>
+              <span className="view-detail-value">
+                ₱{edit_form.excess_trip_charge || "—"}
+              </span>
+            </div>
+            <div className="view-detail-row">
+              <span className="view-detail-label">FUEL PRICE/LITER</span>
+              <span className="view-detail-value">
+                ₱{edit_form.fuel_price_per_liter || "—"}
+              </span>
+            </div>
+            <div className="view-detail-row">
               <span className="view-detail-label">START DATE</span>
-              <span className="view-detail-value">{edit_form.start_date || "—"}</span>
+              <span
+                className={
+                  edit_form.start_date
+                    ? "view-detail-value"
+                    : "view-empty-value"
+                }
+              >
+                {edit_form.start_date || "—"}
+              </span>
             </div>
             <div className="view-detail-row">
               <span className="view-detail-label">END DATE</span>
-              <span className={edit_form.end_date ? "view-detail-value" : "view-empty-value"}>{edit_form.end_date || "Open-ended"}</span>
+              <span
+                className={
+                  edit_form.end_date ? "view-detail-value" : "view-empty-value"
+                }
+              >
+                {edit_form.end_date || "Open-ended"}
+              </span>
+            </div>
+            <div className="view-detail-row">
+              <span className="view-detail-label">STATUS</span>
+              <span className={`status-badge ${edit_form.status}`}>
+                {edit_form.status}
+              </span>
             </div>
             <div className="view-detail-row">
               <span className="view-detail-label">REMARKS</span>
-              <span className={edit_form.remarks ? "view-detail-value" : "view-empty-value"}>{edit_form.remarks || "No remarks"}</span>
+              <span
+                className={
+                  edit_form.remarks ? "view-detail-value" : "view-empty-value"
+                }
+              >
+                {edit_form.remarks || "No remarks"}
+              </span>
             </div>
           </div>
         </div>
       </ViewModal>
-      <DeleteModal text="contract" show={show_delete_modal} onHide={() => set_show_delete_modal(false)} onDelete={handle_delete} />
+      <DeleteModal
+        text="contract"
+        show={show_delete_modal}
+        onHide={() => set_show_delete_modal(false)}
+        onDelete={handle_delete}
+      />
     </div>
   );
 }

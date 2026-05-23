@@ -7,7 +7,13 @@ import EditModal from "../../Components/Modals/EditModal";
 import ViewModal from "../../Components/Modals/ViewModal";
 import DeleteModal from "../../Components/Modals/DeleteModal";
 import InputError from "../../Components/InputError/InputError";
-import { getAllTrucks, searchTrucks, createTruck, updateTruck, deleteTruck } from "../../Helpers/apiCalls/Manage/truckApi";
+import {
+  getAllTrucks,
+  searchTrucks,
+  createTruck,
+  updateTruck,
+  deleteTruck,
+} from "../../Helpers/apiCalls/Manage/truckApi";
 import { validateTruck } from "../../Helpers/Validation/Manage/truckValidation";
 import { toastStyle } from "../../Helpers/Utils/Common";
 import toast from "react-hot-toast";
@@ -74,10 +80,18 @@ export default function Trucks() {
         onChange={(e) => handle_select_change(e, row)}
         value={""}
       >
-        <option defaultValue selected hidden>Select</option>
-        <option value="view-truck" className="color-options">View</option>
-        <option value="edit-truck" className="color-options">Edit</option>
-        <option value="delete-truck" className="color-red">Delete</option>
+        <option defaultValue selected hidden>
+          Select
+        </option>
+        <option value="view-truck" className="color-options">
+          View
+        </option>
+        <option value="edit-truck" className="color-options">
+          Edit
+        </option>
+        <option value="delete-truck" className="color-red">
+          Delete
+        </option>
       </Form.Select>
     );
   }
@@ -94,8 +108,8 @@ export default function Trucks() {
   async function fetch_trucks() {
     set_show_loader(true);
     const response = search_text
-      ? await searchTrucks(search_text)  
-      : await getAllTrucks();     
+      ? await searchTrucks(search_text)
+      : await getAllTrucks();
     if (response.data && response.data.data) {
       const result = response.data.data.map((a) => ({
         ...a,
@@ -163,7 +177,9 @@ export default function Trucks() {
     }
   }
 
-  React.useEffect(() => { fetch_trucks(); }, []);
+  React.useEffect(() => {
+    fetch_trucks();
+  }, []);
 
   /* ── FORM FIELDS — Add and Edit modals ── */
   const form_fields = (form, handle_change) => (
@@ -180,7 +196,10 @@ export default function Trucks() {
             className="nc-modal-custom-input"
             onChange={handle_change}
           />
-          <InputError isValid={is_error.unit_code} message="Unit code is required" />
+          <InputError
+            isValid={is_error.unit_code}
+            message="Unit code is required"
+          />
         </Col>
         <Col>
           PLATE NUMBER <span className="required-icon">*</span>
@@ -192,7 +211,10 @@ export default function Trucks() {
             className="nc-modal-custom-input"
             onChange={handle_change}
           />
-          <InputError isValid={is_error.plate_number} message="Plate number is required" />
+          <InputError
+            isValid={is_error.plate_number}
+            message="Plate number is required"
+          />
         </Col>
       </Row>
       <Row className="nc-modal-custom-row">
@@ -223,7 +245,9 @@ export default function Trucks() {
         </Col>
       </Row>
 
-      <p className="form-section-label" style={{ marginTop: "18px" }}>Fuel Details</p>
+      <p className="form-section-label" style={{ marginTop: "18px" }}>
+        Fuel Details
+      </p>
       <Row className="nc-modal-custom-row">
         <Col xs={6}>
           KM PER LITER
@@ -238,7 +262,9 @@ export default function Trucks() {
             />
             <span className="input-suffix">km/L</span>
           </div>
-          <small className="field-hint">Used for fuel surcharge billing calculation</small>
+          <small className="field-hint">
+            Used for fuel surcharge billing calculation
+          </small>
         </Col>
         <Col xs={6}>
           STATUS
@@ -284,26 +310,43 @@ export default function Trucks() {
         <span className={`status-badge ${form.status}`}>{form.status}</span>
       </div>
 
-      <div className="spec-strip">
-        <div className="spec-card">
-          <div className="spec-value">{form.capacity || "—"}</div>
-          <div className="spec-label">Capacity (tons)</div>
-        </div>
-        <div className="spec-card">
-          <div className="spec-value">{form.km_per_liter || "—"}</div>
-          <div className="spec-label">KM per Liter</div>
-        </div>
-        <div className="spec-card">
-          <div className="spec-value">{form.color || "—"}</div>
-          <div className="spec-label">Color</div>
-        </div>
-      </div>
-
       <div className="view-details">
         <div className="view-detail-row">
-          <span className="view-detail-label">Remarks</span>
-          <span className="view-detail-value">
-            {form.remarks || <span className="view-empty-value">No remarks</span>}
+          <span className="view-detail-label">COLOR</span>
+          <span
+            className={form.color ? "view-detail-value" : "view-empty-value"}
+          >
+            {form.color || "—"}
+          </span>
+        </div>
+        <div className="view-detail-row">
+          <span className="view-detail-label">CAPACITY</span>
+          <span
+            className={form.capacity ? "view-detail-value" : "view-empty-value"}
+          >
+            {form.capacity ? `${form.capacity} tons` : "—"}
+          </span>
+        </div>
+        <div className="view-detail-row">
+          <span className="view-detail-label">KM PER LITER</span>
+          <span
+            className={
+              form.km_per_liter ? "view-detail-value" : "view-empty-value"
+            }
+          >
+            {form.km_per_liter ? `${form.km_per_liter} km/L` : "—"}
+          </span>
+        </div>
+        <div className="view-detail-row">
+          <span className="view-detail-label">STATUS</span>
+          <span className={`status-badge ${form.status}`}>{form.status}</span>
+        </div>
+        <div className="view-detail-row">
+          <span className="view-detail-label">REMARKS</span>
+          <span
+            className={form.remarks ? "view-detail-value" : "view-empty-value"}
+          >
+            {form.remarks || "No remarks"}
           </span>
         </div>
       </div>
@@ -313,7 +356,10 @@ export default function Trucks() {
   return (
     <div>
       <div className="page">
-        <Navbar onCollapse={(is_inactive) => set_inactive(is_inactive)} active={"TRUCKS"} />
+        <Navbar
+          onCollapse={(is_inactive) => set_inactive(is_inactive)}
+          active={"TRUCKS"}
+        />
       </div>
       <div className={`manager-container ${inactive ? "inactive" : "active"}`}>
         <Row className="mb-4">
@@ -328,9 +374,14 @@ export default function Trucks() {
               value={search_text}
               onChange={(e) => set_search_text(e.target.value)}
               className="search-bar"
-              onKeyDown={(e) => { if (e.key === "Enter") fetch_trucks(); }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") fetch_trucks();
+              }}
             />
-            <button className="add-btn" onClick={() => set_show_add_modal(true)}>
+            <button
+              className="add-btn"
+              onClick={() => set_show_add_modal(true)}
+            >
               Add Truck
             </button>
           </Col>
@@ -351,8 +402,24 @@ export default function Trucks() {
 
         <div className="tab-content">
           <Table
-            tableHeaders={["UNIT CODE", "PLATE NO.", "COLOR", "CAPACITY (tons)", "KM/LITER", "STATUS", "ACTIONS"]}
-            headerSelector={["unit_code", "plate_number", "color", "capacity", "km_per_liter", "status_badge", "action_btn"]}
+            tableHeaders={[
+              "UNIT CODE",
+              "PLATE NO.",
+              "COLOR",
+              "CAPACITY (tons)",
+              "KM/LITER",
+              "STATUS",
+              "ACTIONS",
+            ]}
+            headerSelector={[
+              "unit_code",
+              "plate_number",
+              "color",
+              "capacity",
+              "km_per_liter",
+              "status_badge",
+              "action_btn",
+            ]}
             tableData={filtered_data}
             showLoader={show_loader}
             withActionData={true}
@@ -364,7 +431,10 @@ export default function Trucks() {
         title="TRUCK"
         size="lg"
         show={show_add_modal}
-        onHide={() => { set_show_add_modal(false); set_add_form({ ...empty_form }); }}
+        onHide={() => {
+          set_show_add_modal(false);
+          set_add_form({ ...empty_form });
+        }}
         onSave={handle_create}
         isClicked={is_clicked}
       >
@@ -388,7 +458,10 @@ export default function Trucks() {
         withButtons
         show={show_view_modal}
         onHide={() => set_show_view_modal(false)}
-        onEdit={() => { set_show_edit_modal(true); set_show_view_modal(false); }}
+        onEdit={() => {
+          set_show_edit_modal(true);
+          set_show_view_modal(false);
+        }}
       >
         {view_content(edit_form)}
       </ViewModal>
