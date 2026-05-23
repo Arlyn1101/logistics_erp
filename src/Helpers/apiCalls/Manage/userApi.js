@@ -17,7 +17,11 @@ export const createUser = async (form) => {
   try {
     const response = await postAPICall(`${BASE_URL}/users/create`, {
       token: get_token(),
-      ...form,
+      first_name: form.name,
+      last_name: '',
+      email: form.username,
+      password: form.password,
+      role: form.type,
     });
     return { data: response.data };
   } catch (error) {
@@ -30,7 +34,11 @@ export const updateUser = async (form) => {
     const response = await postAPICall(`${BASE_URL}/users/update`, {
       token: get_token(),
       user_id: form.id,
-      ...form,
+      first_name: form.name,
+      last_name: '',
+      email: form.username,
+      password: form.password,
+      role: form.type,
     });
     return { data: response.data };
   } catch (error) {

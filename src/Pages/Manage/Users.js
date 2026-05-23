@@ -83,11 +83,13 @@ export default function Users() {
     const response = await getAllUsers();
     if (response.data && response.data.data) {
       const result = response.data.data.map((a) => ({
-        ...a,
-        full_name: `${a.first_name} ${a.last_name}`,
-        status_badge: StatusBadge(a.role),
-        action_btn: ActionBtn(a),
-      }));
+  ...a,
+  name: `${a.first_name} ${a.last_name}`,
+  username: a.email,
+  type: a.role,
+  status_badge: StatusBadge(a.role),
+  action_btn: ActionBtn(a),
+}));
       set_user_data(result);
     } else {
       set_user_data([]);
@@ -187,8 +189,9 @@ export default function Users() {
             className="nc-modal-custom-select"
             onChange={handle_change}
           >
-            <option value="admin">Admin</option>
-            <option value="staff">Staff</option>
+        <option value="admin">Admin</option>
+<option value="dispatcher">Dispatcher</option>
+<option value="viewer">Viewer</option>
           </Form.Select>
         </Col>
       </Row>
