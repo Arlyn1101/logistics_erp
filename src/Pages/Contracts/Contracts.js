@@ -116,7 +116,7 @@ export default function Contracts() {
     if (validateContract(add_form, set_is_error)) {
       set_is_clicked(true);
       const response = await createContract(add_form);
-      if (response.data && response.data.status === "success") {
+      if (response.data && response.data.response) {
         toast.success("Contract added successfully!", { style: toastStyle() });
         set_show_add_modal(false);
         set_add_form({ ...empty_form });
@@ -132,7 +132,7 @@ export default function Contracts() {
     if (validateContract(edit_form, set_is_error)) {
       set_is_clicked(true);
       const response = await updateContract(edit_form);
-      if (response.data && response.data.status === "success") {
+      if (response.data && response.data.response) {
         toast.success("Contract updated successfully!", { style: toastStyle() });
         set_show_edit_modal(false);
         fetch_contracts();
@@ -145,7 +145,7 @@ export default function Contracts() {
 
   async function handle_delete() {
     const response = await deleteContract(selected_row.id);
-    if (response.data && response.data.status === "success") {
+    if (response.data && response.data.response) {
       toast.success("Contract deleted.", { style: toastStyle() });
       set_show_delete_modal(false);
       fetch_contracts();
@@ -358,8 +358,48 @@ export default function Contracts() {
       <EditModal title="CONTRACT" size="lg" show={show_edit_modal} onHide={() => set_show_edit_modal(false)} onSave={handle_update} isClicked={is_clicked}>
         {form_fields(edit_form, handle_edit_change)}
       </EditModal>
-      <ViewModal title="CONTRACT" size="lg" withButtons show={show_view_modal} onHide={() => set_show_view_modal(false)} onEdit={() => { set_show_edit_modal(true); set_show_view_modal(false); }}>
-        {form_fields(edit_form, () => {}, true)}
+      <ViewModal title="CONTRACT DETAILS" size="lg" withButtons show={show_view_modal} onHide={() => set_show_view_modal(false)} onEdit={() => { set_show_edit_modal(true); set_show_view_modal(false); }}>
+        <div className="view-wrapper">
+          <div className="view-header">
+            <div className="view-header-left">
+              <span className="view-title">{customer_options.find((c) => String(c.id) === String(edit_form.customer_id))?.name || edit_form.customer_name || "—"}</span>
+              <span className="view-subtitle">{edit_form.start_date} — {edit_form.end_date || "Open-ended"}</span>
+            </div>
+            <span className={`status-badge ${edit_form.status}`} style={{ alignSelf: "center" }}>{edit_form.status}</span>
+          </div>
+          <div className="spec-strip">
+            <div className="spec-card">
+              <span className="spec-value">₱{edit_form.monthly_rate}</span>
+              <span className="spec-label">Monthly Rate</span>
+            </div>
+            <div className="spec-card">
+              <span className="spec-value">{edit_form.included_trips}</span>
+              <span className="spec-label">Included Trips</span>
+            </div>
+            <div className="spec-card">
+              <span className="spec-value">₱{edit_form.excess_trip_charge}</span>
+              <span className="spec-label">Excess/Trip</span>
+            </div>
+            <div className="spec-card">
+              <span className="spec-value">₱{edit_form.fuel_price_per_liter}</span>
+              <span className="spec-label">Fuel Price/L</span>
+            </div>
+          </div>
+          <div className="view-details">
+            <div className="view-detail-row">
+              <span className="view-detail-label">START DATE</span>
+              <span className="view-detail-value">{edit_form.start_date || "—"}</span>
+            </div>
+            <div className="view-detail-row">
+              <span className="view-detail-label">END DATE</span>
+              <span className={edit_form.end_date ? "view-detail-value" : "view-empty-value"}>{edit_form.end_date || "Open-ended"}</span>
+            </div>
+            <div className="view-detail-row">
+              <span className="view-detail-label">REMARKS</span>
+              <span className={edit_form.remarks ? "view-detail-value" : "view-empty-value"}>{edit_form.remarks || "No remarks"}</span>
+            </div>
+          </div>
+        </div>
       </ViewModal>
       <DeleteModal text="contract" show={show_delete_modal} onHide={() => set_show_delete_modal(false)} onDelete={handle_delete} />
     </div>

@@ -362,8 +362,47 @@ export default function Trips() {
       <EditModal title="TRIP" size="lg" show={show_edit_modal} onHide={() => set_show_edit_modal(false)} onSave={handle_update} isClicked={is_clicked}>
         {form_fields(edit_form, handle_edit_change, handle_edit_multi, edit_route_options)}
       </EditModal>
-      <ViewModal title="TRIP" size="lg" withButtons show={show_view_modal} onHide={() => set_show_view_modal(false)} onEdit={() => { set_show_edit_modal(true); set_show_view_modal(false); }}>
-        {form_fields(edit_form, () => {}, () => {}, edit_route_options, true)}
+      <ViewModal title="TRIP DETAILS" size="lg" withButtons show={show_view_modal} onHide={() => set_show_view_modal(false)} onEdit={() => { set_show_edit_modal(true); set_show_view_modal(false); }}>
+        <div className="view-wrapper">
+          <div className="view-header">
+            <div className="view-header-left">
+              <span className="view-title">{edit_form.trip_date || "—"}</span>
+              <span className="view-subtitle">{edit_form.route_label || `Route #${edit_form.contract_route_id}`}</span>
+            </div>
+          </div>
+          <div className="spec-strip">
+            <div className="spec-card">
+              <span className="spec-value">{edit_form.trip_date || "—"}</span>
+              <span className="spec-label">Trip Date</span>
+            </div>
+            <div className="spec-card">
+              <span className="spec-value" style={{ fontSize: "14px" }}>{edit_form.truck_label || `Truck #${edit_form.truck_id}`}</span>
+              <span className="spec-label">Truck</span>
+            </div>
+            <div className="spec-card">
+              <span className="spec-value" style={{ fontSize: "14px" }}>{edit_form.contract_label || `Contract #${edit_form.contract_id}`}</span>
+              <span className="spec-label">Contract</span>
+            </div>
+          </div>
+          <div className="view-details">
+            <div className="view-detail-row">
+              <span className="view-detail-label">ROUTE</span>
+              <span className="view-detail-value">{edit_form.route_label || "—"}</span>
+            </div>
+            <div className="view-detail-row">
+              <span className="view-detail-label">DRIVER(S)</span>
+              <span className={edit_form.drivers_label ? "view-detail-value" : "view-empty-value"}>{edit_form.drivers_label || "No drivers assigned"}</span>
+            </div>
+            <div className="view-detail-row">
+              <span className="view-detail-label">HELPER(S)</span>
+              <span className={edit_form.helpers_label ? "view-detail-value" : "view-empty-value"}>{edit_form.helpers_label || "No helpers assigned"}</span>
+            </div>
+            <div className="view-detail-row">
+              <span className="view-detail-label">REMARKS</span>
+              <span className={edit_form.remarks ? "view-detail-value" : "view-empty-value"}>{edit_form.remarks || "No remarks"}</span>
+            </div>
+          </div>
+        </div>
       </ViewModal>
       <DeleteModal text="trip" show={show_delete_modal} onHide={() => set_show_delete_modal(false)} onDelete={handle_delete} />
     </div>

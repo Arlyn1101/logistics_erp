@@ -96,7 +96,7 @@ export default function ContractRoutes() {
     if (validateContractRoute(add_form, set_is_error)) {
       set_is_clicked(true);
       const response = await createContractRoute(add_form);
-      if (response.data && response.data.status === "success") {
+      if (response.data && response.data.response) {
         toast.success("Route added successfully!", { style: toastStyle() });
         set_show_add_modal(false);
         set_add_form({ ...empty_form });
@@ -112,7 +112,7 @@ export default function ContractRoutes() {
     if (validateContractRoute(edit_form, set_is_error)) {
       set_is_clicked(true);
       const response = await updateContractRoute(edit_form);
-      if (response.data && response.data.status === "success") {
+      if (response.data && response.data.response) {
         toast.success("Route updated successfully!", { style: toastStyle() });
         set_show_edit_modal(false);
         fetch_routes();
@@ -125,7 +125,7 @@ export default function ContractRoutes() {
 
   async function handle_delete() {
     const response = await deleteContractRoute(selected_row.id);
-    if (response.data && response.data.status === "success") {
+    if (response.data && response.data.response) {
       toast.success("Route deleted.", { style: toastStyle() });
       set_show_delete_modal(false);
       fetch_routes();
@@ -274,8 +274,39 @@ export default function ContractRoutes() {
       <EditModal title="CONTRACT ROUTE" size="lg" show={show_edit_modal} onHide={() => set_show_edit_modal(false)} onSave={handle_update} isClicked={is_clicked}>
         {form_fields(edit_form, handle_edit_change)}
       </EditModal>
-      <ViewModal title="CONTRACT ROUTE" size="lg" withButtons show={show_view_modal} onHide={() => set_show_view_modal(false)} onEdit={() => { set_show_edit_modal(true); set_show_view_modal(false); }}>
-        {form_fields(edit_form, () => {}, true)}
+      <ViewModal title="CONTRACT ROUTE DETAILS" size="lg" withButtons show={show_view_modal} onHide={() => set_show_view_modal(false)} onEdit={() => { set_show_edit_modal(true); set_show_view_modal(false); }}>
+        <div className="view-wrapper">
+          <div className="view-header">
+            <div className="view-header-left">
+              <span className="view-title">{edit_form.origin} → {edit_form.destination}</span>
+              <span className="view-subtitle">{contract_options.find((c) => String(c.id) === String(edit_form.contract_id))?.customer_name || `Contract #${edit_form.contract_id}`}</span>
+            </div>
+          </div>
+          <div className="spec-strip">
+            <div className="spec-card">
+              <span className="spec-value">{edit_form.origin || "—"}</span>
+              <span className="spec-label">Origin</span>
+            </div>
+            <div className="spec-card">
+              <span className="spec-value">{edit_form.destination || "—"}</span>
+              <span className="spec-label">Destination</span>
+            </div>
+            <div className="spec-card">
+              <span className="spec-value">{edit_form.distance_km || "—"}</span>
+              <span className="spec-label">Distance (km)</span>
+            </div>
+          </div>
+          <div className="view-details">
+            <div className="view-detail-row">
+              <span className="view-detail-label">CONTRACT</span>
+              <span className="view-detail-value">{contract_options.find((c) => String(c.id) === String(edit_form.contract_id))?.customer_name || `Contract #${edit_form.contract_id}`}</span>
+            </div>
+            <div className="view-detail-row">
+              <span className="view-detail-label">REMARKS</span>
+              <span className={edit_form.remarks ? "view-detail-value" : "view-empty-value"}>{edit_form.remarks || "No remarks"}</span>
+            </div>
+          </div>
+        </div>
       </ViewModal>
       <DeleteModal text="route" show={show_delete_modal} onHide={() => set_show_delete_modal(false)} onDelete={handle_delete} />
     </div>
