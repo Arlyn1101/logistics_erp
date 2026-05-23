@@ -84,11 +84,13 @@ export default function Users() {
     const response = await getAllUsers();
     if (response.data && response.data.data) {
       const result = response.data.data.map((a) => ({
-        ...a,
-        full_name: `${a.first_name} ${a.last_name}`,
-        role_badge: StatusBadge(a.role),
-        action_btn: ActionBtn(a),
-      }));
+  ...a,
+  name: `${a.first_name} ${a.last_name}`,
+  username: a.email,
+  type: a.role,
+  status_badge: StatusBadge(a.role),
+  action_btn: ActionBtn(a),
+}));
       set_user_data(result);
     } else {
       set_user_data([]);
@@ -180,20 +182,17 @@ export default function Users() {
           <InputError isValid={is_error.email} message="Email is required" />
         </Col>
         <Col>
-          ROLE
-          <div className="status-select-wrap">
-            <span className={`status-dot ${form.role === "admin" ? "active" : form.role === "dispatcher" ? "active" : "inactive"}`}></span>
-            <Form.Select
-              name="role"
-              value={form.role}
-              className="nc-modal-custom-select"
-              onChange={handle_change}
-            >
-              <option value="admin">Admin</option>
-              <option value="dispatcher">Dispatcher</option>
-              <option value="viewer">Viewer</option>
-            </Form.Select>
-          </div>
+          TYPE
+          <Form.Select
+            name="type"
+            value={form.type}
+            className="nc-modal-custom-select"
+            onChange={handle_change}
+          >
+        <option value="admin">Admin</option>
+<option value="dispatcher">Dispatcher</option>
+<option value="viewer">Viewer</option>
+          </Form.Select>
         </Col>
       </Row>
       <div className="form-section-label">Security</div>
