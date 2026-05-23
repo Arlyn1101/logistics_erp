@@ -43,6 +43,8 @@ export const createContract = async (form) => {
     const response = await postAPICall(`${BASE_URL}/contracts/create`, {
       token: get_token(),
       ...form,
+      date_start: form.start_date,
+      date_end: form.end_date,
     });
     return { data: response.data };
   } catch (error) {
@@ -56,6 +58,8 @@ export const updateContract = async (form) => {
       token: get_token(),
       contract_id: form.id,
       ...form,
+      date_start: form.start_date,
+      date_end: form.end_date,
     });
     return { data: response.data };
   } catch (error) {

@@ -14,6 +14,11 @@ import {
 import Navbar from "../../Components/Navbar/Navbar";
 import { getName } from "../../Helpers/Utils/Common";
 import { getAllTrucks } from "../../Helpers/apiCalls/Manage/truckApi";
+import { getAllDrivers } from "../../Helpers/apiCalls/Manage/driverApi";
+import { getAllHelpers } from "../../Helpers/apiCalls/Manage/helperApi";
+import { getAllCustomers } from "../../Helpers/apiCalls/Manage/customerApi";
+import { getAllContracts } from "../../Helpers/apiCalls/Contracts/contractApi";
+import { getAllTrips, getTripDetails } from "../../Helpers/apiCalls/Trips/tripApi";
 import "./Dashboard.css";
 
 // ── Static data (safe outside component) ─────────────────────
@@ -32,7 +37,7 @@ const MONTH_STATS = [
 
 const TRIP_LINE_DATA = [];
 
-const DONUT_DATA = [
+const INITIAL_DONUT_DATA = [
   { name: "Within Limit", value: 0, color: "#5ac8e1" },
   { name: "Excess Trips", value: 0, color: "#1a2e40" },
 ];
@@ -65,7 +70,11 @@ export default function Dashboard() {
     contracts: "—",
   });
 
-  const navigate  = useNavigate();
+  const [donut_data, set_donut_data]       = useState(INITIAL_DONUT_DATA);
+  const [month_stats, set_month_stats]     = useState({ total: "—", excess: "—", active_contracts: "—" });
+  const [recent_trips, set_recent_trips]   = useState([]);
+  const [contract_alerts, set_contract_alerts] = useState([]);
+  const navigate = useNavigate();
   const user_name = getName() || "User";
 
   const today = new Date().toLocaleDateString("en-PH", {
@@ -77,11 +86,77 @@ export default function Dashboard() {
   }, []);
 
   async function fetch_counts() {
-    const trucks_res = await getAllTrucks();
-    if (trucks_res.data) {
-      const active_trucks = trucks_res.data.data.filter(t => t.status === "active").length;
-      set_counts(prev => ({ ...prev, trucks: active_trucks }));
-    }
+    const [trucks_res, drivers_res, helpers_res, customers_res, contracts_res, trips_res] = await Promise.all([
+      getAllTrucks(),
+      getAllDrivers(),
+      getAllHelpers(),
+      getAllCustomers(),
+      getAllContracts(),
+      getAllTrips(),
+    ]);
+
+    const active_trucks    = trucks_res.data?.data?.filter(t => t.status === "active").length ?? "—";
+    const active_drivers   = drivers_res.data?.data?.filter(d => d.status === "active").length ?? "—";
+    const active_helpers   = helpers_res.data?.data?.filter(h => h.status === "active").length ?? "—";
+    const total_customers  = customers_res.data?.data?.length ?? "—";
+    const active_contracts = contracts_res.data?.data?.filter(c => c.status === "active").length ?? "—";
+
+    // Trip breakdown
+    const trips = trips_res.data?.data || [];
+    const today_date2    = new Date();
+    const this_month2    = today_date2.getMonth();
+    const this_year2     = today_date2.getFullYear();
+    const trips_for_donut = trips.filter(t => {
+      const d = new Date(t.trip_date);
+      return d.getMonth() === this_month2 && d.getFullYear() === this_year2;
+    });
+    const excess_trips  = trips_for_donut.filter(t => t.is_excess == 1).length;
+    const normal_trips  = trips_for_donut.length - excess_trips;
+
+    set_counts({
+      trucks:    active_trucks,
+      drivers:   active_drivers,
+      helpers:   active_helpers,
+      customers: total_customers,
+      contracts: active_contracts,
+    });
+
+    // Update donut data
+    set_donut_data([
+      { name: "Within Limit", value: normal_trips, color: "#5ac8e1" },
+      { name: "Excess Trips", value: excess_trips, color: "#1a2e40" },
+    ]);
+
+    // This Month's Trips
+    const today_date = new Date();
+    const this_month = today_date.getMonth();
+    const this_year  = today_date.getFullYear();
+    const trips_this_month = trips.filter(t => {
+      const d = new Date(t.trip_date);
+      return d.getMonth() === this_month && d.getFullYear() === this_year;
+    });
+    const excess_this_month = trips_this_month.filter(t => t.is_excess == 1).length;
+    set_month_stats({
+      total: trips_this_month.length,
+      excess: excess_this_month,
+      active_contracts: active_contracts,
+    });
+
+    // Recent Trips — last 5
+    set_recent_trips(trips.slice(0, 5));
+
+    // Contract Alerts — expiring within 30 days or expired
+    const today_ms = new Date().setHours(0, 0, 0, 0);
+    const alerts = (contracts_res.data?.data || [])
+      .filter(c => c.end_date)
+      .map(c => {
+        const end = new Date(c.end_date).setHours(0, 0, 0, 0);
+        const days_remaining = Math.ceil((end - today_ms) / (1000 * 60 * 60 * 24));
+        return { ...c, days_remaining };
+      })
+      .filter(c => c.days_remaining <= 30)
+      .sort((a, b) => a.days_remaining - b.days_remaining);
+    set_contract_alerts(alerts);
   }
 
   const DASH_CARDS = [
@@ -92,11 +167,19 @@ export default function Dashboard() {
     { icon: faFileContract, label: "Active Contracts", value: counts.contracts, sub: "currently running" },
   ];
 
-  const donut_total = DONUT_DATA.reduce((sum, d) => sum + d.value, 0);
+  const donut_total = donut_data.reduce((sum, d) => sum + d.value, 0);
 
-  function handle_trip_click(trip) {
-    set_selected_trip(trip);
+  async function handle_trip_click(trip) {
     set_show_modal(true);
+    const response = await getTripDetails(trip.id);
+    if (response.data && response.data.data) {
+      const detail = response.data.data;
+      const drivers_label = (detail.drivers || []).map(d => `${d.first_name} ${d.last_name}`).join(", ");
+      const helpers_label = (detail.helpers || []).map(h => `${h.first_name} ${h.last_name}`).join(", ");
+      set_selected_trip({ ...trip, drivers_label, helpers_label });
+    } else {
+      set_selected_trip(trip);
+    }
   }
 
   function handle_close_modal() {
@@ -179,7 +262,11 @@ export default function Dashboard() {
               </div>
               <div className="stats-body">
                 <div className="stats-rows">
-                  {MONTH_STATS.map((s, idx) => (
+                  {[
+                    { label: "Active Contracts", value: month_stats.active_contracts },
+                    { label: "Total Trips",      value: month_stats.total },
+                    { label: "Excess Trips",     value: month_stats.excess },
+                  ].map((s, idx) => (
                     <div className="stats-row" key={idx}>
                       <div className="stats-row-icon">
                         <FontAwesomeIcon icon={faClipboardList} />
@@ -190,7 +277,6 @@ export default function Dashboard() {
                       </div>
                     </div>
                   ))}
-                  <div className="stats-comparison">vs last month — data pending</div>
                 </div>
                 <div className="stats-chart">
                   <ResponsiveContainer width="100%" height={120}>
@@ -215,13 +301,13 @@ export default function Dashboard() {
               <div className="donut-body">
                 <PieChart width={160} height={160}>
                   <Pie
-                    data={donut_total === 0 ? [{ name: "No data", value: 1, color: "#edf0f4" }] : DONUT_DATA}
+                    data={donut_total === 0 ? [{ name: "No data", value: 1, color: "#edf0f4" }] : donut_data}
                     cx={75} cy={75}
                     innerRadius={50} outerRadius={72}
                     dataKey="value"
                     startAngle={90} endAngle={-270}
                   >
-                    {(donut_total === 0 ? [{ color: "#edf0f4" }] : DONUT_DATA).map((entry, idx) => (
+                    {(donut_total === 0 ? [{ color: "#edf0f4" }] : donut_data).map((entry, idx) => (
                       <Cell key={idx} fill={entry.color} strokeWidth={0} />
                     ))}
                   </Pie>
@@ -232,7 +318,7 @@ export default function Dashboard() {
                   )}
                 </PieChart>
                 <div className="donut-legend">
-                  {DONUT_DATA.map((d, idx) => (
+                  {donut_data.map((d, idx) => (
                     <div className="donut-legend-row" key={idx}>
                       <span className="donut-dot" style={{ background: d.color }} />
                       <div className="donut-legend-info">
@@ -258,10 +344,10 @@ export default function Dashboard() {
                 </button>
               </div>
               <div className="trip-card-list">
-                {RECENT_TRIPS.length === 0 ? (
+                {recent_trips.length === 0 ? (
                   <div className="panel-empty">No trips recorded yet.</div>
                 ) : (
-                  RECENT_TRIPS.map((trip, idx) => (
+                  recent_trips.map((trip, idx) => (
                     <div className="trip-card" key={idx} onClick={() => handle_trip_click(trip)}>
                       <div className="trip-card-header">
                         <span className="trip-card-id">TRIP-{String(trip.id).padStart(4, "0")}</span>
@@ -271,17 +357,17 @@ export default function Dashboard() {
                         <div className="route-point">
                           <span className="route-dot dot-origin" />
                           <span className="route-label">Pickup</span>
-                          <span className="route-place">{trip.origin}</span>
+                          <span className="route-place">{trip.route_origin || "—"}</span>
                         </div>
                         <div className="route-line-connector" />
                         <div className="route-point">
                           <span className="route-dot dot-dest" />
                           <span className="route-label">Destination</span>
-                          <span className="route-place">{trip.destination}</span>
+                          <span className="route-place">{trip.route_destination || "—"}</span>
                         </div>
                       </div>
                       <div className="trip-card-footer">
-                        <span className="trip-card-customer">{trip.customer_name}</span>
+                        <span className="trip-card-customer">{trip.customer_name || "—"}</span>
                         <span className="trip-card-view">View Details</span>
                       </div>
                     </div>
@@ -301,10 +387,10 @@ export default function Dashboard() {
                 </button>
               </div>
               <div className="alert-list">
-                {CONTRACT_ALERTS.length === 0 ? (
+                {contract_alerts.length === 0 ? (
                   <div className="panel-empty">No contract alerts.</div>
                 ) : (
-                  CONTRACT_ALERTS.map((c, idx) => (
+                  contract_alerts.map((c, idx) => (
                     <div className="alert-row" key={idx}>
                       <div className="alert-row-info">
                         <span className="alert-name">{c.customer_name}</span>
@@ -358,21 +444,28 @@ export default function Dashboard() {
                   <FontAwesomeIcon icon={faMapMarkerAlt} className="detail-icon" />
                   <div>
                     <span className="detail-label">Route</span>
-                    <span className="detail-value">{selected_trip.origin} → {selected_trip.destination}</span>
+                    <span className="detail-value">{selected_trip.route_origin} → {selected_trip.route_destination}</span>
                   </div>
                 </div>
                 <div className="trip-detail-row">
                   <FontAwesomeIcon icon={faTruck} className="detail-icon" />
                   <div>
                     <span className="detail-label">Truck</span>
-                    <span className="detail-value">{selected_trip.plate_number} — {selected_trip.truck_type}</span>
+                    <span className="detail-value">{selected_trip.truck_unit_code} — {selected_trip.truck_plate_number}</span>
                   </div>
                 </div>
                 <div className="trip-detail-row">
                   <FontAwesomeIcon icon={faUser} className="detail-icon" />
                   <div>
-                    <span className="detail-label">Driver</span>
-                    <span className="detail-value">{selected_trip.driver_name}</span>
+                    <span className="detail-label">Driver(s)</span>
+                    <span className="detail-value">{selected_trip.drivers_label || "—"}</span>
+                  </div>
+                </div>
+                <div className="trip-detail-row">
+                  <FontAwesomeIcon icon={faUsers} className="detail-icon" />
+                  <div>
+                    <span className="detail-label">Helper(s)</span>
+                    <span className="detail-value">{selected_trip.helpers_label || "—"}</span>
                   </div>
                 </div>
               </div>
@@ -390,7 +483,7 @@ export default function Dashboard() {
                 ) : (
                   <div className="map-placeholder">
                     <FontAwesomeIcon icon={faMapMarkerAlt} className="map-placeholder-icon" />
-                    <span className="map-placeholder-text">{selected_trip.origin} → {selected_trip.destination}</span>
+                    <span className="map-placeholder-text">{selected_trip.route_origin} → {selected_trip.route_destination}</span>
                     <span className="map-placeholder-sub">Add REACT_APP_GOOGLE_MAPS_KEY to .env to enable map</span>
                   </div>
                 )}

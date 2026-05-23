@@ -376,40 +376,50 @@ export default function Drivers() {
           </span>
         </div>
 
-        {/* Spec strip */}
-        <div className="spec-strip">
-          <div className="spec-card">
-            <span className="spec-value">{form.license_number || "—"}</span>
-            <span className="spec-label">License No.</span>
-          </div>
-          <div
-            className="spec-card"
-            style={
-              expiry_color !== "#fff" ? { borderLeftColor: expiry_color } : {}
-            }
-          >
+        <div className="view-details">
+          <div className="view-detail-row">
+            <span className="view-detail-label">CONTACT NO.</span>
             <span
-              className="spec-value"
-              style={expiry_color !== "#fff" ? { color: expiry_color } : {}}
+              className={
+                form.contact_number ? "view-detail-value" : "view-empty-value"
+              }
+            >
+              {form.contact_number || "—"}
+            </span>
+          </div>
+          <div className="view-detail-row">
+            <span className="view-detail-label">LICENSE NO.</span>
+            <span
+              className={
+                form.license_number ? "view-detail-value" : "view-empty-value"
+              }
+            >
+              {form.license_number || "—"}
+            </span>
+          </div>
+          <div className="view-detail-row">
+            <span className="view-detail-label">LICENSE EXPIRY</span>
+            <span
+              className={
+                form.license_expiry ? "view-detail-value" : "view-empty-value"
+              }
+              style={
+                expiry_color !== "#fff"
+                  ? {
+                      color: expiry_color,
+                      fontFamily: "var(--primary-font-bold)",
+                    }
+                  : {}
+              }
             >
               {form.license_expiry || "—"}
-            </span>
-            <span className="spec-label">
-              {diff_days !== null && diff_days < 0
-                ? "EXPIRED"
-                : diff_days !== null && diff_days <= 30
-                  ? `Expiring in ${diff_days}d`
-                  : "Lic. Expiry"}
+              {diff_days !== null && diff_days < 0 && " (Expired)"}
+              {diff_days !== null &&
+                diff_days >= 0 &&
+                diff_days <= 30 &&
+                ` (Expiring in ${diff_days}d)`}
             </span>
           </div>
-          <div className="spec-card">
-            <span className="spec-value">{form.contact_number || "—"}</span>
-            <span className="spec-label">Contact No.</span>
-          </div>
-        </div>
-
-        {/* Detail rows */}
-        <div className="view-details">
           <div className="view-detail-row">
             <span className="view-detail-label">ADDRESS</span>
             <span
@@ -419,6 +429,10 @@ export default function Drivers() {
             >
               {form.address || "No address on record"}
             </span>
+          </div>
+          <div className="view-detail-row">
+            <span className="view-detail-label">STATUS</span>
+            <span className={`status-badge ${form.status}`}>{form.status}</span>
           </div>
         </div>
       </div>

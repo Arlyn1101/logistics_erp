@@ -7,7 +7,13 @@ import EditModal from "../../Components/Modals/EditModal";
 import ViewModal from "../../Components/Modals/ViewModal";
 import DeleteModal from "../../Components/Modals/DeleteModal";
 import InputError from "../../Components/InputError/InputError";
-import { getAllHelpers, searchHelpers, createHelper, updateHelper, deleteHelper } from "../../Helpers/apiCalls/Manage/helperApi";
+import {
+  getAllHelpers,
+  searchHelpers,
+  createHelper,
+  updateHelper,
+  deleteHelper,
+} from "../../Helpers/apiCalls/Manage/helperApi";
 import { validateHelper } from "../../Helpers/Validation/Manage/helperValidation";
 import { toastStyle } from "../../Helpers/Utils/Common";
 import toast from "react-hot-toast";
@@ -39,7 +45,10 @@ export default function Helpers() {
   };
   const [add_form, set_add_form] = useState({ ...empty_form });
   const [edit_form, set_edit_form] = useState({ ...empty_form });
-  const [is_error, set_is_error] = useState({ first_name: false, last_name: false });
+  const [is_error, set_is_error] = useState({
+    first_name: false,
+    last_name: false,
+  });
 
   const handle_add_change = (e) => {
     const { name, value } = e.target;
@@ -68,10 +77,18 @@ export default function Helpers() {
         onChange={(e) => handle_select_change(e, row)}
         value={""}
       >
-        <option defaultValue selected hidden>Select</option>
-        <option value="view-helper" className="color-options">View</option>
-        <option value="edit-helper" className="color-options">Edit</option>
-        <option value="delete-helper" className="color-red">Delete</option>
+        <option defaultValue selected hidden>
+          Select
+        </option>
+        <option value="view-helper" className="color-options">
+          View
+        </option>
+        <option value="edit-helper" className="color-options">
+          Edit
+        </option>
+        <option value="delete-helper" className="color-red">
+          Delete
+        </option>
       </Form.Select>
     );
   }
@@ -158,14 +175,18 @@ export default function Helpers() {
     }
   }
 
-  React.useEffect(() => { fetch_helpers(); }, []);
+  React.useEffect(() => {
+    fetch_helpers();
+  }, []);
 
   // ─── Add / Edit form ───────────────────────────────────────────────────────
   const form_fields = (form, handle_change) => {
     const status_dot_class =
-      form.status === "active" ? "status-dot active"
-      : form.status === "inactive" ? "status-dot inactive"
-      : "status-dot";
+      form.status === "active"
+        ? "status-dot active"
+        : form.status === "inactive"
+          ? "status-dot inactive"
+          : "status-dot";
 
     return (
       <div className="mt-3">
@@ -180,7 +201,10 @@ export default function Helpers() {
               className="nc-modal-custom-input"
               onChange={handle_change}
             />
-            <InputError isValid={is_error.first_name} message="First name is required" />
+            <InputError
+              isValid={is_error.first_name}
+              message="First name is required"
+            />
           </Col>
           <Col>
             LAST NAME <span className="required-icon">*</span>
@@ -191,7 +215,10 @@ export default function Helpers() {
               className="nc-modal-custom-input"
               onChange={handle_change}
             />
-            <InputError isValid={is_error.last_name} message="Last name is required" />
+            <InputError
+              isValid={is_error.last_name}
+              message="Last name is required"
+            />
           </Col>
         </Row>
         <Row className="nc-modal-custom-row">
@@ -248,32 +275,42 @@ export default function Helpers() {
         <div className="view-header">
           <div className="view-header-left">
             <span className="view-title">{full_name || "—"}</span>
-            <span className="view-subtitle">{form.contact_number || "No contact number"}</span>
+            <span className="view-subtitle">
+              {form.contact_number || "No contact number"}
+            </span>
           </div>
-          <span className={`status-badge ${form.status}`} style={{ alignSelf: "center" }}>
+          <span
+            className={`status-badge ${form.status}`}
+            style={{ alignSelf: "center" }}
+          >
             {form.status}
           </span>
         </div>
 
-        {/* Spec strip */}
-        <div className="spec-strip">
-          <div className="spec-card">
-            <span className="spec-value">{form.contact_number || "—"}</span>
-            <span className="spec-label">Contact No.</span>
-          </div>
-          <div className="spec-card">
-            <span className="spec-value" style={{ textTransform: "capitalize" }}>{form.status || "—"}</span>
-            <span className="spec-label">Status</span>
-          </div>
-        </div>
-
-        {/* Detail rows */}
         <div className="view-details">
           <div className="view-detail-row">
+            <span className="view-detail-label">CONTACT NO.</span>
+            <span
+              className={
+                form.contact_number ? "view-detail-value" : "view-empty-value"
+              }
+            >
+              {form.contact_number || "—"}
+            </span>
+          </div>
+          <div className="view-detail-row">
             <span className="view-detail-label">ADDRESS</span>
-            <span className={form.address ? "view-detail-value" : "view-empty-value"}>
+            <span
+              className={
+                form.address ? "view-detail-value" : "view-empty-value"
+              }
+            >
               {form.address || "No address on record"}
             </span>
+          </div>
+          <div className="view-detail-row">
+            <span className="view-detail-label">STATUS</span>
+            <span className={`status-badge ${form.status}`}>{form.status}</span>
           </div>
         </div>
       </div>
@@ -283,7 +320,10 @@ export default function Helpers() {
   return (
     <div>
       <div className="page">
-        <Navbar onCollapse={(is_inactive) => set_inactive(is_inactive)} active={"HELPERS"} />
+        <Navbar
+          onCollapse={(is_inactive) => set_inactive(is_inactive)}
+          active={"HELPERS"}
+        />
       </div>
 
       <div className={`manager-container ${inactive ? "inactive" : "active"}`}>
@@ -299,9 +339,16 @@ export default function Helpers() {
               value={search_text}
               onChange={(e) => set_search_text(e.target.value)}
               className="search-bar"
-              onKeyDown={(e) => { if (e.key === "Enter") fetch_helpers(); }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") fetch_helpers();
+              }}
             />
-            <button className="add-btn" onClick={() => set_show_add_modal(true)}>Add</button>
+            <button
+              className="add-btn"
+              onClick={() => set_show_add_modal(true)}
+            >
+              Add
+            </button>
           </Col>
         </Row>
 
@@ -321,8 +368,20 @@ export default function Helpers() {
 
         <div className="tab-content">
           <Table
-            tableHeaders={["NAME", "CONTACT NO.", "ADDRESS", "STATUS", "ACTIONS"]}
-            headerSelector={["full_name", "contact_number", "address", "status_badge", "action_btn"]}
+            tableHeaders={[
+              "NAME",
+              "CONTACT NO.",
+              "ADDRESS",
+              "STATUS",
+              "ACTIONS",
+            ]}
+            headerSelector={[
+              "full_name",
+              "contact_number",
+              "address",
+              "status_badge",
+              "action_btn",
+            ]}
             tableData={filtered_data}
             showLoader={show_loader}
             withActionData={true}
@@ -334,7 +393,10 @@ export default function Helpers() {
         title="HELPER"
         size="lg"
         show={show_add_modal}
-        onHide={() => { set_show_add_modal(false); set_add_form({ ...empty_form }); }}
+        onHide={() => {
+          set_show_add_modal(false);
+          set_add_form({ ...empty_form });
+        }}
         onSave={handle_create}
         isClicked={is_clicked}
       >
@@ -358,7 +420,10 @@ export default function Helpers() {
         withButtons
         show={show_view_modal}
         onHide={() => set_show_view_modal(false)}
-        onEdit={() => { set_show_edit_modal(true); set_show_view_modal(false); }}
+        onEdit={() => {
+          set_show_edit_modal(true);
+          set_show_view_modal(false);
+        }}
       >
         {view_content(edit_form)}
       </ViewModal>
