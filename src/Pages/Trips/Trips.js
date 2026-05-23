@@ -23,11 +23,15 @@ import { getAllDrivers } from "../../Helpers/apiCalls/Manage/driverApi";
 import { getAllHelpers } from "../../Helpers/apiCalls/Manage/helperApi";
 import { validateTrip } from "../../Helpers/Validation/Trips/tripValidation";
 import { toastStyle } from "../../Helpers/Utils/Common";
+import { getTripDetails } from "../../Helpers/apiCalls/Trips/tripApi";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faTimes, faCalendarAlt, faBuilding, faMapMarkerAlt, faTruck, faUser, faUsers } from "@fortawesome/free-solid-svg-icons";
 import Select from "react-select";
 import toast from "react-hot-toast";
 import "../Manage/Manage.css";
 import "../../Components/Navbar/Navbar.css";
 import "../../Components/Modals/Modal.css";
+import "../Dashboard/Dashboard.css";
 
 export default function Trips() {
   const [inactive, set_inactive] = useState(false);
@@ -44,6 +48,8 @@ export default function Trips() {
   const [driver_options, set_driver_options] = useState([]);
   const [helper_options, set_helper_options] = useState([]);
 
+  const [show_map_modal, set_show_map_modal] = useState(false);
+  const [selected_trip, set_selected_trip]   = useState(null);
   const [show_add_modal, set_show_add_modal] = useState(false);
   const [show_edit_modal, set_show_edit_modal] = useState(false);
   const [show_view_modal, set_show_view_modal] = useState(false);
@@ -117,6 +123,27 @@ export default function Trips() {
       set_show_delete_modal(true);
     }
     e.target.value = "";
+  }
+
+  async function handle_row_click(row) {
+    set_selected_trip(row);
+    set_show_map_modal(true);
+    const response = await getTripDetails(row.id);
+    if (response.data && response.data.data) {
+      const detail = response.data.data;
+      const drivers_label = (detail.drivers || []).map(d => `${d.first_name} ${d.last_name}`).join(", ");
+      const helpers_label = (detail.helpers || []).map(h => `${h.first_name} ${h.last_name}`).join(", ");
+      set_selected_trip({ ...row, drivers_label, helpers_label });
+    } else {
+      set_selected_trip(row);
+    }
+  }
+
+  function build_maps_url(origin, destination) {
+    const key = process.env.REACT_APP_GOOGLE_MAPS_KEY || "";
+    const o   = encodeURIComponent(origin);
+    const d   = encodeURIComponent(destination);
+    return `https://www.google.com/maps/embed/v1/directions?origin=${o}&destination=${d}&key=${key}&mode=driving`;
   }
 
   async function fetch_routes_for_edit(contract_id) {
@@ -487,6 +514,7 @@ export default function Trips() {
             tableData={trip_data}
             showLoader={show_loader}
             withActionData={true}
+            onRowClick={(row) => handle_row_click(row)}
           />
         </div>
       </div>
@@ -635,6 +663,86 @@ export default function Trips() {
         onHide={() => set_show_delete_modal(false)}
         onDelete={handle_delete}
       />
+
+      {show_map_modal && selected_trip && (
+        <div className="trip-modal-overlay" onClick={() => set_show_map_modal(false)}>
+          <div className="trip-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="trip-modal-header">
+              <span className="trip-modal-title">
+                TRIP-{String(selected_trip.id).padStart(4, "0")} — Trip Details
+              </span>
+              <button className="trip-modal-close" onClick={() => set_show_map_modal(false)}>
+                <FontAwesomeIcon icon={faTimes} />
+              </button>
+            </div>
+            <div className="trip-modal-body">
+              <div className="trip-modal-details">
+                <div className="trip-detail-row">
+                  <FontAwesomeIcon icon={faCalendarAlt} className="detail-icon" />
+                  <div>
+                    <span className="detail-label">Trip Date</span>
+                    <span className="detail-value">{selected_trip.trip_date}</span>
+                  </div>
+                </div>
+                <div className="trip-detail-row">
+                  <FontAwesomeIcon icon={faBuilding} className="detail-icon" />
+                  <div>
+                    <span className="detail-label">Customer</span>
+                    <span className="detail-value">{selected_trip.customer_name || "—"}</span>
+                  </div>
+                </div>
+                <div className="trip-detail-row">
+                  <FontAwesomeIcon icon={faMapMarkerAlt} className="detail-icon" />
+                  <div>
+                    <span className="detail-label">Route</span>
+                    <span className="detail-value">{selected_trip.route_origin} → {selected_trip.route_destination}</span>
+                  </div>
+                </div>
+                <div className="trip-detail-row">
+                  <FontAwesomeIcon icon={faTruck} className="detail-icon" />
+                  <div>
+                    <span className="detail-label">Truck</span>
+                    <span className="detail-value">{selected_trip.truck_unit_code} — {selected_trip.truck_plate_number}</span>
+                  </div>
+                </div>
+                <div className="trip-detail-row">
+                  <FontAwesomeIcon icon={faUser} className="detail-icon" />
+                  <div>
+                    <span className="detail-label">Driver(s)</span>
+                    <span className="detail-value">{selected_trip.drivers_label || "—"}</span>
+                  </div>
+                </div>
+                <div className="trip-detail-row">
+                  <FontAwesomeIcon icon={faUsers} className="detail-icon" />
+                  <div>
+                    <span className="detail-label">Helper(s)</span>
+                    <span className="detail-value">{selected_trip.helpers_label || "—"}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="trip-modal-map">
+                {process.env.REACT_APP_GOOGLE_MAPS_KEY ? (
+                  <iframe
+                    title="trip-route-map"
+                    width="100%"
+                    height="100%"
+                    style={{ border: 0, borderRadius: 8 }}
+                    loading="lazy"
+                    allowFullScreen
+                    src={build_maps_url(selected_trip.route_origin, selected_trip.route_destination)}
+                  />
+                ) : (
+                  <div className="map-placeholder">
+                    <FontAwesomeIcon icon={faMapMarkerAlt} className="map-placeholder-icon" />
+                    <span className="map-placeholder-text">{selected_trip.route_origin} → {selected_trip.route_destination}</span>
+                    <span className="map-placeholder-sub">Add REACT_APP_GOOGLE_MAPS_KEY to .env to enable map</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
