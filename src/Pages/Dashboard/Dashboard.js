@@ -444,7 +444,7 @@ export default function Dashboard() {
                   <FontAwesomeIcon icon={faMapMarkerAlt} className="detail-icon" />
                   <div>
                     <span className="detail-label">Route</span>
-                    <span className="detail-value">{selected_trip.origin} → {selected_trip.destination}</span>
+                    <span className="detail-value">{selected_trip.route_origin} → {selected_trip.route_destination}</span>
                   </div>
                 </div>
                 <div className="trip-detail-row">
@@ -483,7 +483,7 @@ export default function Dashboard() {
                 ) : (
                   <div className="map-placeholder">
                     <FontAwesomeIcon icon={faMapMarkerAlt} className="map-placeholder-icon" />
-                    <span className="map-placeholder-text">{selected_trip.origin} → {selected_trip.destination}</span>
+                    <span className="map-placeholder-text">{selected_trip.route_origin} → {selected_trip.route_destination}</span>
                     <span className="map-placeholder-sub">Add REACT_APP_GOOGLE_MAPS_KEY to .env to enable map</span>
                   </div>
                 )}

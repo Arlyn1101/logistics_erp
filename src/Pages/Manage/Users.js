@@ -43,9 +43,10 @@ export default function Users() {
 
   function validate_user(data, for_edit = false) {
     var is_valid = true;
-    var error = { name: false, username: false, password: false };
-    if (!data.name) { error.name = true; is_valid = false; }
-    if (!data.username) { error.username = true; is_valid = false; }
+    var error = { first_name: false, last_name: false, email: false, password: false };
+    if (!data.first_name) { error.first_name = true; is_valid = false; }
+    if (!data.last_name)  { error.last_name  = true; is_valid = false; }
+    if (!data.email)      { error.email      = true; is_valid = false; }
     if (!for_edit && !data.password) { error.password = true; is_valid = false; }
     set_is_error(error);
     return is_valid;
@@ -85,7 +86,7 @@ export default function Users() {
       const result = response.data.data.map((a) => ({
         ...a,
         full_name: `${a.first_name} ${a.last_name}`,
-        status_badge: StatusBadge(a.role),
+        role_badge: StatusBadge(a.role),
         action_btn: ActionBtn(a),
       }));
       set_user_data(result);
@@ -141,69 +142,74 @@ export default function Users() {
 
   const form_fields = (form, handle_change, for_edit = false) => (
     <div className="mt-3">
+      <div className="form-section-label">User Information</div>
       <Row className="nc-modal-custom-row">
         <Col>
-          NAME <span className="required-icon">*</span>
+          FIRST NAME <span className="required-icon">*</span>
           <Form.Control
             type="text"
-            name="name"
-            value={form.name}
-            className={for_edit ? "nc-modal-custom-input-edit" : "nc-modal-custom-input"}
+            name="first_name"
+            value={form.first_name}
+            className="nc-modal-custom-input"
             onChange={handle_change}
           />
-          <InputError isValid={is_error.name} message="Name is required" />
+          <InputError isValid={is_error.first_name} message="First name is required" />
         </Col>
         <Col>
-          USERNAME <span className="required-icon">*</span>
+          LAST NAME <span className="required-icon">*</span>
           <Form.Control
             type="text"
-            name="username"
-            value={form.username}
-            className={for_edit ? "nc-modal-custom-input-edit" : "nc-modal-custom-input"}
+            name="last_name"
+            value={form.last_name}
+            className="nc-modal-custom-input"
             onChange={handle_change}
           />
-          <InputError isValid={is_error.username} message="Username is required" />
+          <InputError isValid={is_error.last_name} message="Last name is required" />
         </Col>
       </Row>
       <Row className="nc-modal-custom-row">
         <Col>
+          EMAIL <span className="required-icon">*</span>
+          <Form.Control
+            type="email"
+            name="email"
+            value={form.email}
+            className="nc-modal-custom-input"
+            onChange={handle_change}
+          />
+          <InputError isValid={is_error.email} message="Email is required" />
+        </Col>
+        <Col>
+          ROLE
+          <div className="status-select-wrap">
+            <span className={`status-dot ${form.role === "admin" ? "active" : form.role === "dispatcher" ? "active" : "inactive"}`}></span>
+            <Form.Select
+              name="role"
+              value={form.role}
+              className="nc-modal-custom-select"
+              onChange={handle_change}
+            >
+              <option value="admin">Admin</option>
+              <option value="dispatcher">Dispatcher</option>
+              <option value="viewer">Viewer</option>
+            </Form.Select>
+          </div>
+        </Col>
+      </Row>
+      <div className="form-section-label">Security</div>
+      <Row className="nc-modal-custom-row">
+        <Col xs={6}>
           PASSWORD {!for_edit && <span className="required-icon">*</span>}
-          {for_edit && <span style={{ color: "#aaa", fontSize: 11, marginLeft: 4 }}>(leave blank to keep current)</span>}
+          {for_edit && <span className="field-hint">Leave blank to keep current password</span>}
           <Form.Control
             type="password"
             name="password"
             value={form.password}
-            className={for_edit ? "nc-modal-custom-input-edit" : "nc-modal-custom-input"}
+            className="nc-modal-custom-input"
             onChange={handle_change}
             placeholder={for_edit ? "Leave blank to keep current" : ""}
           />
           <InputError isValid={is_error.password} message="Password is required" />
-        </Col>
-        <Col>
-          TYPE
-          <Form.Select
-            name="type"
-            value={form.type}
-            className="nc-modal-custom-select"
-            onChange={handle_change}
-          >
-            <option value="admin">Admin</option>
-            <option value="staff">Staff</option>
-          </Form.Select>
-        </Col>
-      </Row>
-      <Row className="nc-modal-custom-row">
-        <Col xs={6}>
-          STATUS
-          <Form.Select
-            name="status"
-            value={form.status}
-            className="nc-modal-custom-select"
-            onChange={handle_change}
-          >
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-          </Form.Select>
         </Col>
       </Row>
     </div>
@@ -231,8 +237,8 @@ export default function Users() {
         </Row>
         <div className="tab-content">
           <Table
-            tableHeaders={["NAME", "USERNAME", "TYPE", "STATUS", "ACTIONS"]}
-            headerSelector={["name", "username", "type", "status_badge", "action_btn"]}
+            tableHeaders={["NAME", "EMAIL", "ROLE", "ACTIONS"]}
+            headerSelector={["full_name", "email", "role_badge", "action_btn"]}
             tableData={user_data}
             showLoader={show_loader}
             withActionData={true}
