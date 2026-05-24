@@ -131,8 +131,8 @@ export default function Trips() {
     const response = await getTripDetails(row.id);
     if (response.data && response.data.data) {
       const detail = response.data.data;
-      const drivers_label = (detail.drivers || []).map(d => `${d.first_name} ${d.last_name}`).join(", ");
-      const helpers_label = (detail.helpers || []).map(h => `${h.first_name} ${h.last_name}`).join(", ");
+      const drivers_label = (detail.drivers || []).map(d => d.driver_name).join(", ");
+      const helpers_label = (detail.helpers || []).map(h => h.helper_name).join(", ");  
       set_selected_trip({ ...row, drivers_label, helpers_label });
     } else {
       set_selected_trip(row);

@@ -51,7 +51,7 @@ export default function Trucks() {
   const [is_error, set_is_error] = useState({
     unit_code: false,
     plate_number: false,
-  });
+  })
 
   const handle_add_change = (e) => {
     const { name, value } = e.target;
