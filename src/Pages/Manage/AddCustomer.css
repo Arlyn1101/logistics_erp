@@ -1,0 +1,199 @@
+/* ── Breadcrumb ── */
+.add-customer-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--primary-font-medium);
+  font-size: 13px;
+  color: #8a9ab0;
+  margin-bottom: 20px;
+}
+
+.breadcrumb-link {
+  color: #5ac8e1;
+  cursor: pointer;
+}
+
+.breadcrumb-link:hover {
+  text-decoration: underline;
+}
+
+.breadcrumb-sep {
+  color: #c5cdd6;
+  font-size: 15px;
+}
+
+.breadcrumb-current {
+  font-family: var(--primary-font-medium);
+  color: #5E5E5E;
+}
+
+/* ── Sticky page header ── */
+.add-customer-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #f8f9fa;
+  padding: 12px 0;
+  border-bottom: 1px solid #edf0f4;
+}
+
+.add-customer-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+/* ── Single biodata card ── */
+.biodata-card {
+  background: #ffffff;
+  border: 1px solid #edf0f4;
+  border-radius: 10px;
+  padding: 24px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ── Section divider labels ── */
+.biodata-section-label {
+  font-family: var(--primary-font-bold);
+  font-size: 11px;
+  color: #5ac8e1;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  border-bottom: 1px solid #edf0f4;
+  padding-bottom: 6px;
+  margin-top: 8px;
+}
+
+.biodata-section-label:first-child {
+  margin-top: 0;
+}
+
+/* ── Field labels ── */
+.field-label {
+  font-family: var(--primary-font-bold);
+  font-size: 11px;
+  color: #8a9ab0;
+  letter-spacing: 0.06em;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+
+/* ── BIR 2307 radio toggle group ── */
+.bir-option-group {
+  display: flex;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.bir-option {
+  font-family: var(--primary-font-medium);
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 14px;
+  border-radius: 20px;
+  border: 1.5px solid #d0d7de;
+  color: #8a9ab0;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.bir-option input[type="radio"] {
+  display: none;
+}
+
+.bir-option:hover {
+  border-color: #5ac8e1;
+  color: #5ac8e1;
+}
+
+.bir-option.selected {
+  background: #5ac8e1;
+  border-color: #5ac8e1;
+  color: #ffffff;
+}
+
+/* ── Buttons ── */
+.save-btn {
+  font-family: var(--primary-font-medium);
+  background: #5ac8e1;
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  padding: 9px 22px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+.save-btn:hover:not(:disabled) {
+  background: #3fb8d4;
+}
+
+.save-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.cancel-btn {
+  font-family: var(--primary-font-medium);
+  background: #ffffff;
+  color: #5E5E5E;
+  border: 1px solid #d0d7de;
+  border-radius: 10px;
+  padding: 9px 18px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+.cancel-btn:hover:not(:disabled) {
+  background: #f0f4f8;
+}
+
+.cancel-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ── Bottom footer ── */
+.add-customer-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 16px;
+}
+
+
+.attach-icon {
+  font-size: 28px;
+  margin-bottom: 4px;
+}
+
+.attach-main-text {
+  font-family: var(--primary-font-medium);
+  font-size: 14px;
+  color: #5E5E5E;
+  margin: 0;
+}
+
+.attach-sub-text {
+  font-family: var(--primary-font-light);
+  font-size: 12px;
+  color: #8a9ab0;
+  margin: 4px 0 0;
+}

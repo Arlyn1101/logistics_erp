@@ -1,0 +1,57 @@
+/* ── Edit button (view mode header action) ── */
+.edit-btn {
+  font-family: var(--primary-font-medium);
+  background: #ffffff;
+  color: #5ac8e1;
+  border: 1.5px solid #5ac8e1;
+  border-radius: 10px;
+  padding: 9px 20px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.edit-btn:hover {
+  background: #5ac8e1;
+  color: #ffffff;
+}
+
+/* ── Read-only field value ── */
+.detail-value {
+  font-family: var(--primary-font-medium);
+  font-size: 14px;
+  color: #2d3748;
+  padding: 7px 0 8px;
+  border-bottom: 1px solid #edf0f4;
+  min-height: 36px;
+  line-height: 1.4;
+  white-space: pre-wrap;
+}
+
+.detail-empty {
+  color: #c5cdd6;
+  font-family: var(--primary-font-light);
+  font-style: italic;
+}
+
+/* ── Loading state ── */
+.details-loading {
+  font-family: var(--primary-font-medium);
+  color: #8a9ab0;
+  font-size: 15px;
+  padding: 60px 0;
+  text-align: center;
+}
+
+/* ── Attachments empty state ── */
+.detail-attachments-empty {
+  font-family: var(--primary-font-light);
+  font-size: 13px;
+  color: #8a9ab0;
+  font-style: italic;
+  padding: 12px 0;
+}

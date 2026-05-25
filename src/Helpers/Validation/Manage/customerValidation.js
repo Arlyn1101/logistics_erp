@@ -1,11 +1,17 @@
 export const validateCustomer = (data, set_is_error) => {
   var is_valid = true;
   var error = {
-    name: false,
+    first_name: false,
+    last_name: false,
   };
 
-  if (!data.name || data.name === "") {
-    error.name = true;
+  if (!data.first_name || data.first_name === "") {
+    error.first_name = true;
+    is_valid = false;
+  }
+
+  if (!data.last_name || data.last_name === "") {
+    error.last_name = true;
     is_valid = false;
   }
 

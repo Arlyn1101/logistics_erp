@@ -38,12 +38,25 @@ export const getCustomerDetails = async (customer_id) => {
   }
 };
 
-export const createCustomer = async (form) => {
+export const createCustomer = async (form, attachments = []) => {
   try {
-    const response = await postAPICall(`${BASE_URL}/customers/create`, {
-      token: get_token(),
-      ...form,
+    const form_data = new FormData();
+    form_data.append('token', get_token());
+
+    // append all form fields
+    Object.keys(form).forEach((key) => {
+      form_data.append(key, form[key] ?? '');
     });
+
+    // append files
+    attachments.forEach((file) => {
+      form_data.append('attachments[]', file.originFileObj);
+    });
+
+    const response = await postAPICall(
+      `${BASE_URL}/customers/create`,
+      form_data
+    );
     return { data: response.data };
   } catch (error) {
     return { error: error.response };
