@@ -5,14 +5,12 @@ import Table from "../../Components/TableTemplate/Table";
 import AddModal from "../../Components/Modals/AddModal";
 import EditModal from "../../Components/Modals/EditModal";
 import ViewModal from "../../Components/Modals/ViewModal";
-import DeleteModal from "../../Components/Modals/DeleteModal";
 import InputError from "../../Components/InputError/InputError";
 import {
   getAllTrucks,
   searchTrucks,
   createTruck,
   updateTruck,
-  deleteTruck,
 } from "../../Helpers/apiCalls/Manage/truckApi";
 import { validateTruck } from "../../Helpers/Validation/Manage/truckValidation";
 import { toastStyle } from "../../Helpers/Utils/Common";
@@ -34,7 +32,7 @@ export default function Trucks() {
   const [show_add_modal, set_show_add_modal] = useState(false);
   const [show_edit_modal, set_show_edit_modal] = useState(false);
   const [show_view_modal, set_show_view_modal] = useState(false);
-  const [show_delete_modal, set_show_delete_modal] = useState(false);
+ 
 
   const empty_form = {
     unit_code: "",
@@ -68,7 +66,6 @@ export default function Trucks() {
     set_edit_form(row);
     if (e.target.value === "edit-truck") set_show_edit_modal(true);
     else if (e.target.value === "view-truck") set_show_view_modal(true);
-    else if (e.target.value === "delete-truck") set_show_delete_modal(true);
     e.target.value = "";
   }
 
@@ -88,9 +85,6 @@ export default function Trucks() {
         </option>
         <option value="edit-truck" className="color-options">
           Edit
-        </option>
-        <option value="delete-truck" className="color-red">
-          Delete
         </option>
       </Form.Select>
     );
@@ -166,17 +160,6 @@ export default function Trucks() {
     }
   }
 
-  async function handle_delete() {
-    const response = await deleteTruck(selected_row.id);
-    if (response.data && response.data.status === "success") {
-      toast.success("Truck deleted.", { style: toastStyle() });
-      set_show_delete_modal(false);
-      fetch_trucks();
-    } else {
-      toast.error("Failed to delete truck.", { style: toastStyle() });
-    }
-  }
-
   React.useEffect(() => {
     fetch_trucks();
   }, []);
@@ -245,27 +228,7 @@ export default function Trucks() {
         </Col>
       </Row>
 
-      <p className="form-section-label" style={{ marginTop: "18px" }}>
-        Fuel Details
-      </p>
       <Row className="nc-modal-custom-row">
-        <Col xs={6}>
-          KM PER LITER
-          <div className="input-suffix-wrap">
-            <Form.Control
-              type="number"
-              name="km_per_liter"
-              placeholder="e.g. 4.5"
-              value={form.km_per_liter}
-              className="nc-modal-custom-input"
-              onChange={handle_change}
-            />
-            <span className="input-suffix">km/L</span>
-          </div>
-          <small className="field-hint">
-            Used for fuel surcharge billing calculation
-          </small>
-        </Col>
         <Col xs={6}>
           STATUS
           <div className="status-select-wrap">
@@ -280,6 +243,29 @@ export default function Trucks() {
               <option value="inactive">Inactive</option>
             </Form.Select>
           </div>
+        </Col>
+      </Row>
+
+      <p className="form-section-label" style={{ marginTop: "18px" }}>
+        Fuel Details
+      </p>
+      <Row className="nc-modal-custom-row">
+        <Col xs={6}>
+          KM PER LITER
+          <div className="input-suffix-wrap">
+            <Form.Control
+              type="number"
+              name="km_per_liter"
+              placeholder="e.g. 4.5"
+              value={form.km_per_liter}
+              className="nc-modal-customf-input"
+              onChange={handle_change}
+            />
+            <span className="input-suffix">km/L</span>
+          </div>
+          <small className="field-hint">
+            Used for fuel surcharge billing calculation
+          </small>
         </Col>
       </Row>
       <Row className="nc-modal-custom-row">
@@ -402,6 +388,11 @@ export default function Trucks() {
 
         <div className="tab-content">
           <Table
+            onRowClick={(row) => {
+              set_selected_row(row);
+              set_edit_form(row);
+              set_show_view_modal(true);
+            }}
             tableHeaders={[
               "UNIT CODE",
               "PLATE NO.",
@@ -409,7 +400,6 @@ export default function Trucks() {
               "CAPACITY (tons)",
               "KM/LITER",
               "STATUS",
-              "ACTIONS",
             ]}
             headerSelector={[
               "unit_code",
@@ -418,7 +408,6 @@ export default function Trucks() {
               "capacity",
               "km_per_liter",
               "status_badge",
-              "action_btn",
             ]}
             tableData={filtered_data}
             showLoader={show_loader}
@@ -466,12 +455,6 @@ export default function Trucks() {
         {view_content(edit_form)}
       </ViewModal>
 
-      <DeleteModal
-        text="truck"
-        show={show_delete_modal}
-        onHide={() => set_show_delete_modal(false)}
-        onDelete={handle_delete}
-      />
     </div>
   );
 }
