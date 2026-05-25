@@ -13,8 +13,11 @@ import {
   updateHelper,
 } from "../../Helpers/apiCalls/Manage/helperApi";
 import { validateHelper } from "../../Helpers/Validation/Manage/helperValidation";
-import { toastStyle } from "../../Helpers/Utils/Common";
+import { toastStyle, dateFormat } from "../../Helpers/Utils/Common";
 import toast from "react-hot-toast";
+import moment from "moment";
+import ReactDatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 import "../Manage/Manage.css";
 import "../../Components/Navbar/Navbar.css";
 import "../../Components/Modals/Modal.css";
@@ -39,6 +42,18 @@ export default function Helpers() {
     contact_number: "",
     address: "",
     status: "active",
+    middle_name: "",
+    suffix: "",
+    birthdate: "",
+    gender: "",
+    civil_status: "",
+    nationality: "",
+    religion: "",
+    email: "",
+    emergency_contact_name: "",
+    emergency_contact_number: "",
+    emergency_contact_relationship: "",
+    emergency_contact_address: "",
   };
   const [add_form, set_add_form] = useState({ ...empty_form });
   const [edit_form, set_edit_form] = useState({ ...empty_form });
@@ -55,6 +70,20 @@ export default function Helpers() {
   const handle_edit_change = (e) => {
     const { name, value } = e.target;
     set_edit_form((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handle_add_birthdate_change = (date) => {
+    set_add_form((prev) => ({
+      ...prev,
+      birthdate: moment(date).format("YYYY-MM-DD"),
+    }));
+  };
+
+  const handle_edit_birthdate_change = (date) => {
+    set_edit_form((prev) => ({
+      ...prev,
+      birthdate: moment(date).format("YYYY-MM-DD"),
+    }));
   };
 
   function StatusBadge(status) {
@@ -106,7 +135,7 @@ export default function Helpers() {
     if (validateHelper(add_form, set_is_error)) {
       set_is_clicked(true);
       const response = await createHelper(add_form);
-      if (response.data && response.data.status === "success") {
+      if (response.data && response.data.response) {
         toast.success("Helper added successfully!", { style: toastStyle() });
         set_show_add_modal(false);
         set_add_form({ ...empty_form });
@@ -122,7 +151,7 @@ export default function Helpers() {
     if (validateHelper(edit_form, set_is_error)) {
       set_is_clicked(true);
       const response = await updateHelper(edit_form);
-      if (response.data && response.data.status === "success") {
+      if (response.data && response.data.response) {
         toast.success("Helper updated successfully!", { style: toastStyle() });
         set_show_edit_modal(false);
         fetch_helpers();
@@ -165,6 +194,16 @@ export default function Helpers() {
             />
           </Col>
           <Col>
+            MIDDLE NAME
+            <Form.Control
+              type="text"
+              name="middle_name"
+              value={form.middle_name}
+              className="nc-modal-custom-input"
+              onChange={handle_change}
+            />
+          </Col>
+          <Col>
             LAST NAME <span className="required-icon">*</span>
             <Form.Control
               type="text"
@@ -176,6 +215,16 @@ export default function Helpers() {
             <InputError
               isValid={is_error.last_name}
               message="Last name is required"
+            />
+          </Col>
+          <Col xs={2}>
+            SUFFIX
+            <Form.Control
+              type="text"
+              name="suffix"
+              value={form.suffix}
+              className="nc-modal-custom-input"
+              onChange={handle_change}
             />
           </Col>
         </Row>
@@ -221,13 +270,147 @@ export default function Helpers() {
             />
           </Col>
         </Row>
+
+        {/* ── Personal Info ── */}
+        <div className="form-section-label">Personal Information</div>
+        <Row className="nc-modal-custom-row">
+          <Col>
+            <div>BIRTHDATE</div>
+            <ReactDatePicker
+              selected={form.birthdate ? new Date(form.birthdate) : null}
+              onChange={
+                form === add_form
+                  ? handle_add_birthdate_change
+                  : handle_edit_birthdate_change
+              }
+              dateFormat="yyyy-MM-dd"
+              className="nc-modal-custom-input w-100"
+              placeholderText="Select date"
+            />
+          </Col>
+          <Col>
+            <div>GENDER</div>
+            <Form.Select
+              name="gender"
+              value={form.gender}
+              className="nc-modal-custom-select"
+              onChange={handle_change}
+            >
+              <option value="">Select</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+            </Form.Select>
+          </Col>
+          <Col>
+            <div>CIVIL STATUS</div>
+            <Form.Select
+              name="civil_status"
+              value={form.civil_status}
+              className="nc-modal-custom-select"
+              onChange={handle_change}
+            >
+              <option value="">Select</option>
+              <option value="single">Single</option>
+              <option value="married">Married</option>
+              <option value="widowed">Widowed</option>
+              <option value="separated">Separated</option>
+            </Form.Select>
+          </Col>
+        </Row>
+        <Row className="nc-modal-custom-row">
+          <Col>
+            NATIONALITY
+            <Form.Control
+              type="text"
+              name="nationality"
+              value={form.nationality}
+              className="nc-modal-custom-input"
+              onChange={handle_change}
+            />
+          </Col>
+          <Col>
+            RELIGION
+            <Form.Control
+              type="text"
+              name="religion"
+              value={form.religion}
+              className="nc-modal-custom-input"
+              onChange={handle_change}
+            />
+          </Col>
+          <Col>
+            EMAIL
+            <Form.Control
+              type="email"
+              name="email"
+              value={form.email}
+              className="nc-modal-custom-input"
+              onChange={handle_change}
+            />
+          </Col>
+        </Row>
+
+        {/* ── Emergency Contact ── */}
+        <div className="form-section-label">Emergency Contact</div>
+        <Row className="nc-modal-custom-row">
+          <Col>
+            NAME
+            <Form.Control
+              type="text"
+              name="emergency_contact_name"
+              value={form.emergency_contact_name}
+              className="nc-modal-custom-input"
+              onChange={handle_change}
+            />
+          </Col>
+          <Col>
+            CONTACT NUMBER
+            <Form.Control
+              type="text"
+              name="emergency_contact_number"
+              value={form.emergency_contact_number}
+              className="nc-modal-custom-input"
+              onChange={handle_change}
+            />
+          </Col>
+          <Col>
+            RELATIONSHIP
+            <Form.Control
+              type="text"
+              name="emergency_contact_relationship"
+              value={form.emergency_contact_relationship}
+              className="nc-modal-custom-input"
+              onChange={handle_change}
+            />
+          </Col>
+        </Row>
+        <Row className="nc-modal-custom-row">
+          <Col>
+            ADDRESS
+            <Form.Control
+              as="textarea"
+              rows={2}
+              name="emergency_contact_address"
+              value={form.emergency_contact_address}
+              className="nc-modal-custom-input"
+              onChange={handle_change}
+            />
+          </Col>
+        </Row>
       </div>
     );
   };
 
   // ─── View modal record card ────────────────────────────────────────────────
   function view_content(form) {
-    const full_name = `${form.first_name || ""} ${form.last_name || ""}`.trim();
+    const full_name = [
+      form.first_name,
+      form.middle_name,
+      form.last_name,
+      form.suffix,
+    ]
+      .filter(Boolean)
+      .join(" ");
 
     return (
       <div className="view-wrapper">
@@ -248,6 +431,7 @@ export default function Helpers() {
         </div>
 
         <div className="view-details">
+          <div className="form-section-label">Helper Information</div>
           <div className="view-detail-row">
             <span className="view-detail-label">CONTACT NO.</span>
             <span
@@ -271,6 +455,114 @@ export default function Helpers() {
           <div className="view-detail-row">
             <span className="view-detail-label">STATUS</span>
             <span className={`status-badge ${form.status}`}>{form.status}</span>
+          </div>
+
+          <div className="form-section-label mt-3">Personal Information</div>
+          <div className="view-detail-row">
+            <span className="view-detail-label">BIRTHDATE</span>
+            <span
+              className={
+                form.birthdate ? "view-detail-value" : "view-empty-value"
+              }
+            >
+              {form.birthdate ? dateFormat(form.birthdate) : "—"}
+            </span>
+          </div>
+          <div className="view-detail-row">
+            <span className="view-detail-label">GENDER</span>
+            <span
+              className={form.gender ? "view-detail-value" : "view-empty-value"}
+            >
+              {form.gender || "—"}
+            </span>
+          </div>
+          <div className="view-detail-row">
+            <span className="view-detail-label">CIVIL STATUS</span>
+            <span
+              className={
+                form.civil_status ? "view-detail-value" : "view-empty-value"
+              }
+            >
+              {form.civil_status || "—"}
+            </span>
+          </div>
+          <div className="view-detail-row">
+            <span className="view-detail-label">NATIONALITY</span>
+            <span
+              className={
+                form.nationality ? "view-detail-value" : "view-empty-value"
+              }
+            >
+              {form.nationality || "—"}
+            </span>
+          </div>
+          <div className="view-detail-row">
+            <span className="view-detail-label">RELIGION</span>
+            <span
+              className={
+                form.religion ? "view-detail-value" : "view-empty-value"
+              }
+            >
+              {form.religion || "—"}
+            </span>
+          </div>
+          <div className="view-detail-row">
+            <span className="view-detail-label">EMAIL</span>
+            <span
+              className={form.email ? "view-detail-value" : "view-empty-value"}
+            >
+              {form.email || "—"}
+            </span>
+          </div>
+
+          <div className="form-section-label mt-3">Emergency Contact</div>
+          <div className="view-detail-row">
+            <span className="view-detail-label">NAME</span>
+            <span
+              className={
+                form.emergency_contact_name
+                  ? "view-detail-value"
+                  : "view-empty-value"
+              }
+            >
+              {form.emergency_contact_name || "—"}
+            </span>
+          </div>
+          <div className="view-detail-row">
+            <span className="view-detail-label">CONTACT NO.</span>
+            <span
+              className={
+                form.emergency_contact_number
+                  ? "view-detail-value"
+                  : "view-empty-value"
+              }
+            >
+              {form.emergency_contact_number || "—"}
+            </span>
+          </div>
+          <div className="view-detail-row">
+            <span className="view-detail-label">RELATIONSHIP</span>
+            <span
+              className={
+                form.emergency_contact_relationship
+                  ? "view-detail-value"
+                  : "view-empty-value"
+              }
+            >
+              {form.emergency_contact_relationship || "—"}
+            </span>
+          </div>
+          <div className="view-detail-row">
+            <span className="view-detail-label">ADDRESS</span>
+            <span
+              className={
+                form.emergency_contact_address
+                  ? "view-detail-value"
+                  : "view-empty-value"
+              }
+            >
+              {form.emergency_contact_address || "—"}
+            </span>
           </div>
         </div>
       </div>
@@ -328,12 +620,7 @@ export default function Helpers() {
 
         <div className="tab-content">
           <Table
-            tableHeaders={[
-              "NAME",
-              "CONTACT NO.",
-              "ADDRESS",
-              "STATUS",
-            ]}
+            tableHeaders={["NAME", "CONTACT NO.", "ADDRESS", "STATUS"]}
             headerSelector={[
               "full_name",
               "contact_number",

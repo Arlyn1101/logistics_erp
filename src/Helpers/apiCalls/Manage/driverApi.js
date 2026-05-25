@@ -13,7 +13,11 @@ export const getAllDrivers = async () => {
   }
 };
 
-export const searchDrivers = async (name = null, license_number = null, status = null) => {
+export const searchDrivers = async (
+  name = null,
+  license_number = null,
+  status = null,
+) => {
   try {
     const response = await getAPICall(`${BASE_URL}/drivers/search`, {
       token: get_token(),

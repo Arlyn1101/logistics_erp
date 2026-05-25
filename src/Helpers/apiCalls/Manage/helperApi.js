@@ -55,7 +55,23 @@ export const updateHelper = async (form) => {
     const response = await postAPICall(`${BASE_URL}/helpers/update`, {
       token: get_token(),
       helper_id: form.id,
-      ...form,
+      first_name: form.first_name,
+      middle_name: form.middle_name,
+      last_name: form.last_name,
+      suffix: form.suffix,
+      birthdate: form.birthdate,
+      gender: form.gender,
+      civil_status: form.civil_status,
+      nationality: form.nationality,
+      religion: form.religion,
+      email: form.email,
+      contact_number: form.contact_number,
+      address: form.address,
+      emergency_contact_name: form.emergency_contact_name,
+      emergency_contact_number: form.emergency_contact_number,
+      emergency_contact_relationship: form.emergency_contact_relationship,
+      emergency_contact_address: form.emergency_contact_address,
+      status: form.status,
     });
     return { data: response.data };
   } catch (error) {

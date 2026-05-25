@@ -20,8 +20,11 @@ import { getAllTrucks } from "../../Helpers/apiCalls/Manage/truckApi";
 import { getAllDrivers } from "../../Helpers/apiCalls/Manage/driverApi";
 import { getAllHelpers } from "../../Helpers/apiCalls/Manage/helperApi";
 import { validateTrip } from "../../Helpers/Validation/Trips/tripValidation";
-import { toastStyle } from "../../Helpers/Utils/Common";
+import { toastStyle, dateFormat } from "../../Helpers/Utils/Common";
 import { getTripDetails } from "../../Helpers/apiCalls/Trips/tripApi";
+import moment from "moment";
+import ReactDatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faTimes,
@@ -99,6 +102,14 @@ export default function Trips() {
       else set_edit_route_options([]);
       set_edit_form((prev) => ({ ...prev, contract_route_id: "" }));
     }
+  };
+
+  const handle_add_date_change = (date) => {
+    set_add_form((prev) => ({ ...prev, trip_date: moment(date).format("YYYY-MM-DD") }));
+  };
+
+  const handle_edit_date_change = (date) => {
+    set_edit_form((prev) => ({ ...prev, trip_date: moment(date).format("YYYY-MM-DD") }));
   };
 
   const handle_add_multi = (e, field) => {
@@ -186,6 +197,7 @@ export default function Trips() {
               : `Truck #${a.truck_id}`,
           drivers_label: a.drivers_label || "—",
           helpers_label: a.helpers_label || "—",
+          trip_date_fmt: dateFormat(a.trip_date),
         };
         return mapped;
       });
@@ -315,12 +327,12 @@ export default function Trips() {
           <div>
             TRIP DATE <span className="required-icon">*</span>
           </div>
-          <Form.Control
-            type="date"
-            name="trip_date"
-            value={form.trip_date}
-            className="nc-modal-custom-input"
-            onChange={handle_change}
+          <ReactDatePicker
+            selected={form.trip_date ? new Date(form.trip_date) : null}
+            onChange={form === add_form ? handle_add_date_change : handle_edit_date_change}
+            dateFormat="yyyy-MM-dd"
+            className="nc-modal-custom-input w-100"
+            placeholderText="Select date"
           />
           <InputError
             isValid={is_error.trip_date}
@@ -458,7 +470,7 @@ export default function Trips() {
               "REMARKS",
             ]}
             headerSelector={[
-              "trip_date",
+              "trip_date_fmt",
               "contract_label",
               "route_label",
               "truck_label",
@@ -520,7 +532,7 @@ export default function Trips() {
         <div className="view-wrapper">
           <div className="view-header">
             <div className="view-header-left">
-              <span className="view-title">{edit_form.trip_date || "—"}</span>
+              <span className="view-title">{edit_form.trip_date ? dateFormat(edit_form.trip_date) : "—"}</span>
               <span className="view-subtitle">
                 {edit_form.route_label ||
                   `Route #${edit_form.contract_route_id}`}
@@ -535,7 +547,7 @@ export default function Trips() {
                   edit_form.trip_date ? "view-detail-value" : "view-empty-value"
                 }
               >
-                {edit_form.trip_date || "—"}
+                {edit_form.trip_date ? dateFormat(edit_form.trip_date) : "—"}
               </span>
             </div>
             <div className="view-detail-row">
@@ -669,7 +681,7 @@ export default function Trips() {
                   <div>
                     <span className="detail-label">Trip Date</span>
                     <span className="detail-value">
-                      {selected_trip.trip_date}
+                      {dateFormat(selected_trip.trip_date)}
                     </span>
                   </div>
                 </div>

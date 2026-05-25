@@ -70,3 +70,17 @@ export const removeUserSession = () => {
 };
 
 export const isAdmin = getType() === "admin";
+
+export const dateFormat = (date) => {
+  if (date) {
+    return moment(date).format("MMM DD, YYYY");
+  }
+  return "";
+};
+
+export const dateTimeFormat = (date) => {
+  if (date) {
+    return moment(date).format("MMM DD, YYYY h:mm A");
+  }
+  return "";
+};

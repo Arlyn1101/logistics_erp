@@ -38,13 +38,22 @@ export const getContractDetails = async (contract_id) => {
   }
 };
 
-export const createContract = async (form) => {
+export const createContract = async (form, routes = []) => {
   try {
     const response = await postAPICall(`${BASE_URL}/contracts/create`, {
       token: get_token(),
-      ...form,
+      customer_id: form.customer_id,
+      date_signed: form.date_signed,
+      authorized_representative: form.authorized_representative,
+      payment_terms: form.payment_terms,
+      monthly_rate: form.monthly_rate,
+      included_trips: form.included_trips,
+      excess_trip_charge: form.excess_trip_charge,
+      fuel_price_per_liter: form.fuel_price_per_liter,
       date_start: form.start_date,
       date_end: form.end_date,
+      remarks: form.remarks,
+      routes: routes,
     });
     return { data: response.data };
   } catch (error) {
@@ -52,14 +61,24 @@ export const createContract = async (form) => {
   }
 };
 
-export const updateContract = async (form) => {
+export const updateContract = async (form, routes = []) => {
   try {
     const response = await postAPICall(`${BASE_URL}/contracts/update`, {
       token: get_token(),
       contract_id: form.id,
-      ...form,
+      customer_id: form.customer_id,
+      date_signed: form.date_signed,
+      authorized_representative: form.authorized_representative,
+      payment_terms: form.payment_terms,
+      monthly_rate: form.monthly_rate,
+      included_trips: form.included_trips,
+      excess_trip_charge: form.excess_trip_charge,
+      fuel_price_per_liter: form.fuel_price_per_liter,
       date_start: form.start_date,
       date_end: form.end_date,
+      status: form.status,
+      remarks: form.remarks,
+      routes: routes,
     });
     return { data: response.data };
   } catch (error) {
