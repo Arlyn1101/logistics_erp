@@ -11,7 +11,6 @@ import {
   faRoute,
   faClipboardList,
   faUserCog,
-  faHistory,
   faSignOutAlt,
 } from "@fortawesome/free-solid-svg-icons";
 import toast from "react-hot-toast";
@@ -71,13 +70,10 @@ const MENU_SECTIONS = [
     section: "SYSTEM",
     items: [
       {
-        name: "SYSTEM",
-        to: "/",
+        name: "USERS",
+        to: "/users",
         icon: faUserCog,
-        subMenus: [
-          { name: "USERS",       to: "/users" },
-          { name: "AUDIT TRAIL", to: "/trail" },
-        ],
+        subMenus: [],
       },
     ],
   },
