@@ -100,24 +100,25 @@ export default function Customers() {
     );
   }
 
-  async function fetch_customers() {
+  const fetch_customers = React.useCallback(async () => {
     set_show_loader(true);
     const response = search_text
       ? await searchCustomers(search_text)
       : await getAllCustomers();
     if (response.data && response.data.data) {
       const result = response.data.data.map((c) => ({
-          ...c,
-          full_name: [c.first_name, c.middle_name, c.last_name, c.suffix]
-              .filter(Boolean)
-              .join(" "),
+        ...c,
+        full_name: [c.first_name, c.middle_name, c.last_name, c.suffix]
+          .filter(Boolean)
+          .join(" "),
       }));
       set_customer_data(result);
     } else {
       set_customer_data([]);
     }
     set_show_loader(false);
-  }
+  }, [search_text]);
+
 
   function handle_row_click(row) {
     navigate(`/customers/${row.id}`);
@@ -158,7 +159,7 @@ export default function Customers() {
 
   React.useEffect(() => {
     fetch_customers();
-  }, []);
+  }, [fetch_customers]);
 
   // ─── Add / Edit form ───────────────────────────────────────────────────────
   const form_fields = (form, handle_change) => (
@@ -507,7 +508,27 @@ export default function Customers() {
               name="search"
               placeholder="Search customer..."
               value={search_text}
-              onChange={(e) => set_search_text(e.target.value)}
+              onChange={(e) => {
+                const val = e.target.value;
+                set_search_text(val);
+                if (val === "") {
+                  set_show_loader(true);
+                  getAllCustomers().then((response) => {
+                    if (response.data && response.data.data) {
+                      const result = response.data.data.map((c) => ({
+                        ...c,
+                        full_name: [c.first_name, c.middle_name, c.last_name, c.suffix]
+                          .filter(Boolean)
+                          .join(" "),
+                      }));
+                      set_customer_data(result);
+                    } else {
+                      set_customer_data([]);
+                    }
+                    set_show_loader(false);
+                  });
+                }
+              }}
               className="search-bar"
               onKeyDown={(e) => {
                 if (e.key === "Enter") fetch_customers();
