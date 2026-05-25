@@ -5,14 +5,12 @@ import Table from "../../Components/TableTemplate/Table";
 import AddModal from "../../Components/Modals/AddModal";
 import EditModal from "../../Components/Modals/EditModal";
 import ViewModal from "../../Components/Modals/ViewModal";
-import DeleteModal from "../../Components/Modals/DeleteModal";
 import InputError from "../../Components/InputError/InputError";
 import {
   getAllDrivers,
   searchDrivers,
   createDriver,
   updateDriver,
-  deleteDriver,
 } from "../../Helpers/apiCalls/Manage/driverApi";
 import { validateDriver } from "../../Helpers/Validation/Manage/driverValidation";
 import { toastStyle } from "../../Helpers/Utils/Common";
@@ -34,7 +32,6 @@ export default function Drivers() {
   const [show_add_modal, set_show_add_modal] = useState(false);
   const [show_edit_modal, set_show_edit_modal] = useState(false);
   const [show_view_modal, set_show_view_modal] = useState(false);
-  const [show_delete_modal, set_show_delete_modal] = useState(false);
 
   const empty_form = {
     first_name: "",
@@ -67,7 +64,6 @@ export default function Drivers() {
     set_edit_form(row);
     if (e.target.value === "edit-driver") set_show_edit_modal(true);
     else if (e.target.value === "view-driver") set_show_view_modal(true);
-    else if (e.target.value === "delete-driver") set_show_delete_modal(true);
     e.target.value = "";
   }
 
@@ -87,9 +83,6 @@ export default function Drivers() {
         </option>
         <option value="edit-driver" className="color-options">
           Edit
-        </option>
-        <option value="delete-driver" className="color-red">
-          Delete
         </option>
       </Form.Select>
     );
@@ -172,7 +165,6 @@ export default function Drivers() {
         full_name: `${a.first_name} ${a.last_name}`,
         status_badge: StatusBadge(a.status),
         expiry_badge: ExpiryBadge(a.license_expiry),
-        action_btn: ActionBtn(a),
       }));
       set_driver_data(result);
       set_filtered_data(apply_tab_filter(result, active_tab));
@@ -211,17 +203,6 @@ export default function Drivers() {
         toast.error("Failed to update driver.", { style: toastStyle() });
       }
       set_is_clicked(false);
-    }
-  }
-
-  async function handle_delete() {
-    const response = await deleteDriver(selected_row.id);
-    if (response.data && response.data.response) {
-      toast.success("Driver deleted.", { style: toastStyle() });
-      set_show_delete_modal(false);
-      fetch_drivers();
-    } else {
-      toast.error("Failed to delete driver.", { style: toastStyle() });
     }
   }
 
@@ -492,13 +473,24 @@ export default function Drivers() {
 
         <div className="tab-content">
           <Table
+            onRowClick={(row) => {
+              set_selected_row(row);
+              set_edit_form(row);
+              set_show_view_modal(true);
+            }}
             tableHeaders={[
               "NAME",
               "CONTACT NO.",
               "LICENSE NO.",
               "LICENSE EXPIRY",
               "STATUS",
-              "ACTIONS",
+            ]}
+            headerSelector={[
+              "full_name",
+              "contact_number",
+              "license_number",
+              "expiry_badge",
+              "status_badge",
             ]}
             headerSelector={[
               "full_name",
@@ -553,13 +545,6 @@ export default function Drivers() {
       >
         {view_content(edit_form)}
       </ViewModal>
-
-      <DeleteModal
-        text="driver"
-        show={show_delete_modal}
-        onHide={() => set_show_delete_modal(false)}
-        onDelete={handle_delete}
-      />
     </div>
   );
 }
