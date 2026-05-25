@@ -4,10 +4,18 @@ import Navbar from "../../Components/Navbar/Navbar";
 import Table from "../../Components/TableTemplate/Table";
 import AddModal from "../../Components/Modals/AddModal";
 import EditModal from "../../Components/Modals/EditModal";
-import DeleteModal from "../../Components/Modals/DeleteModal";
+import ViewModal from "../../Components/Modals/ViewModal";
 import InputError from "../../Components/InputError/InputError";
-import { getAPICall, postAPICall, BASE_URL } from "../../Helpers/apiCalls/axiosMethodCalls";
-import { getAllUsers, createUser, updateUser, deleteUser } from "../../Helpers/apiCalls/Manage/userApi";
+import {
+  getAPICall,
+  postAPICall,
+  BASE_URL,
+} from "../../Helpers/apiCalls/axiosMethodCalls";
+import {
+  getAllUsers,
+  createUser,
+  updateUser,
+} from "../../Helpers/apiCalls/Manage/userApi";
 import { toastStyle } from "../../Helpers/Utils/Common";
 import toast from "react-hot-toast";
 import "../Manage/Manage.css";
@@ -24,12 +32,22 @@ export default function Users() {
 
   const [show_add_modal, set_show_add_modal] = useState(false);
   const [show_edit_modal, set_show_edit_modal] = useState(false);
-  const [show_delete_modal, set_show_delete_modal] = useState(false);
+  const [show_view_modal, set_show_view_modal] = useState(false);
 
-  const empty_form = { name: "", username: "", password: "", type: "staff", status: "active" };
+  const empty_form = {
+    first_name: "",
+    last_name: "",
+    email: "",
+    password: "",
+    role: "viewer",
+  };
   const [add_form, set_add_form] = useState({ ...empty_form });
   const [edit_form, set_edit_form] = useState({ ...empty_form });
-  const [is_error, set_is_error] = useState({ name: false, username: false, password: false });
+  const [is_error, set_is_error] = useState({
+    name: false,
+    username: false,
+    password: false,
+  });
 
   const handle_add_change = (e) => {
     const { name, value } = e.target;
@@ -43,21 +61,30 @@ export default function Users() {
 
   function validate_user(data, for_edit = false) {
     var is_valid = true;
-    var error = { first_name: false, last_name: false, email: false, password: false };
-    if (!data.first_name) { error.first_name = true; is_valid = false; }
-    if (!data.last_name)  { error.last_name  = true; is_valid = false; }
-    if (!data.email)      { error.email      = true; is_valid = false; }
-    if (!for_edit && !data.password) { error.password = true; is_valid = false; }
+    var error = {
+      first_name: false,
+      last_name: false,
+      email: false,
+      password: false,
+    };
+    if (!data.first_name) {
+      error.first_name = true;
+      is_valid = false;
+    }
+    if (!data.last_name) {
+      error.last_name = true;
+      is_valid = false;
+    }
+    if (!data.email) {
+      error.email = true;
+      is_valid = false;
+    }
+    if (!for_edit && !data.password) {
+      error.password = true;
+      is_valid = false;
+    }
     set_is_error(error);
     return is_valid;
-  }
-
-  function handle_select_change(e, row) {
-    set_selected_row(row);
-    set_edit_form({ ...row, password: "" });
-    if (e.target.value === "edit-user") set_show_edit_modal(true);
-    else if (e.target.value === "delete-user") set_show_delete_modal(true);
-    e.target.value = "";
   }
 
   function ActionBtn(row) {
@@ -65,12 +92,17 @@ export default function Users() {
       <Form.Select
         name="action"
         className="PO-select-action form-select"
-        onChange={(e) => handle_select_change(e, row)}
         value={""}
       >
-        <option defaultValue selected hidden>Select</option>
-        <option value="edit-user" className="color-options">Edit</option>
-        <option value="delete-user" className="color-red">Delete</option>
+        <option defaultValue selected hidden>
+          Select
+        </option>
+        <option value="edit-user" className="color-options">
+          Edit
+        </option>
+        <option value="delete-user" className="color-red">
+          Delete
+        </option>
       </Form.Select>
     );
   }
@@ -84,13 +116,12 @@ export default function Users() {
     const response = await getAllUsers();
     if (response.data && response.data.data) {
       const result = response.data.data.map((a) => ({
-  ...a,
-  name: `${a.first_name} ${a.last_name}`,
-  username: a.email,
-  type: a.role,
-  status_badge: StatusBadge(a.role),
-  action_btn: ActionBtn(a),
-}));
+        ...a,
+        name: `${a.first_name} ${a.last_name}`,
+        username: a.email,
+        type: a.role,
+        status_badge: StatusBadge(a.role),
+      }));
       set_user_data(result);
     } else {
       set_user_data([]);
@@ -129,18 +160,9 @@ export default function Users() {
     }
   }
 
-  async function handle_delete() {
-    const response = await deleteUser(selected_row.id);
-    if (response.data && response.data.status === "success") {
-      toast.success("User deleted.", { style: toastStyle() });
-      set_show_delete_modal(false);
-      fetch_users();
-    } else {
-      toast.error("Failed to delete user.", { style: toastStyle() });
-    }
-  }
-
-  React.useEffect(() => { fetch_users(); }, []);
+  React.useEffect(() => {
+    fetch_users();
+  }, []);
 
   const form_fields = (form, handle_change, for_edit = false) => (
     <div className="mt-3">
@@ -155,7 +177,10 @@ export default function Users() {
             className="nc-modal-custom-input"
             onChange={handle_change}
           />
-          <InputError isValid={is_error.first_name} message="First name is required" />
+          <InputError
+            isValid={is_error.first_name}
+            message="First name is required"
+          />
         </Col>
         <Col>
           LAST NAME <span className="required-icon">*</span>
@@ -166,7 +191,10 @@ export default function Users() {
             className="nc-modal-custom-input"
             onChange={handle_change}
           />
-          <InputError isValid={is_error.last_name} message="Last name is required" />
+          <InputError
+            isValid={is_error.last_name}
+            message="Last name is required"
+          />
         </Col>
       </Row>
       <Row className="nc-modal-custom-row">
@@ -184,14 +212,14 @@ export default function Users() {
         <Col>
           TYPE
           <Form.Select
-            name="type"
-            value={form.type}
+            name="role"
+            value={form.role}
             className="nc-modal-custom-select"
             onChange={handle_change}
           >
-        <option value="admin">Admin</option>
-<option value="dispatcher">Dispatcher</option>
-<option value="viewer">Viewer</option>
+            <option value="admin">Admin</option>
+            <option value="dispatcher">Dispatcher</option>
+            <option value="viewer">Viewer</option>
           </Form.Select>
         </Col>
       </Row>
@@ -199,7 +227,11 @@ export default function Users() {
       <Row className="nc-modal-custom-row">
         <Col xs={6}>
           PASSWORD {!for_edit && <span className="required-icon">*</span>}
-          {for_edit && <span className="field-hint">Leave blank to keep current password</span>}
+          {for_edit && (
+            <span className="field-hint">
+              Leave blank to keep current password
+            </span>
+          )}
           <Form.Control
             type="password"
             name="password"
@@ -208,7 +240,10 @@ export default function Users() {
             onChange={handle_change}
             placeholder={for_edit ? "Leave blank to keep current" : ""}
           />
-          <InputError isValid={is_error.password} message="Password is required" />
+          <InputError
+            isValid={is_error.password}
+            message="Password is required"
+          />
         </Col>
       </Row>
     </div>
@@ -217,11 +252,16 @@ export default function Users() {
   return (
     <div>
       <div className="page">
-        <Navbar onCollapse={(is_inactive) => set_inactive(is_inactive)} active={"USERS"} />
+        <Navbar
+          onCollapse={(is_inactive) => set_inactive(is_inactive)}
+          active={"USERS"}
+        />
       </div>
       <div className={`manager-container ${inactive ? "inactive" : "active"}`}>
         <Row className="mb-4">
-          <Col xs={6}><h1 className="page-title">Users</h1></Col>
+          <Col xs={6}>
+            <h1 className="page-title">Users</h1>
+          </Col>
           <Col className="d-flex justify-content-end align-items-center">
             <input
               type="search"
@@ -229,15 +269,32 @@ export default function Users() {
               value={search_text}
               onChange={(e) => set_search_text(e.target.value)}
               className="search-bar"
-              onKeyDown={(e) => { if (e.key === "Enter") fetch_users(); }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") fetch_users();
+              }}
             />
-            <button className="add-btn" onClick={() => set_show_add_modal(true)}>Add</button>
+            <button
+              className="add-btn"
+              onClick={() => set_show_add_modal(true)}
+            >
+              Add
+            </button>
           </Col>
         </Row>
         <div className="tab-content">
           <Table
-            tableHeaders={["NAME", "EMAIL", "ROLE", "ACTIONS"]}
-            headerSelector={["full_name", "email", "role_badge", "action_btn"]}
+            onRowClick={(row) => {
+              set_selected_row(row);
+              set_edit_form({
+                ...row,
+                first_name: row.first_name || "",
+                last_name: row.last_name || "",
+                password: "",
+              });
+              set_show_view_modal(true);
+            }}
+            tableHeaders={["NAME", "EMAIL", "ROLE"]}
+            headerSelector={["name", "email", "role"]}
             tableData={user_data}
             showLoader={show_loader}
             withActionData={true}
@@ -245,13 +302,84 @@ export default function Users() {
         </div>
       </div>
 
-      <AddModal title="USER" size="lg" show={show_add_modal} onHide={() => set_show_add_modal(false)} onSave={handle_create} isClicked={is_clicked}>
+      <AddModal
+        title="USER"
+        size="lg"
+        show={show_add_modal}
+        onHide={() => set_show_add_modal(false)}
+        onSave={handle_create}
+        isClicked={is_clicked}
+      >
         {form_fields(add_form, handle_add_change)}
       </AddModal>
-      <EditModal title="USER" size="lg" show={show_edit_modal} onHide={() => set_show_edit_modal(false)} onSave={handle_update} isClicked={is_clicked}>
+      <EditModal
+        title="USER"
+        size="lg"
+        show={show_edit_modal}
+        onHide={() => set_show_edit_modal(false)}
+        onSave={handle_update}
+        isClicked={is_clicked}
+      >
         {form_fields(edit_form, handle_edit_change, true)}
       </EditModal>
-      <DeleteModal text="user" show={show_delete_modal} onHide={() => set_show_delete_modal(false)} onDelete={handle_delete} />
+      <ViewModal
+        title="USER DETAILS"
+        size="lg"
+        withButtons
+        show={show_view_modal}
+        onHide={() => set_show_view_modal(false)}
+        onEdit={() => {
+          set_show_edit_modal(true);
+          set_show_view_modal(false);
+        }}
+      >
+        <div className="view-wrapper">
+          <div className="view-header">
+            <div className="view-header-left">
+              <span className="view-title">
+                {`${selected_row.first_name || ""} ${selected_row.last_name || ""}`.trim() ||
+                  "—"}
+              </span>
+              <span className="view-subtitle">{selected_row.email || "—"}</span>
+            </div>
+          </div>
+          <div className="view-details">
+            <div className="view-detail-row">
+              <span className="view-detail-label">NAME</span>
+              <span
+                className={
+                  selected_row.first_name
+                    ? "view-detail-value"
+                    : "view-empty-value"
+                }
+              >
+                {`${selected_row.first_name || ""} ${selected_row.last_name || ""}`.trim() ||
+                  "—"}
+              </span>
+            </div>
+            <div className="view-detail-row">
+              <span className="view-detail-label">EMAIL</span>
+              <span
+                className={
+                  selected_row.email ? "view-detail-value" : "view-empty-value"
+                }
+              >
+                {selected_row.email || "—"}
+              </span>
+            </div>
+            <div className="view-detail-row">
+              <span className="view-detail-label">ROLE</span>
+              <span
+                className={
+                  selected_row.role ? "view-detail-value" : "view-empty-value"
+                }
+              >
+                {selected_row.role || "—"}
+              </span>
+            </div>
+          </div>
+        </div>
+      </ViewModal>
     </div>
   );
 }

@@ -5,14 +5,12 @@ import Table from "../../Components/TableTemplate/Table";
 import AddModal from "../../Components/Modals/AddModal";
 import EditModal from "../../Components/Modals/EditModal";
 import ViewModal from "../../Components/Modals/ViewModal";
-import DeleteModal from "../../Components/Modals/DeleteModal";
 import InputError from "../../Components/InputError/InputError";
 import {
   getAllCustomers,
   searchCustomers,
   createCustomer,
   updateCustomer,
-  deleteCustomer,
 } from "../../Helpers/apiCalls/Manage/customerApi";
 import { validateCustomer } from "../../Helpers/Validation/Manage/customerValidation";
 import { toastStyle } from "../../Helpers/Utils/Common";
@@ -32,7 +30,6 @@ export default function Customers() {
   const [show_add_modal, set_show_add_modal] = useState(false);
   const [show_edit_modal, set_show_edit_modal] = useState(false);
   const [show_view_modal, set_show_view_modal] = useState(false);
-  const [show_delete_modal, set_show_delete_modal] = useState(false);
 
   const empty_form = {
     name: "",
@@ -60,7 +57,6 @@ export default function Customers() {
     set_edit_form(row);
     if (e.target.value === "edit-customer") set_show_edit_modal(true);
     else if (e.target.value === "view-customer") set_show_view_modal(true);
-    else if (e.target.value === "delete-customer") set_show_delete_modal(true);
     e.target.value = "";
   }
 
@@ -80,9 +76,6 @@ export default function Customers() {
         </option>
         <option value="edit-customer" className="color-options">
           Edit
-        </option>
-        <option value="delete-customer" className="color-red">
-          Delete
         </option>
       </Form.Select>
     );
@@ -135,17 +128,6 @@ export default function Customers() {
         toast.error("Failed to update customer.", { style: toastStyle() });
       }
       set_is_clicked(false);
-    }
-  }
-
-  async function handle_delete() {
-    const response = await deleteCustomer(selected_row.id);
-    if (response.data && response.data.response) {
-      toast.success("Customer deleted.", { style: toastStyle() });
-      set_show_delete_modal(false);
-      fetch_customers();
-    } else {
-      toast.error("Failed to delete customer.", { style: toastStyle() });
     }
   }
 
@@ -323,13 +305,17 @@ export default function Customers() {
 
         <div className="tab-content">
           <Table
+            onRowClick={(row) => {
+              set_selected_row(row);
+              set_edit_form(row);
+              set_show_view_modal(true);
+            }}
             tableHeaders={[
               "CUSTOMER NAME",
               "CONTACT PERSON",
               "CONTACT NO.",
               "EMAIL",
               "ADDRESS",
-              "ACTIONS",
             ]}
             headerSelector={[
               "name",
@@ -337,7 +323,6 @@ export default function Customers() {
               "contact_number",
               "email",
               "address",
-              "action_btn",
             ]}
             tableData={customer_data}
             showLoader={show_loader}
@@ -384,13 +369,6 @@ export default function Customers() {
       >
         {view_content(edit_form)}
       </ViewModal>
-
-      <DeleteModal
-        text="customer"
-        show={show_delete_modal}
-        onHide={() => set_show_delete_modal(false)}
-        onDelete={handle_delete}
-      />
     </div>
   );
 }

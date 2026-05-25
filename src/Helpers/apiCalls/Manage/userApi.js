@@ -17,11 +17,11 @@ export const createUser = async (form) => {
   try {
     const response = await postAPICall(`${BASE_URL}/users/create`, {
       token: get_token(),
-      first_name: form.name,
-      last_name: '',
-      email: form.username,
+      first_name: form.first_name,
+      last_name: form.last_name,
+      email: form.email,
       password: form.password,
-      role: form.type,
+      role: form.role,
     });
     return { data: response.data };
   } catch (error) {
@@ -34,11 +34,11 @@ export const updateUser = async (form) => {
     const response = await postAPICall(`${BASE_URL}/users/update`, {
       token: get_token(),
       user_id: form.id,
-      first_name: form.name,
-      last_name: '',
-      email: form.username,
+      first_name: form.first_name,
+      last_name: form.last_name,
+      email: form.email,
       password: form.password,
-      role: form.type,
+      role: form.role,
     });
     return { data: response.data };
   } catch (error) {
