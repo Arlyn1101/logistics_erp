@@ -7,6 +7,8 @@ import "./App.css";
 import Login from "./Pages/Login/Login";
 import Dashboard from "./Pages/Dashboard/Dashboard";
 import Customers from "./Pages/Manage/Customers";
+import AddCustomer from "./Pages/Manage/AddCustomer";
+import CustomerDetails from "./Pages/Manage/CustomerDetails";
 import Drivers from "./Pages/Manage/Drivers";
 import Helpers from "./Pages/Manage/Helpers";
 import Trucks from "./Pages/Manage/Trucks";
@@ -44,6 +46,8 @@ function App() {
 
         {/* Manage */}
         <Route path="/customers" element={<PrivateRoute><Customers /></PrivateRoute>} />
+        <Route path="/customers/new" element={<PrivateRoute><AddCustomer /></PrivateRoute>} />
+        <Route path="/customers/:id" element={<PrivateRoute><CustomerDetails  /></PrivateRoute>} />
         <Route path="/drivers" element={<PrivateRoute><Drivers /></PrivateRoute>} />
         <Route path="/helpers" element={<PrivateRoute><Helpers /></PrivateRoute>} />
         <Route path="/trucks" element={<PrivateRoute><Trucks /></PrivateRoute>} />
