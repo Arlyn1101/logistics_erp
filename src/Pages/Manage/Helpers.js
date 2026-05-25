@@ -5,14 +5,12 @@ import Table from "../../Components/TableTemplate/Table";
 import AddModal from "../../Components/Modals/AddModal";
 import EditModal from "../../Components/Modals/EditModal";
 import ViewModal from "../../Components/Modals/ViewModal";
-import DeleteModal from "../../Components/Modals/DeleteModal";
 import InputError from "../../Components/InputError/InputError";
 import {
   getAllHelpers,
   searchHelpers,
   createHelper,
   updateHelper,
-  deleteHelper,
 } from "../../Helpers/apiCalls/Manage/helperApi";
 import { validateHelper } from "../../Helpers/Validation/Manage/helperValidation";
 import { toastStyle } from "../../Helpers/Utils/Common";
@@ -34,7 +32,6 @@ export default function Helpers() {
   const [show_add_modal, set_show_add_modal] = useState(false);
   const [show_edit_modal, set_show_edit_modal] = useState(false);
   const [show_view_modal, set_show_view_modal] = useState(false);
-  const [show_delete_modal, set_show_delete_modal] = useState(false);
 
   const empty_form = {
     first_name: "",
@@ -59,39 +56,6 @@ export default function Helpers() {
     const { name, value } = e.target;
     set_edit_form((prev) => ({ ...prev, [name]: value }));
   };
-
-  function handle_select_change(e, row) {
-    set_selected_row(row);
-    set_edit_form(row);
-    if (e.target.value === "edit-helper") set_show_edit_modal(true);
-    else if (e.target.value === "view-helper") set_show_view_modal(true);
-    else if (e.target.value === "delete-helper") set_show_delete_modal(true);
-    e.target.value = "";
-  }
-
-  function ActionBtn(row) {
-    return (
-      <Form.Select
-        name="action"
-        className="PO-select-action form-select"
-        onChange={(e) => handle_select_change(e, row)}
-        value={""}
-      >
-        <option defaultValue selected hidden>
-          Select
-        </option>
-        <option value="view-helper" className="color-options">
-          View
-        </option>
-        <option value="edit-helper" className="color-options">
-          Edit
-        </option>
-        <option value="delete-helper" className="color-red">
-          Delete
-        </option>
-      </Form.Select>
-    );
-  }
 
   function StatusBadge(status) {
     return <span className={`status-badge ${status}`}>{status}</span>;
@@ -122,7 +86,6 @@ export default function Helpers() {
         ...a,
         full_name: `${a.first_name} ${a.last_name}`,
         status_badge: StatusBadge(a.status),
-        action_btn: ActionBtn(a),
       }));
       set_helper_data(result);
       set_filtered_data(apply_tab_filter(result, active_tab));
@@ -131,6 +94,12 @@ export default function Helpers() {
       set_filtered_data([]);
     }
     set_show_loader(false);
+  }
+
+  function handle_row_click(row) {
+    set_selected_row(row);
+    set_edit_form(row);
+    set_show_view_modal(true);
   }
 
   async function handle_create() {
@@ -164,23 +133,12 @@ export default function Helpers() {
     }
   }
 
-  async function handle_delete() {
-    const response = await deleteHelper(selected_row.id);
-    if (response.data && response.data.status === "success") {
-      toast.success("Helper deleted.", { style: toastStyle() });
-      set_show_delete_modal(false);
-      fetch_helpers();
-    } else {
-      toast.error("Failed to delete helper.", { style: toastStyle() });
-    }
-  }
-
   React.useEffect(() => {
     fetch_helpers();
   }, []);
 
   // ─── Add / Edit form ───────────────────────────────────────────────────────
-  const form_fields = (form, handle_change) => {
+  const form_fields = (form, handle_change, is_edit = false) => {
     const status_dot_class =
       form.status === "active"
         ? "status-dot active"
@@ -232,21 +190,23 @@ export default function Helpers() {
               onChange={handle_change}
             />
           </Col>
-          <Col>
-            STATUS
-            <div className="status-select-wrap">
-              <span className={status_dot_class}></span>
-              <Form.Select
-                name="status"
-                value={form.status}
-                className="nc-modal-custom-select"
-                onChange={handle_change}
-              >
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </Form.Select>
-            </div>
-          </Col>
+          {is_edit && (
+            <Col>
+              STATUS
+              <div className="status-select-wrap">
+                <span className={status_dot_class}></span>
+                <Form.Select
+                  name="status"
+                  value={form.status}
+                  className="nc-modal-custom-select"
+                  onChange={handle_change}
+                >
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </Form.Select>
+              </div>
+            </Col>
+          )}
         </Row>
         <Row className="nc-modal-custom-row">
           <Col>
@@ -373,18 +333,17 @@ export default function Helpers() {
               "CONTACT NO.",
               "ADDRESS",
               "STATUS",
-              "ACTIONS",
             ]}
             headerSelector={[
               "full_name",
               "contact_number",
               "address",
               "status_badge",
-              "action_btn",
             ]}
             tableData={filtered_data}
             showLoader={show_loader}
             withActionData={true}
+            onRowClick={handle_row_click}
           />
         </div>
       </div>
@@ -411,7 +370,7 @@ export default function Helpers() {
         onSave={handle_update}
         isClicked={is_clicked}
       >
-        {form_fields(edit_form, handle_edit_change)}
+        {form_fields(edit_form, handle_edit_change, true)}
       </EditModal>
 
       <ViewModal
@@ -427,13 +386,6 @@ export default function Helpers() {
       >
         {view_content(edit_form)}
       </ViewModal>
-
-      <DeleteModal
-        text="helper"
-        show={show_delete_modal}
-        onHide={() => set_show_delete_modal(false)}
-        onDelete={handle_delete}
-      />
     </div>
   );
 }

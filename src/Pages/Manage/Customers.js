@@ -87,15 +87,18 @@ export default function Customers() {
       ? await searchCustomers(search_text)
       : await getAllCustomers();
     if (response.data && response.data.data) {
-      const result = response.data.data.map((a) => ({
-        ...a,
-        action_btn: ActionBtn(a),
-      }));
+      const result = response.data.data;
       set_customer_data(result);
     } else {
       set_customer_data([]);
     }
     set_show_loader(false);
+  }
+
+  function handle_row_click(row) {
+    set_selected_row(row);
+    set_edit_form(row);
+    set_show_view_modal(true);
   }
 
   async function handle_create() {
@@ -327,6 +330,7 @@ export default function Customers() {
             tableData={customer_data}
             showLoader={show_loader}
             withActionData={true}
+            onRowClick={handle_row_click}
           />
         </div>
       </div>

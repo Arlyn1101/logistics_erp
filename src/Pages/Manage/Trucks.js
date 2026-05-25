@@ -165,7 +165,7 @@ export default function Trucks() {
   }, []);
 
   /* ── FORM FIELDS — Add and Edit modals ── */
-  const form_fields = (form, handle_change) => (
+  const form_fields = (form, handle_change, is_edit = false) => (
     <div className="mt-3">
       <p className="form-section-label">Truck Information</p>
       <Row className="nc-modal-custom-row">
@@ -228,23 +228,25 @@ export default function Trucks() {
         </Col>
       </Row>
 
-      <Row className="nc-modal-custom-row">
-        <Col xs={6}>
-          STATUS
-          <div className="status-select-wrap">
-            <span className={`status-dot ${form.status}`}></span>
-            <Form.Select
-              name="status"
-              value={form.status}
-              className="nc-modal-custom-select"
-              onChange={handle_change}
-            >
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </Form.Select>
-          </div>
-        </Col>
-      </Row>
+      {is_edit && (
+        <Row className="nc-modal-custom-row">
+          <Col xs={6}>
+            STATUS
+            <div className="status-select-wrap">
+              <span className={`status-dot ${form.status}`}></span>
+              <Form.Select
+                name="status"
+                value={form.status}
+                className="nc-modal-custom-select"
+                onChange={handle_change}
+              >
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </Form.Select>
+            </div>
+          </Col>
+        </Row>
+      )}
 
       <p className="form-section-label" style={{ marginTop: "18px" }}>
         Fuel Details
@@ -438,7 +440,7 @@ export default function Trucks() {
         onSave={handle_update}
         isClicked={is_clicked}
       >
-        {form_fields(edit_form, handle_edit_change)}
+        {form_fields(edit_form, handle_edit_change, true)}
       </EditModal>
 
       <ViewModal

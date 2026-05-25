@@ -5,13 +5,11 @@ import Table from "../../Components/TableTemplate/Table";
 import AddModal from "../../Components/Modals/AddModal";
 import EditModal from "../../Components/Modals/EditModal";
 import ViewModal from "../../Components/Modals/ViewModal";
-import DeleteModal from "../../Components/Modals/DeleteModal";
 import InputError from "../../Components/InputError/InputError";
 import {
   getAllContractRoutes,
   createContractRoute,
   updateContractRoute,
-  deleteContractRoute,
 } from "../../Helpers/apiCalls/Contracts/contractApi";
 import { getAllContracts } from "../../Helpers/apiCalls/Contracts/contractApi";
 import { validateContractRoute } from "../../Helpers/Validation/Contracts/contractValidation";
@@ -33,7 +31,6 @@ export default function ContractRoutes() {
   const [show_add_modal, set_show_add_modal] = useState(false);
   const [show_edit_modal, set_show_edit_modal] = useState(false);
   const [show_view_modal, set_show_view_modal] = useState(false);
-  const [show_delete_modal, set_show_delete_modal] = useState(false);
 
   const empty_form = {
     contract_id: "",
@@ -56,39 +53,6 @@ export default function ContractRoutes() {
     set_edit_form((prev) => ({ ...prev, [name]: value }));
   };
 
-  function handle_select_change(e, row) {
-    set_selected_row(row);
-    set_edit_form(row);
-    if (e.target.value === "edit-route") set_show_edit_modal(true);
-    else if (e.target.value === "view-route") set_show_view_modal(true);
-    else if (e.target.value === "delete-route") set_show_delete_modal(true);
-    e.target.value = "";
-  }
-
-  function ActionBtn(row) {
-    return (
-      <Form.Select
-        name="action"
-        className="PO-select-action form-select"
-        onChange={(e) => handle_select_change(e, row)}
-        value={""}
-      >
-        <option defaultValue selected hidden>
-          Select
-        </option>
-        <option value="view-route" className="color-options">
-          View
-        </option>
-        <option value="edit-route" className="color-options">
-          Edit
-        </option>
-        <option value="delete-route" className="color-red">
-          Delete
-        </option>
-      </Form.Select>
-    );
-  }
-
   async function fetch_contracts() {
     const response = await getAllContracts();
     if (response.data && response.data.data) {
@@ -102,15 +66,17 @@ export default function ContractRoutes() {
       filter_contract_id || undefined,
     );
     if (response.data && response.data.data) {
-      const result = response.data.data.map((a) => ({
-        ...a,
-        action_btn: ActionBtn(a),
-      }));
-      set_route_data(result);
+      set_route_data(response.data.data);
     } else {
       set_route_data([]);
     }
     set_show_loader(false);
+  }
+
+  function handle_row_click(row) {
+    set_selected_row(row);
+    set_edit_form(row);
+    set_show_view_modal(true);
   }
 
   async function handle_create() {
@@ -141,17 +107,6 @@ export default function ContractRoutes() {
         toast.error("Failed to update route.", { style: toastStyle() });
       }
       set_is_clicked(false);
-    }
-  }
-
-  async function handle_delete() {
-    const response = await deleteContractRoute(selected_row.id);
-    if (response.data && response.data.response) {
-      toast.success("Route deleted.", { style: toastStyle() });
-      set_show_delete_modal(false);
-      fetch_routes();
-    } else {
-      toast.error("Failed to delete route.", { style: toastStyle() });
     }
   }
 
@@ -307,7 +262,6 @@ export default function ContractRoutes() {
               "DESTINATION",
               "DISTANCE (km)",
               "REMARKS",
-              "ACTIONS",
             ]}
             headerSelector={[
               "contract_name",
@@ -315,11 +269,11 @@ export default function ContractRoutes() {
               "destination",
               "distance_km",
               "remarks",
-              "action_btn",
             ]}
             tableData={route_data}
             showLoader={show_loader}
             withActionData={true}
+            onRowClick={handle_row_click}
           />
         </div>
       </div>
@@ -362,9 +316,7 @@ export default function ContractRoutes() {
                 {edit_form.origin} → {edit_form.destination}
               </span>
               <span className="view-subtitle">
-                {contract_options.find(
-                  (c) => String(c.id) === String(edit_form.contract_id),
-                )?.customer_name || `Contract #${edit_form.contract_id}`}
+                {edit_form.contract_name || `Contract #${edit_form.contract_id}`}
               </span>
             </div>
           </div>
@@ -424,12 +376,6 @@ export default function ContractRoutes() {
           </div>
         </div>
       </ViewModal>
-      <DeleteModal
-        text="route"
-        show={show_delete_modal}
-        onHide={() => set_show_delete_modal(false)}
-        onDelete={handle_delete}
-      />
     </div>
   );
 }

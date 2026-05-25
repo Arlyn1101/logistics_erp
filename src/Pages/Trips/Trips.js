@@ -5,14 +5,12 @@ import Table from "../../Components/TableTemplate/Table";
 import AddModal from "../../Components/Modals/AddModal";
 import EditModal from "../../Components/Modals/EditModal";
 import ViewModal from "../../Components/Modals/ViewModal";
-import DeleteModal from "../../Components/Modals/DeleteModal";
 import InputError from "../../Components/InputError/InputError";
 import {
   getAllTrips,
   searchTrips,
   createTrip,
   updateTrip,
-  deleteTrip,
 } from "../../Helpers/apiCalls/Trips/tripApi";
 import {
   getAllContracts,
@@ -61,7 +59,6 @@ export default function Trips() {
   const [show_add_modal, set_show_add_modal] = useState(false);
   const [show_edit_modal, set_show_edit_modal] = useState(false);
   const [show_view_modal, set_show_view_modal] = useState(false);
-  const [show_delete_modal, set_show_delete_modal] = useState(false);
 
   const empty_form = {
     contract_id: "",
@@ -114,38 +111,6 @@ export default function Trips() {
     set_edit_form((prev) => ({ ...prev, [field]: values }));
   };
 
-  function handle_select_change(e, row) {
-    set_selected_row(row);
-    set_edit_form({
-      ...row,
-      driver_ids: row.driver_ids || [],
-      helper_ids: row.helper_ids || [],
-    });
-    if (e.target.value === "edit-trip") {
-      fetch_routes_for_edit(row.contract_id);
-      // Fetch actual driver/helper IDs for prefill
-      getTripDetails(row.id).then((res) => {
-        if (res.data && res.data.data) {
-          const detail = res.data.data;
-          const d_ids = (detail.drivers || []).map((d) => String(d.driver_id));
-          const h_ids = (detail.helpers || []).map((h) => String(h.helper_id));
-          set_edit_form((prev) => ({
-            ...prev,
-            driver_ids: d_ids,
-            helper_ids: h_ids,
-          }));
-        }
-      });
-      set_show_edit_modal(true);
-    } else if (e.target.value === "view-trip") {
-      fetch_routes_for_edit(row.contract_id);
-      set_show_view_modal(true);
-    } else if (e.target.value === "delete-trip") {
-      set_show_delete_modal(true);
-    }
-    e.target.value = "";
-  }
-
   async function handle_row_click(row) {
     set_selected_trip(row);
     set_show_map_modal(true);
@@ -176,30 +141,6 @@ export default function Trips() {
     const response = await getAllContractRoutes(contract_id);
     if (response.data && response.data.data)
       set_edit_route_options(response.data.data);
-  }
-
-  function ActionBtn(row) {
-    return (
-      <Form.Select
-        name="action"
-        className="PO-select-action form-select"
-        onChange={(e) => handle_select_change(e, row)}
-        value={""}
-      >
-        <option defaultValue selected hidden>
-          Select
-        </option>
-        <option value="view-trip" className="color-options">
-          View
-        </option>
-        <option value="edit-trip" className="color-options">
-          Edit
-        </option>
-        <option value="delete-trip" className="color-red">
-          Delete
-        </option>
-      </Form.Select>
-    );
   }
 
   async function fetch_all_options() {
@@ -246,7 +187,6 @@ export default function Trips() {
           drivers_label: a.drivers_label || "—",
           helpers_label: a.helpers_label || "—",
         };
-        mapped.action_btn = ActionBtn(mapped);
         return mapped;
       });
       set_trip_data(result);
@@ -285,17 +225,6 @@ export default function Trips() {
         toast.error("Failed to update trip.", { style: toastStyle() });
       }
       set_is_clicked(false);
-    }
-  }
-
-  async function handle_delete() {
-    const response = await deleteTrip(selected_row.id);
-    if (response.data && response.data.status === "success") {
-      toast.success("Trip deleted.", { style: toastStyle() });
-      set_show_delete_modal(false);
-      fetch_trips();
-    } else {
-      toast.error("Failed to delete trip.", { style: toastStyle() });
     }
   }
 
@@ -527,7 +456,6 @@ export default function Trips() {
               "DRIVER(S)",
               "HELPER(S)",
               "REMARKS",
-              "ACTIONS",
             ]}
             headerSelector={[
               "trip_date",
@@ -537,7 +465,6 @@ export default function Trips() {
               "drivers_label",
               "helpers_label",
               "remarks",
-              "action_btn",
             ]}
             tableData={trip_data}
             showLoader={show_loader}
@@ -685,12 +612,6 @@ export default function Trips() {
           </div>
         </div>
       </ViewModal>
-      <DeleteModal
-        text="trip"
-        show={show_delete_modal}
-        onHide={() => set_show_delete_modal(false)}
-        onDelete={handle_delete}
-      />
 
       {show_map_modal && selected_trip && (
         <div
@@ -702,12 +623,41 @@ export default function Trips() {
               <span className="trip-modal-title">
                 TRIP-{String(selected_trip.id).padStart(4, "0")} — Trip Details
               </span>
-              <button
-                className="trip-modal-close"
-                onClick={() => set_show_map_modal(false)}
-              >
-                <FontAwesomeIcon icon={faTimes} />
-              </button>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <button
+                  className="add-btn"
+                  onClick={() => {
+                    set_edit_form({
+                      ...selected_trip,
+                      driver_ids: [],
+                      helper_ids: [],
+                    });
+                    fetch_routes_for_edit(selected_trip.contract_id);
+                    getTripDetails(selected_trip.id).then((res) => {
+                      if (res.data && res.data.data) {
+                        const detail = res.data.data;
+                        const d_ids = (detail.drivers || []).map((d) => String(d.driver_id));
+                        const h_ids = (detail.helpers || []).map((h) => String(h.helper_id));
+                        set_edit_form((prev) => ({
+                          ...prev,
+                          driver_ids: d_ids,
+                          helper_ids: h_ids,
+                        }));
+                      }
+                    });
+                    set_show_map_modal(false);
+                    set_show_edit_modal(true);
+                  }}
+                >
+                  Edit
+                </button>
+                <button
+                  className="trip-modal-close"
+                  onClick={() => set_show_map_modal(false)}
+                >
+                  <FontAwesomeIcon icon={faTimes} />
+                </button>
+              </div>
             </div>
             <div className="trip-modal-body">
               <div className="trip-modal-details">

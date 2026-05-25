@@ -59,35 +59,6 @@ export default function Drivers() {
     set_edit_form((prev) => ({ ...prev, [name]: value }));
   };
 
-  function handle_select_change(e, row) {
-    set_selected_row(row);
-    set_edit_form(row);
-    if (e.target.value === "edit-driver") set_show_edit_modal(true);
-    else if (e.target.value === "view-driver") set_show_view_modal(true);
-    e.target.value = "";
-  }
-
-  function ActionBtn(row) {
-    return (
-      <Form.Select
-        name="action"
-        className="PO-select-action form-select"
-        onChange={(e) => handle_select_change(e, row)}
-        value={""}
-      >
-        <option defaultValue selected hidden>
-          Select
-        </option>
-        <option value="view-driver" className="color-options">
-          View
-        </option>
-        <option value="edit-driver" className="color-options">
-          Edit
-        </option>
-      </Form.Select>
-    );
-  }
-
   function StatusBadge(status) {
     return <span className={`status-badge ${status}`}>{status}</span>;
   }
@@ -211,7 +182,7 @@ export default function Drivers() {
   }, []);
 
   // ─── Add / Edit form ───────────────────────────────────────────────────────
-  const form_fields = (form, handle_change) => {
+  const form_fields = (form, handle_change, is_edit = false) => {
     const status_dot_class =
       form.status === "active"
         ? "status-dot active"
@@ -264,21 +235,23 @@ export default function Drivers() {
               onChange={handle_change}
             />
           </Col>
-          <Col>
-            STATUS
-            <div className="status-select-wrap">
-              <span className={status_dot_class}></span>
-              <Form.Select
-                name="status"
-                value={form.status}
-                className="nc-modal-custom-select"
-                onChange={handle_change}
-              >
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </Form.Select>
-            </div>
-          </Col>
+          {is_edit && (
+            <Col>
+              STATUS
+              <div className="status-select-wrap">
+                <span className={status_dot_class}></span>
+                <Form.Select
+                  name="status"
+                  value={form.status}
+                  className="nc-modal-custom-select"
+                  onChange={handle_change}
+                >
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </Form.Select>
+              </div>
+            </Col>
+          )}
         </Row>
         <Row className="nc-modal-custom-row">
           <Col>
@@ -492,14 +465,6 @@ export default function Drivers() {
               "expiry_badge",
               "status_badge",
             ]}
-            headerSelector={[
-              "full_name",
-              "contact_number",
-              "license_number",
-              "expiry_badge",
-              "status_badge",
-              "action_btn",
-            ]}
             tableData={filtered_data}
             showLoader={show_loader}
             withActionData={true}
@@ -529,7 +494,7 @@ export default function Drivers() {
         onSave={handle_update}
         isClicked={is_clicked}
       >
-        {form_fields(edit_form, handle_edit_change)}
+        {form_fields(edit_form, handle_edit_change, true)}
       </EditModal>
 
       <ViewModal

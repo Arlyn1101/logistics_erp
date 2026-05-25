@@ -5,14 +5,12 @@ import Table from "../../Components/TableTemplate/Table";
 import AddModal from "../../Components/Modals/AddModal";
 import EditModal from "../../Components/Modals/EditModal";
 import ViewModal from "../../Components/Modals/ViewModal";
-import DeleteModal from "../../Components/Modals/DeleteModal";
 import InputError from "../../Components/InputError/InputError";
 import {
   getAllContracts,
   searchContracts,
   createContract,
   updateContract,
-  deleteContract,
 } from "../../Helpers/apiCalls/Contracts/contractApi";
 import { getAllCustomers } from "../../Helpers/apiCalls/Manage/customerApi";
 import { validateContract } from "../../Helpers/Validation/Contracts/contractValidation";
@@ -36,7 +34,6 @@ export default function Contracts() {
   const [show_add_modal, set_show_add_modal] = useState(false);
   const [show_edit_modal, set_show_edit_modal] = useState(false);
   const [show_view_modal, set_show_view_modal] = useState(false);
-  const [show_delete_modal, set_show_delete_modal] = useState(false);
 
   const empty_form = {
     customer_id: "",
@@ -62,39 +59,6 @@ export default function Contracts() {
     const { name, value } = e.target;
     set_edit_form((prev) => ({ ...prev, [name]: value }));
   };
-
-  function handle_select_change(e, row) {
-    set_selected_row(row);
-    set_edit_form(row);
-    if (e.target.value === "edit-contract") set_show_edit_modal(true);
-    else if (e.target.value === "view-contract") set_show_view_modal(true);
-    else if (e.target.value === "delete-contract") set_show_delete_modal(true);
-    e.target.value = "";
-  }
-
-  function ActionBtn(row) {
-    return (
-      <Form.Select
-        name="action"
-        className="PO-select-action form-select"
-        onChange={(e) => handle_select_change(e, row)}
-        value={""}
-      >
-        <option defaultValue selected hidden>
-          Select
-        </option>
-        <option value="view-contract" className="color-options">
-          View
-        </option>
-        <option value="edit-contract" className="color-options">
-          Edit
-        </option>
-        <option value="delete-contract" className="color-red">
-          Delete
-        </option>
-      </Form.Select>
-    );
-  }
 
   function StatusBadge(status) {
     return <span className={`status-badge ${status}`}>{status}</span>;
@@ -134,7 +98,6 @@ export default function Contracts() {
         fuel_price_fmt: `₱ ${formatAmount(a.fuel_price_per_liter)}`,
         excess_fmt: `₱ ${formatAmount(a.excess_trip_charge)}`,
         status_badge: StatusBadge(a.status),
-        action_btn: ActionBtn(a),
       }));
       set_contract_data(result);
       set_filtered_data(apply_tab_filter(result, active_tab));
@@ -144,6 +107,13 @@ export default function Contracts() {
     }
     set_show_loader(false);
   }
+
+  function handle_row_click(row) {
+    set_selected_row(row);
+    set_edit_form(row);
+    set_show_view_modal(true);
+  }
+
 
   async function handle_create() {
     if (validateContract(add_form, set_is_error)) {
@@ -178,23 +148,12 @@ export default function Contracts() {
     }
   }
 
-  async function handle_delete() {
-    const response = await deleteContract(selected_row.id);
-    if (response.data && response.data.response) {
-      toast.success("Contract deleted.", { style: toastStyle() });
-      set_show_delete_modal(false);
-      fetch_contracts();
-    } else {
-      toast.error("Failed to delete contract.", { style: toastStyle() });
-    }
-  }
-
   useEffect(() => {
     fetch_customers();
     fetch_contracts();
   }, []);
 
-  const form_fields = (form, handle_change, disabled = false) => (
+  const form_fields = (form, handle_change, disabled = false, is_edit = false) => (
     <div className="mt-3">
       <div className="form-section-label">Contract Information</div>
       <Row className="nc-modal-custom-row">
@@ -220,22 +179,24 @@ export default function Contracts() {
             message="Customer is required"
           />
         </Col>
-        <Col>
-          <div>STATUS</div>
-          <div className="status-select-wrap">
-            <span className={`status-dot ${form.status}`}></span>
-            <Form.Select
-              name="status"
-              value={form.status}
-              className="nc-modal-custom-select"
-              onChange={handle_change}
-            >
-              <option value="active">Active</option>
-              <option value="expired">Expired</option>
-              <option value="terminated">Terminated</option>
-            </Form.Select>
-          </div>
-        </Col>
+        {is_edit && (
+          <Col>
+            <div>STATUS</div>
+            <div className="status-select-wrap">
+              <span className={`status-dot ${form.status}`}></span>
+              <Form.Select
+                name="status"
+                value={form.status}
+                className="nc-modal-custom-select"
+                onChange={handle_change}
+              >
+                <option value="active">Active</option>
+                <option value="expired">Expired</option>
+                <option value="terminated">Terminated</option>
+              </Form.Select>
+            </div>
+          </Col>
+        )}
       </Row>
 
       <div className="form-section-label">Rate Details</div>
@@ -448,7 +409,6 @@ export default function Contracts() {
               "START DATE",
               "END DATE",
               "STATUS",
-              "ACTIONS",
             ]}
             headerSelector={[
               "customer_name",
@@ -459,11 +419,11 @@ export default function Contracts() {
               "start_date",
               "end_date",
               "status_badge",
-              "action_btn",
             ]}
             tableData={filtered_data}
             showLoader={show_loader}
             withActionData={true}
+            onRowClick={handle_row_click}
           />
         </div>
       </div>
@@ -486,7 +446,7 @@ export default function Contracts() {
         onSave={handle_update}
         isClicked={is_clicked}
       >
-        {form_fields(edit_form, handle_edit_change)}
+        {form_fields(edit_form, handle_edit_change, false, true)}
       </EditModal>
       <ViewModal
         title="CONTRACT DETAILS"
@@ -586,12 +546,6 @@ export default function Contracts() {
           </div>
         </div>
       </ViewModal>
-      <DeleteModal
-        text="contract"
-        show={show_delete_modal}
-        onHide={() => set_show_delete_modal(false)}
-        onDelete={handle_delete}
-      />
     </div>
   );
 }
