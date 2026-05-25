@@ -25,7 +25,15 @@ import { validateTrip } from "../../Helpers/Validation/Trips/tripValidation";
 import { toastStyle } from "../../Helpers/Utils/Common";
 import { getTripDetails } from "../../Helpers/apiCalls/Trips/tripApi";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faTimes, faCalendarAlt, faBuilding, faMapMarkerAlt, faTruck, faUser, faUsers } from "@fortawesome/free-solid-svg-icons";
+import {
+  faTimes,
+  faCalendarAlt,
+  faBuilding,
+  faMapMarkerAlt,
+  faTruck,
+  faUser,
+  faUsers,
+} from "@fortawesome/free-solid-svg-icons";
 import Select from "react-select";
 import toast from "react-hot-toast";
 import "../Manage/Manage.css";
@@ -49,7 +57,7 @@ export default function Trips() {
   const [helper_options, set_helper_options] = useState([]);
 
   const [show_map_modal, set_show_map_modal] = useState(false);
-  const [selected_trip, set_selected_trip]   = useState(null);
+  const [selected_trip, set_selected_trip] = useState(null);
   const [show_add_modal, set_show_add_modal] = useState(false);
   const [show_edit_modal, set_show_edit_modal] = useState(false);
   const [show_view_modal, set_show_view_modal] = useState(false);
@@ -115,6 +123,19 @@ export default function Trips() {
     });
     if (e.target.value === "edit-trip") {
       fetch_routes_for_edit(row.contract_id);
+      // Fetch actual driver/helper IDs for prefill
+      getTripDetails(row.id).then((res) => {
+        if (res.data && res.data.data) {
+          const detail = res.data.data;
+          const d_ids = (detail.drivers || []).map((d) => String(d.driver_id));
+          const h_ids = (detail.helpers || []).map((h) => String(h.helper_id));
+          set_edit_form((prev) => ({
+            ...prev,
+            driver_ids: d_ids,
+            helper_ids: h_ids,
+          }));
+        }
+      });
       set_show_edit_modal(true);
     } else if (e.target.value === "view-trip") {
       fetch_routes_for_edit(row.contract_id);
@@ -131,8 +152,12 @@ export default function Trips() {
     const response = await getTripDetails(row.id);
     if (response.data && response.data.data) {
       const detail = response.data.data;
-      const drivers_label = (detail.drivers || []).map(d => d.driver_name).join(", ");
-      const helpers_label = (detail.helpers || []).map(h => h.helper_name).join(", ");  
+      const drivers_label = (detail.drivers || [])
+        .map((d) => d.driver_name)
+        .join(", ");
+      const helpers_label = (detail.helpers || [])
+        .map((h) => h.helper_name)
+        .join(", ");
       set_selected_trip({ ...row, drivers_label, helpers_label });
     } else {
       set_selected_trip(row);
@@ -141,8 +166,8 @@ export default function Trips() {
 
   function build_maps_url(origin, destination) {
     const key = process.env.REACT_APP_GOOGLE_MAPS_KEY || "";
-    const o   = encodeURIComponent(origin);
-    const d   = encodeURIComponent(destination);
+    const o = encodeURIComponent(origin);
+    const d = encodeURIComponent(destination);
     return `https://www.google.com/maps/embed/v1/directions?origin=${o}&destination=${d}&key=${key}&mode=driving`;
   }
 
@@ -206,21 +231,24 @@ export default function Trips() {
       ? await searchTrips(search_text)
       : await getAllTrips();
     if (response.data && response.data.data) {
-      const result = response.data.data.map((a) => ({
-        ...a,
-        contract_label: a.customer_name || `Contract #${a.contract_id}`,
-        route_label:
-          a.route_origin && a.route_destination
-            ? `${a.route_origin} → ${a.route_destination}`
-            : `Route #${a.contract_route_id}`,
-        truck_label:
-          a.truck_unit_code && a.truck_plate_number
-            ? `${a.truck_unit_code} — ${a.truck_plate_number}`
-            : `Truck #${a.truck_id}`,
-        drivers_label: "",
-        helpers_label: "",
-        action_btn: ActionBtn(a),
-      }));
+      const result = response.data.data.map((a) => {
+        const mapped = {
+          ...a,
+          contract_label: a.customer_name || `Contract #${a.contract_id}`,
+          route_label:
+            a.route_origin && a.route_destination
+              ? `${a.route_origin} → ${a.route_destination}`
+              : `Route #${a.contract_route_id}`,
+          truck_label:
+            a.truck_unit_code && a.truck_plate_number
+              ? `${a.truck_unit_code} — ${a.truck_plate_number}`
+              : `Truck #${a.truck_id}`,
+          drivers_label: a.drivers_label || "—",
+          helpers_label: a.helpers_label || "—",
+        };
+        mapped.action_btn = ActionBtn(mapped);
+        return mapped;
+      });
       set_trip_data(result);
     } else {
       set_trip_data([]);
@@ -665,58 +693,84 @@ export default function Trips() {
       />
 
       {show_map_modal && selected_trip && (
-        <div className="trip-modal-overlay" onClick={() => set_show_map_modal(false)}>
+        <div
+          className="trip-modal-overlay"
+          onClick={() => set_show_map_modal(false)}
+        >
           <div className="trip-modal" onClick={(e) => e.stopPropagation()}>
             <div className="trip-modal-header">
               <span className="trip-modal-title">
                 TRIP-{String(selected_trip.id).padStart(4, "0")} — Trip Details
               </span>
-              <button className="trip-modal-close" onClick={() => set_show_map_modal(false)}>
+              <button
+                className="trip-modal-close"
+                onClick={() => set_show_map_modal(false)}
+              >
                 <FontAwesomeIcon icon={faTimes} />
               </button>
             </div>
             <div className="trip-modal-body">
               <div className="trip-modal-details">
                 <div className="trip-detail-row">
-                  <FontAwesomeIcon icon={faCalendarAlt} className="detail-icon" />
+                  <FontAwesomeIcon
+                    icon={faCalendarAlt}
+                    className="detail-icon"
+                  />
                   <div>
                     <span className="detail-label">Trip Date</span>
-                    <span className="detail-value">{selected_trip.trip_date}</span>
+                    <span className="detail-value">
+                      {selected_trip.trip_date}
+                    </span>
                   </div>
                 </div>
                 <div className="trip-detail-row">
                   <FontAwesomeIcon icon={faBuilding} className="detail-icon" />
                   <div>
                     <span className="detail-label">Customer</span>
-                    <span className="detail-value">{selected_trip.customer_name || "—"}</span>
+                    <span className="detail-value">
+                      {selected_trip.customer_name || "—"}
+                    </span>
                   </div>
                 </div>
                 <div className="trip-detail-row">
-                  <FontAwesomeIcon icon={faMapMarkerAlt} className="detail-icon" />
+                  <FontAwesomeIcon
+                    icon={faMapMarkerAlt}
+                    className="detail-icon"
+                  />
                   <div>
                     <span className="detail-label">Route</span>
-                    <span className="detail-value">{selected_trip.route_origin} → {selected_trip.route_destination}</span>
+                    <span className="detail-value">
+                      {selected_trip.route_origin} →{" "}
+                      {selected_trip.route_destination}
+                    </span>
                   </div>
                 </div>
                 <div className="trip-detail-row">
                   <FontAwesomeIcon icon={faTruck} className="detail-icon" />
                   <div>
                     <span className="detail-label">Truck</span>
-                    <span className="detail-value">{selected_trip.truck_unit_code} — {selected_trip.truck_plate_number}</span>
+                    <span className="detail-value">
+                      {selected_trip.truck_unit_code} —{" "}
+                      {selected_trip.truck_plate_number}
+                    </span>
                   </div>
                 </div>
                 <div className="trip-detail-row">
                   <FontAwesomeIcon icon={faUser} className="detail-icon" />
                   <div>
                     <span className="detail-label">Driver(s)</span>
-                    <span className="detail-value">{selected_trip.drivers_label || "—"}</span>
+                    <span className="detail-value">
+                      {selected_trip.drivers_label || "—"}
+                    </span>
                   </div>
                 </div>
                 <div className="trip-detail-row">
                   <FontAwesomeIcon icon={faUsers} className="detail-icon" />
                   <div>
                     <span className="detail-label">Helper(s)</span>
-                    <span className="detail-value">{selected_trip.helpers_label || "—"}</span>
+                    <span className="detail-value">
+                      {selected_trip.helpers_label || "—"}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -729,13 +783,24 @@ export default function Trips() {
                     style={{ border: 0, borderRadius: 8 }}
                     loading="lazy"
                     allowFullScreen
-                    src={build_maps_url(selected_trip.route_origin, selected_trip.route_destination)}
+                    src={build_maps_url(
+                      selected_trip.route_origin,
+                      selected_trip.route_destination,
+                    )}
                   />
                 ) : (
                   <div className="map-placeholder">
-                    <FontAwesomeIcon icon={faMapMarkerAlt} className="map-placeholder-icon" />
-                    <span className="map-placeholder-text">{selected_trip.route_origin} → {selected_trip.route_destination}</span>
-                    <span className="map-placeholder-sub">Add REACT_APP_GOOGLE_MAPS_KEY to .env to enable map</span>
+                    <FontAwesomeIcon
+                      icon={faMapMarkerAlt}
+                      className="map-placeholder-icon"
+                    />
+                    <span className="map-placeholder-text">
+                      {selected_trip.route_origin} →{" "}
+                      {selected_trip.route_destination}
+                    </span>
+                    <span className="map-placeholder-sub">
+                      Add REACT_APP_GOOGLE_MAPS_KEY to .env to enable map
+                    </span>
                   </div>
                 )}
               </div>

@@ -1,48 +1,120 @@
 import React from "react";
+import DataTable from "react-data-table-component";
+import { SyncLoader } from "react-spinners";
 import "./Table.css";
 
-function Table({ tableHeaders, headerSelector, tableData, showLoader, withActionData, onRowClick }) {
+const customStyles = {
+  headRow: {
+    style: {
+      backgroundColor: "#2d3e4e",
+      color: "#fff",
+      fontFamily: "var(--primary-font-bold)",
+      fontSize: "12px",
+      letterSpacing: "0.04em",
+      minHeight: "44px",
+    },
+  },
+  headCells: {
+    style: {
+      color: "#fff",
+      paddingLeft: "16px",
+      paddingRight: "16px",
+    },
+  },
+  rows: {
+    style: {
+      fontFamily: "var(--primary-font-medium)",
+      fontSize: "13px",
+      color: "#2d3e4e",
+      minHeight: "48px",
+      borderBottom: "1px solid #f0f2f5",
+    },
+    stripedStyle: {
+      backgroundColor: "#f7fbfd",
+    },
+  },
+  cells: {
+    style: {
+      paddingLeft: "16px",
+      paddingRight: "16px",
+    },
+  },
+  pagination: {
+    style: {
+      fontFamily: "var(--primary-font-medium)",
+      fontSize: "13px",
+      color: "#2d3e4e",
+      borderTop: "1px solid #edf0f4",
+    },
+  },
+};
+
+const paginationOptions = {
+  rowsPerPageText: "Rows per page:",
+  rangeSeparatorText: "of",
+  noRowsPerPage: false,
+};
+
+function NoData() {
+  return (
+    <div style={{
+      padding: "40px",
+      textAlign: "center",
+      fontFamily: "var(--primary-font-medium)",
+      fontSize: "14px",
+      color: "#8a9ab0",
+    }}>
+      No records found.
+    </div>
+  );
+}
+
+function Table({
+  tableHeaders,
+  headerSelector,
+  tableData,
+  showLoader,
+  withActionData,
+  onRowClick,
+}) {
   if (showLoader) {
     return (
-      <div className="table-wrapper">
-        <div className="table-loader">Loading...</div>
+      <div className="d-flex justify-content-center my-5">
+        <SyncLoader color="#5ac8e1" size={12} />
       </div>
     );
   }
 
+  const columns = tableHeaders.map((header, index) => ({
+    name: header,
+    selector: (row) => row[headerSelector[index]],
+    cell: (row) => {
+      const value = row[headerSelector[index]];
+      if (value === null || value === undefined) return "—";
+      return value;
+    },
+    sortable: headerSelector[index] !== "action_btn",
+    wrap: true,
+    minWidth: headerSelector[index] === "action_btn" ? "120px" : "100px",
+  }));
+
   return (
-    <div className="table-wrapper">
-      <table className="erp-table">
-        <thead>
-          <tr>
-            {tableHeaders.map((header, index) => (
-              <th key={index}>{header}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {tableData && tableData.length > 0 ? (
-            tableData.map((row, row_index) => (
-              <tr
-                key={row_index}
-                onClick={() => onRowClick && onRowClick(row)}
-                style={{ cursor: onRowClick ? "pointer" : "default" }}
-              >
-                {headerSelector.map((selector, col_index) => (
-                  <td key={col_index} onClick={selector === "action_btn" ? (e) => e.stopPropagation() : undefined}>
-                    {selector === "action_btn" ? row[selector] : row[selector] ?? "—"}
-                  </td>
-                ))}
-              </tr>
-            ))
-          ) : (
-            <tr className="no-data-row">
-              <td colSpan={tableHeaders.length}>No records found.</td>
-            </tr>
-          )}
-        </tbody>
-      </table>
-    </div>
+    <DataTable
+      columns={columns}
+      data={tableData}
+      pagination
+      paginationPerPage={10}
+      paginationRowsPerPageOptions={[10, 25, 50, 100]}
+      paginationComponentOptions={paginationOptions}
+      striped
+      fixedHeader
+      fixedHeaderScrollHeight="65vh"
+      customStyles={customStyles}
+      noDataComponent={<NoData />}
+      onRowClicked={onRowClick || undefined}
+      pointerOnHover={!!onRowClick}
+      highlightOnHover
+    />
   );
 }
 
