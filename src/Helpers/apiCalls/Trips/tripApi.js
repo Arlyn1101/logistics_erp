@@ -13,11 +13,11 @@ export const getAllTrips = async () => {
   }
 };
 
-export const searchTrips = async (search = null) => {
+export const searchTrips = async (filters = {}) => {
   try {
     const response = await getAPICall(`${BASE_URL}/trips/search`, {
       token: get_token(),
-      search,
+      ...filters,
     });
     return { data: response.data };
   } catch (error) {
@@ -30,6 +30,19 @@ export const getTripDetails = async (trip_id) => {
     const response = await getAPICall(`${BASE_URL}/trips/details`, {
       token: get_token(),
       trip_id,
+    });
+    return { data: response.data };
+  } catch (error) {
+    return { error: error.response };
+  }
+};
+
+export const getContractTripInfo = async (contract_id, trip_date) => {
+  try {
+    const response = await getAPICall(`${BASE_URL}/trips/get_contract_trip_info`, {
+      token: get_token(),
+      contract_id,
+      trip_date,
     });
     return { data: response.data };
   } catch (error) {
@@ -74,11 +87,24 @@ export const deleteTrip = async (trip_id) => {
   }
 };
 
-export const computeBilling = async (trip_id) => {
+export const computeBilling = async (contract_id, month) => {
   try {
     const response = await getAPICall(`${BASE_URL}/trips/compute_billing`, {
       token: get_token(),
-      trip_id,
+      contract_id,
+      month,
+    });
+    return { data: response.data };
+  } catch (error) {
+    return { error: error.response };
+  }
+};
+
+export const getTripSuggestions = async (keyword) => {
+  try {
+    const response = await getAPICall(`${BASE_URL}/trips/get_suggestions`, {
+      token: get_token(),
+      keyword,
     });
     return { data: response.data };
   } catch (error) {

@@ -15,6 +15,9 @@ import {
 import { validateTruck } from "../../Helpers/Validation/Manage/truckValidation";
 import { toastStyle } from "../../Helpers/Utils/Common";
 import toast from "react-hot-toast";
+import moment from "moment";                      
+import ReactDatePicker from "react-datepicker";  
+import "react-datepicker/dist/react-datepicker.css"; 
 import "../Manage/Manage.css";
 import "../../Components/Navbar/Navbar.css";
 import "../../Components/Modals/Modal.css";
@@ -37,8 +40,10 @@ export default function Trucks() {
   const empty_form = {
     unit_code: "",
     plate_number: "",
+    truck_type: "",  
     color: "",
     capacity: "",
+    or_expiry: "",  
     km_per_liter: "",
     status: "active",
     remarks: "",
@@ -60,6 +65,21 @@ export default function Trucks() {
     const { name, value } = e.target;
     set_edit_form((prev) => ({ ...prev, [name]: value }));
   };
+
+  const handle_add_or_expiry_change = (date) => {
+    set_add_form((prev) => ({
+      ...prev,
+      or_expiry: moment(date).format("YYYY-MM-DD"),
+    }));
+  };
+
+  const handle_edit_or_expiry_change = (date) => {
+    set_edit_form((prev) => ({
+      ...prev,
+      or_expiry: moment(date).format("YYYY-MM-DD"),
+    }));
+  };
+
 
   function handle_select_change(e, row) {
     set_selected_row(row);
@@ -168,6 +188,36 @@ export default function Trucks() {
   const form_fields = (form, handle_change, is_edit = false) => (
     <div className="mt-3">
       <p className="form-section-label">Truck Information</p>
+      <Row className="nc-modal-custom-row">
+        <Col>
+          <div style={{ marginBottom: "6px", fontWeight: "600", fontSize: "13px", color: "#2d3e4e" }}>
+            TRUCK TYPE
+          </div>
+          <Form.Select
+            name="truck_type"
+            value={form.truck_type}
+            className="nc-modal-custom-select"
+            onChange={handle_change}
+          >
+            <option value="">Select</option>
+            <option value="Wing Van">Wing Van</option>
+            <option value="Closed Van">Closed Van</option>
+            <option value="Flatbed">Flatbed</option>
+            <option value="Dump Truck">Dump Truck</option>
+            <option value="Tractor Head">Tractor Head</option>
+          </Form.Select>
+        </Col>
+        <Col>
+          OR EXPIRY
+          <ReactDatePicker
+            selected={form.or_expiry ? new Date(form.or_expiry) : null}
+            onChange={form === add_form ? handle_add_or_expiry_change : handle_edit_or_expiry_change}
+            dateFormat="yyyy-MM-dd"
+            className="nc-modal-custom-input w-100"
+            placeholderText="Select date"
+          />
+        </Col>
+      </Row>
       <Row className="nc-modal-custom-row">
         <Col>
           UNIT CODE <span className="required-icon">*</span>
@@ -398,17 +448,19 @@ export default function Trucks() {
             tableHeaders={[
               "UNIT CODE",
               "PLATE NO.",
+              "TRUCK TYPE",     
               "COLOR",
               "CAPACITY (tons)",
-              "KM/LITER",
+              "OR EXPIRY", 
               "STATUS",
             ]}
             headerSelector={[
               "unit_code",
               "plate_number",
+              "truck_type",  
               "color",
               "capacity",
-              "km_per_liter",
+              "or_expiry", 
               "status_badge",
             ]}
             tableData={filtered_data}

@@ -4,13 +4,15 @@ import Navbar from "../../Components/Navbar/Navbar";
 import Table from "../../Components/TableTemplate/Table";
 import AddModal from "../../Components/Modals/AddModal";
 import EditModal from "../../Components/Modals/EditModal";
-import ViewModal from "../../Components/Modals/ViewModal";
 import InputError from "../../Components/InputError/InputError";
 import {
   getAllTrips,
   searchTrips,
   createTrip,
   updateTrip,
+  getTripDetails,
+  getContractTripInfo,
+  getTripSuggestions,
 } from "../../Helpers/apiCalls/Trips/tripApi";
 import {
   getAllContracts,
@@ -19,9 +21,10 @@ import {
 import { getAllTrucks } from "../../Helpers/apiCalls/Manage/truckApi";
 import { getAllDrivers } from "../../Helpers/apiCalls/Manage/driverApi";
 import { getAllHelpers } from "../../Helpers/apiCalls/Manage/helperApi";
+import { getAllCustomers } from "../../Helpers/apiCalls/Manage/customerApi";
 import { validateTrip } from "../../Helpers/Validation/Trips/tripValidation";
 import { toastStyle, dateFormat } from "../../Helpers/Utils/Common";
-import { getTripDetails } from "../../Helpers/apiCalls/Trips/tripApi";
+import { Select as AntSelect, DatePicker as AntDatePicker } from "antd";
 import moment from "moment";
 import ReactDatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -34,6 +37,8 @@ import {
   faTruck,
   faUser,
   faUsers,
+  faGasPump,
+  faExclamationTriangle,
 } from "@fortawesome/free-solid-svg-icons";
 import Select from "react-select";
 import toast from "react-hot-toast";
@@ -42,101 +47,178 @@ import "../../Components/Navbar/Navbar.css";
 import "../../Components/Modals/Modal.css";
 import "../Dashboard/Dashboard.css";
 
+const { RangePicker } = AntDatePicker;
+
 export default function Trips() {
   const [inactive, set_inactive] = useState(false);
   const [show_loader, set_show_loader] = useState(false);
   const [is_clicked, set_is_clicked] = useState(false);
-  const [search_text, set_search_text] = useState("");
   const [trip_data, set_trip_data] = useState([]);
-  const [selected_row, set_selected_row] = useState({});
+  const [selected_trip, set_selected_trip] = useState(null);
+  const [show_add_modal, set_show_add_modal] = useState(false);
+  const [show_edit_modal, set_show_edit_modal] = useState(false);
+  const [show_map_modal, set_show_map_modal] = useState(false);
 
-  // Options
+  // Dropdown options
+  const [customer_options, set_customer_options] = useState([]);
   const [contract_options, set_contract_options] = useState([]);
-  const [route_options, set_route_options] = useState([]);
   const [truck_options, set_truck_options] = useState([]);
   const [driver_options, set_driver_options] = useState([]);
   const [helper_options, set_helper_options] = useState([]);
 
-  const [show_map_modal, set_show_map_modal] = useState(false);
-  const [selected_trip, set_selected_trip] = useState(null);
-  const [show_add_modal, set_show_add_modal] = useState(false);
-  const [show_edit_modal, set_show_edit_modal] = useState(false);
-  const [show_view_modal, set_show_view_modal] = useState(false);
+
+  // Contract trip info (for log trip form)
+  const [contract_trip_info, set_contract_trip_info] = useState(null);
+  const [fuel_preview, set_fuel_preview] = useState(0);
 
   const empty_form = {
     contract_id: "",
     contract_route_id: "",
     truck_id: "",
     trip_date: "",
-    driver_ids: [],
-    helper_ids: [],
+    driver_id: "",
+    helper_id: "",
+    actual_fuel_price: "",
     remarks: "",
   };
+
   const [add_form, set_add_form] = useState({ ...empty_form });
   const [edit_form, set_edit_form] = useState({ ...empty_form });
-  const [is_error, set_is_error] = useState({});
-
-  // When contract changes, filter routes
   const [add_route_options, set_add_route_options] = useState([]);
   const [edit_route_options, set_edit_route_options] = useState([]);
+  const [is_error, set_is_error] = useState({});
+  const [suggestions, set_suggestions]         = useState([]);
+  const [suggestion_loading, set_suggestion_loading] = useState(false);
+  const [active_filter, set_active_filter]     = useState(null);
+  const [date_range, set_date_range]           = useState([null, null]);
+  const [search_value, set_search_value] = useState(null);
+
+  // When contract or trip_date changes in add form, fetch contract trip info
+  async function fetch_contract_trip_info(contract_id, trip_date, set_form) {
+    if (!contract_id || !trip_date) return;
+    const res = await getContractTripInfo(contract_id, trip_date);
+    if (res.data && res.data.data) {
+      set_contract_trip_info(res.data.data);
+    }
+  }
+
+  // Compute fuel preview on the fly
+  function compute_fuel_preview(actual_price, route_opts, form) {
+    if (!actual_price || !form.contract_route_id || !form.truck_id) {
+      set_fuel_preview(0);
+      return;
+    }
+    const agreed = contract_trip_info?.fuel_price_per_liter ?? 0;
+    const route  = route_opts.find((r) => String(r.id) === String(form.contract_route_id));
+    const truck  = truck_options.find((t) => String(t.id) === String(form.truck_id));
+
+    if (!route || !truck || !route.distance_km || !truck.km_per_liter) {
+      set_fuel_preview(0);
+      return;
+    }
+
+    const diff = parseFloat(actual_price) - parseFloat(agreed);
+    if (diff <= 0) {
+      set_fuel_preview(0);
+      return;
+    }
+
+    const liters  = parseFloat(route.distance_km) / parseFloat(truck.km_per_liter);
+    const preview = Math.round(diff * liters * 100) / 100;
+    set_fuel_preview(preview);
+  }
 
   const handle_add_change = async (e) => {
     const { name, value } = e.target;
-    set_add_form((prev) => ({ ...prev, [name]: value }));
+    const updated = { ...add_form, [name]: value };
+    set_add_form(updated);
+
     if (name === "contract_id") {
-      const response = await getAllContractRoutes(value);
-      if (response.data && response.data.data)
-        set_add_route_options(response.data.data);
-      else set_add_route_options([]);
+      const res = await getAllContractRoutes(value);
+      const routes = res.data?.data ?? [];
+      set_add_route_options(routes);
       set_add_form((prev) => ({ ...prev, contract_route_id: "" }));
+      set_contract_trip_info(null);
+      set_fuel_preview(0);
+      if (value && updated.trip_date) {
+        fetch_contract_trip_info(value, updated.trip_date);
+      }
+    }
+
+    if (name === "trip_date") {
+      if (updated.contract_id && value) {
+        fetch_contract_trip_info(updated.contract_id, value);
+      }
+    }
+
+    if (name === "actual_fuel_price") {
+      compute_fuel_preview(value, add_route_options, updated);
+    }
+
+    if (name === "contract_route_id" || name === "truck_id") {
+      compute_fuel_preview(updated.actual_fuel_price, add_route_options, updated);
     }
   };
 
   const handle_edit_change = async (e) => {
     const { name, value } = e.target;
-    set_edit_form((prev) => ({ ...prev, [name]: value }));
+    const updated = { ...edit_form, [name]: value };
+    set_edit_form(updated);
+
     if (name === "contract_id") {
-      const response = await getAllContractRoutes(value);
-      if (response.data && response.data.data)
-        set_edit_route_options(response.data.data);
-      else set_edit_route_options([]);
+      const res = await getAllContractRoutes(value);
+      const routes = res.data?.data ?? [];
+      set_edit_route_options(routes);
       set_edit_form((prev) => ({ ...prev, contract_route_id: "" }));
+    }
+
+    if (name === "actual_fuel_price") {
+      compute_fuel_preview(value, edit_route_options, updated);
+    }
+
+    if (name === "contract_route_id" || name === "truck_id") {
+      compute_fuel_preview(updated.actual_fuel_price, edit_route_options, updated);
     }
   };
 
   const handle_add_date_change = (date) => {
-    set_add_form((prev) => ({ ...prev, trip_date: moment(date).format("YYYY-MM-DD") }));
+    const formatted = moment(date).format("YYYY-MM-DD");
+    set_add_form((prev) => ({ ...prev, trip_date: formatted }));
+    if (add_form.contract_id) {
+      fetch_contract_trip_info(add_form.contract_id, formatted);
+    }
   };
 
   const handle_edit_date_change = (date) => {
-    set_edit_form((prev) => ({ ...prev, trip_date: moment(date).format("YYYY-MM-DD") }));
-  };
-
-  const handle_add_multi = (e, field) => {
-    const values = Array.from(e.target.selectedOptions, (opt) => opt.value);
-    set_add_form((prev) => ({ ...prev, [field]: values }));
-  };
-
-  const handle_edit_multi = (e, field) => {
-    const values = Array.from(e.target.selectedOptions, (opt) => opt.value);
-    set_edit_form((prev) => ({ ...prev, [field]: values }));
+    set_edit_form((prev) => ({
+      ...prev,
+      trip_date: moment(date).format("YYYY-MM-DD"),
+    }));
   };
 
   async function handle_row_click(row) {
     set_selected_trip(row);
     set_show_map_modal(true);
-    const response = await getTripDetails(row.id);
-    if (response.data && response.data.data) {
-      const detail = response.data.data;
-      const drivers_label = (detail.drivers || [])
-        .map((d) => d.driver_name)
-        .join(", ");
-      const helpers_label = (detail.helpers || [])
-        .map((h) => h.helper_name)
-        .join(", ");
-      set_selected_trip({ ...row, drivers_label, helpers_label });
-    } else {
-      set_selected_trip(row);
+    const res = await getTripDetails(row.id);
+    if (res.data?.data) {
+      const detail = res.data.data;
+      set_selected_trip({
+        ...row,
+        driver_label: detail.driver
+          ? detail.driver.driver_name
+          : row.driver_label || "—",
+        helper_label: detail.helper
+          ? detail.helper.helper_name
+          : row.helper_label || "—",
+        agreed_fuel_price:      detail.agreed_fuel_price,
+        actual_fuel_price:      detail.actual_fuel_price,
+        fuel_additional_charge: detail.fuel_additional_charge,
+        excess_charge:          detail.excess_charge,
+        is_excess:              detail.is_excess,
+        route_distance_km:      detail.route_distance_km,
+        driver_id:              detail.driver?.driver_id ?? "",
+        helper_id:              detail.helper?.helper_id ?? "",
+      });
     }
   }
 
@@ -149,58 +231,53 @@ export default function Trips() {
 
   async function fetch_routes_for_edit(contract_id) {
     if (!contract_id) return;
-    const response = await getAllContractRoutes(contract_id);
-    if (response.data && response.data.data)
-      set_edit_route_options(response.data.data);
+    const res = await getAllContractRoutes(contract_id);
+    if (res.data?.data) set_edit_route_options(res.data.data);
   }
 
   async function fetch_all_options() {
-    const [contracts_res, trucks_res, drivers_res, helpers_res] =
+    const [customers_res, contracts_res, trucks_res, drivers_res, helpers_res] =
       await Promise.all([
+        getAllCustomers(),
         getAllContracts(),
         getAllTrucks(),
         getAllDrivers(),
         getAllHelpers(),
       ]);
+    if (customers_res.data?.data) set_customer_options(customers_res.data.data);
     if (contracts_res.data?.data) set_contract_options(contracts_res.data.data);
     if (trucks_res.data?.data)
-      set_truck_options(
-        trucks_res.data.data.filter((t) => t.status === "active"),
-      );
+      set_truck_options(trucks_res.data.data.filter((t) => t.status === "active"));
     if (drivers_res.data?.data)
-      set_driver_options(
-        drivers_res.data.data.filter((d) => d.status === "active"),
-      );
+      set_driver_options(drivers_res.data.data.filter((d) => d.status === "active"));
     if (helpers_res.data?.data)
-      set_helper_options(
-        helpers_res.data.data.filter((h) => h.status === "active"),
-      );
+      set_helper_options(helpers_res.data.data.filter((h) => h.status === "active"));
   }
 
-  async function fetch_trips() {
+  async function fetch_trips(filters = {}) {
     set_show_loader(true);
-    const response = search_text
-      ? await searchTrips(search_text)
+    const has_filter = Object.values(filters).some((v) => v !== "" && v !== null);
+    const response = has_filter
+      ? await searchTrips(filters)
       : await getAllTrips();
-    if (response.data && response.data.data) {
-      const result = response.data.data.map((a) => {
-        const mapped = {
-          ...a,
-          contract_label: a.customer_name || `Contract #${a.contract_id}`,
-          route_label:
-            a.route_origin && a.route_destination
-              ? `${a.route_origin} → ${a.route_destination}`
-              : `Route #${a.contract_route_id}`,
-          truck_label:
-            a.truck_unit_code && a.truck_plate_number
-              ? `${a.truck_unit_code} — ${a.truck_plate_number}`
-              : `Truck #${a.truck_id}`,
-          drivers_label: a.drivers_label || "—",
-          helpers_label: a.helpers_label || "—",
-          trip_date_fmt: dateFormat(a.trip_date),
-        };
-        return mapped;
-      });
+
+    if (response.data?.data) {
+      const result = response.data.data.map((a) => ({
+        ...a,
+        contract_label:  a.contract_number ? `#${a.contract_number}` : `#${a.contract_id}`,
+        customer_label:  a.customer_name   || "—",
+        route_label:
+          a.route_origin && a.route_destination
+            ? `${a.route_origin} → ${a.route_destination}`
+            : `Route #${a.contract_route_id}`,
+        truck_label:
+          a.truck_unit_code && a.truck_plate_number
+            ? `${a.truck_unit_code} — ${a.truck_plate_number}`
+            : `Truck #${a.truck_id}`,
+        driver_label:  a.driver_label  || "—",
+        helper_label:  a.helper_label  || "—",
+        trip_date_fmt: dateFormat(a.trip_date),
+      }));
       set_trip_data(result);
     } else {
       set_trip_data([]);
@@ -212,11 +289,13 @@ export default function Trips() {
     if (validateTrip(add_form, set_is_error)) {
       set_is_clicked(true);
       const response = await createTrip(add_form);
-      if (response.data && response.data.status === "success") {
+      if (response.data?.status === "success") {
         toast.success("Trip logged successfully!", { style: toastStyle() });
         set_show_add_modal(false);
         set_add_form({ ...empty_form });
         set_add_route_options([]);
+        set_contract_trip_info(null);
+        set_fuel_preview(0);
         fetch_trips();
       } else {
         toast.error("Failed to log trip.", { style: toastStyle() });
@@ -229,42 +308,175 @@ export default function Trips() {
     if (validateTrip(edit_form, set_is_error)) {
       set_is_clicked(true);
       const response = await updateTrip(edit_form);
-      if (response.data && response.data.status === "success") {
+      if (response.data?.status === "success") {
         toast.success("Trip updated successfully!", { style: toastStyle() });
         set_show_edit_modal(false);
+        set_fuel_preview(0);
         fetch_trips();
       } else {
         toast.error("Failed to update trip.", { style: toastStyle() });
-      }
+      } 
       set_is_clicked(false);
     }
   }
+
+  async function handle_suggestion_search(keyword) {
+  if (!keyword || keyword.trim().length < 1) {
+    set_suggestions([]);
+    return;
+  }
+  set_suggestion_loading(true);
+  const res = await getTripSuggestions(keyword);
+  if (res.data?.data) {
+    const data = res.data.data;
+    const type_map = [
+      { key: 'customers', type: 'customer_id', icon: '👤', label: 'Customer' },
+      { key: 'contracts', type: 'contract_id', icon: '📄', label: 'Contract' },
+      { key: 'trucks',    type: 'truck_id',    icon: '🚛', label: 'Truck'    },
+      { key: 'drivers',   type: 'driver_id',   icon: '🧑', label: 'Driver'   },
+      { key: 'helpers',   type: 'helper_id',   icon: '👷', label: 'Helper'   },
+      { key: 'routes',    type: 'route_id',    icon: '📍', label: 'Route'    },
+    ];
+    const options = type_map.flatMap(({ key, type, icon, label }) =>
+      (data[key] || []).map((item) => ({
+        value: `${type}::${item.id}`,
+        label: `${icon} ${item.label}`,
+        sublabel: label,
+      }))
+    );
+    set_suggestions(options);
+  }
+  set_suggestion_loading(false);
+}
+
+function handle_suggestion_select(value, option) {
+  const [type, id] = value.split('::');
+  set_active_filter({ type, id, label: option.label });
+  const filters = {
+    customer_id: '',
+    contract_id: '',
+    truck_id:    '',
+    driver_id:   '',
+    helper_id:   '',
+    route_id:    '',
+    date_from:   date_range[0] ? moment(date_range[0]).format('YYYY-MM-DD') : '',
+    date_to:     date_range[1] ? moment(date_range[1]).format('YYYY-MM-DD') : '',
+    [type]:      id,
+  };
+  fetch_trips(filters);
+}
+
+function handle_range_change(dates) {
+  set_date_range(dates || [null, null]);
+  const filters = {
+    customer_id: '',
+    contract_id: '',
+    truck_id:    '',
+    driver_id:   '',
+    helper_id:   '',
+    route_id:    '',
+    ...(active_filter ? { [active_filter.type]: active_filter.id } : {}),
+    date_from: dates?.[0] ? moment(dates[0]).format('YYYY-MM-DD') : '',
+    date_to:   dates?.[1] ? moment(dates[1]).format('YYYY-MM-DD') : '',
+  };
+  fetch_trips(filters);
+}
+
+function handle_reset_filter() {
+  set_active_filter(null);
+  set_date_range([null, null]);
+  set_suggestions([]);
+  set_search_value(null);
+  fetch_trips({});
+}
+
 
   useEffect(() => {
     fetch_all_options();
     fetch_trips();
   }, []);
 
-  const form_fields = (
-    form,
-    handle_change,
-    handle_multi,
-    route_opts,
-    set_form,
-    disabled = false,
-  ) => (
+  // Fuel info banner shown inside log trip form
+  const fuel_info_banner = (form, route_opts) => {
+    if (!contract_trip_info) return null;
+    const agreed      = parseFloat(contract_trip_info.fuel_price_per_liter ?? 0);
+    const actual      = parseFloat(form.actual_fuel_price ?? 0);
+    const route       = route_opts.find((r) => String(r.id) === String(form.contract_route_id));
+    const truck       = truck_options.find((t) => String(t.id) === String(form.truck_id));
+    const distance_km = route ? parseFloat(route.distance_km ?? 0) : 0;
+    const kpl         = truck ? parseFloat(truck.km_per_liter ?? 0) : 0;
+    const liters      = kpl > 0 && distance_km > 0 ? (distance_km / kpl).toFixed(2) : "—";
+
+    return (
+      <div className="fuel-info-banner">
+        <div className="fuel-info-row">
+          <span>Agreed fuel price:</span>
+          <strong>₱{agreed.toFixed(2)}/L</strong>
+        </div>
+        {route && (
+          <div className="fuel-info-row">
+            <span>Route distance:</span>
+            <strong>{distance_km} km</strong>
+          </div>
+        )}
+        {truck && kpl > 0 && (
+          <div className="fuel-info-row">
+            <span>Truck fuel efficiency:</span>
+            <strong>{kpl} km/L → ~{liters} L needed</strong>
+          </div>
+        )}
+        {actual > 0 && actual > agreed && (
+          <div className="fuel-info-row fuel-excess">
+            <FontAwesomeIcon icon={faExclamationTriangle} />
+            <span>Fuel surcharge:</span>
+            <strong>₱{fuel_preview.toFixed(2)}</strong>
+          </div>
+        )}
+        {actual > 0 && actual <= agreed && (
+          <div className="fuel-info-row fuel-ok">
+            <FontAwesomeIcon icon={faGasPump} />
+            <span>Actual price is within agreed rate — no fuel surcharge.</span>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const trip_count_banner = () => {
+    if (!contract_trip_info) return null;
+    const { trips_this_month, included_trips, next_is_excess, excess_trip_charge } =
+      contract_trip_info;
+    return (
+      <div className={`trip-count-banner ${next_is_excess ? "excess" : "ok"}`}>
+        <span>
+          Trips this month: <strong>{trips_this_month} / {included_trips}</strong>
+        </span>
+        {next_is_excess ? (
+          <span className="excess-warning">
+            <FontAwesomeIcon icon={faExclamationTriangle} />
+            {" "}This trip will be an <strong>excess trip</strong> — ₱{parseFloat(excess_trip_charge).toFixed(2)} charge applies.
+          </span>
+        ) : (
+          <span className="trips-remaining">
+            {included_trips - trips_this_month} trip(s) remaining in included trips.
+          </span>
+        )}
+      </div>
+    );
+  };
+
+  const form_fields = (form, handle_change, route_opts, set_form, is_edit = false) => (
     <div className="mt-3">
       <div className="form-section-label">Trip Information</div>
       <Row className="nc-modal-custom-row">
         <Col>
-          <div>
-            CONTRACT <span className="required-icon">*</span>
-          </div>
+          <div>CONTRACT <span className="required-icon">*</span></div>
           <Form.Select
             name="contract_id"
             value={form.contract_id}
             className="nc-modal-custom-select"
             onChange={handle_change}
+            disabled={is_edit}
           >
             <option value="">-- Select Contract --</option>
             {contract_options.map((c) => (
@@ -273,15 +485,26 @@ export default function Trips() {
               </option>
             ))}
           </Form.Select>
-          <InputError
-            isValid={is_error.contract_id}
-            message="Contract is required"
-          />
+          <InputError isValid={is_error.contract_id} message="Contract is required" />
         </Col>
         <Col>
-          <div>
-            ROUTE <span className="required-icon">*</span>
-          </div>
+          <div>TRIP DATE <span className="required-icon">*</span></div>
+          <ReactDatePicker
+            selected={form.trip_date ? new Date(form.trip_date) : null}
+            onChange={is_edit ? handle_edit_date_change : handle_add_date_change}
+            dateFormat="yyyy-MM-dd"
+            className="nc-modal-custom-input w-100"
+            placeholderText="Select date"
+          />
+          <InputError isValid={is_error.trip_date} message="Trip date is required" />
+        </Col>
+      </Row>
+
+      {trip_count_banner()}
+
+      <Row className="nc-modal-custom-row">
+        <Col>
+          <div>ROUTE <span className="required-icon">*</span></div>
           <Form.Select
             name="contract_route_id"
             value={form.contract_route_id}
@@ -293,21 +516,14 @@ export default function Trips() {
             {route_opts.map((r) => (
               <option key={r.id} value={r.id}>
                 {r.origin} → {r.destination}
+                {r.distance_km ? ` (${r.distance_km} km)` : ""}
               </option>
             ))}
           </Form.Select>
-          <InputError
-            isValid={is_error.contract_route_id}
-            message="Route is required"
-          />
+          <InputError isValid={is_error.contract_route_id} message="Route is required" />
         </Col>
-      </Row>
-
-      <Row className="nc-modal-custom-row">
         <Col>
-          <div>
-            TRUCK <span className="required-icon">*</span>
-          </div>
+          <div>TRUCK <span className="required-icon">*</span></div>
           <Form.Select
             name="truck_id"
             value={form.truck_id}
@@ -318,96 +534,81 @@ export default function Trips() {
             {truck_options.map((t) => (
               <option key={t.id} value={t.id}>
                 {t.plate_number} — {t.truck_type}
+                {t.km_per_liter ? ` (${t.km_per_liter} km/L)` : ""}
               </option>
             ))}
           </Form.Select>
           <InputError isValid={is_error.truck_id} message="Truck is required" />
-        </Col>
-        <Col>
-          <div>
-            TRIP DATE <span className="required-icon">*</span>
-          </div>
-          <ReactDatePicker
-            selected={form.trip_date ? new Date(form.trip_date) : null}
-            onChange={form === add_form ? handle_add_date_change : handle_edit_date_change}
-            dateFormat="yyyy-MM-dd"
-            className="nc-modal-custom-input w-100"
-            placeholderText="Select date"
-          />
-          <InputError
-            isValid={is_error.trip_date}
-            message="Trip date is required"
-          />
         </Col>
       </Row>
 
       <div className="form-section-label">Personnel</div>
       <Row className="nc-modal-custom-row">
         <Col>
-          <div>DRIVER(S)</div>
-          <Select
-            isMulti
-            options={driver_options.map((d) => ({
-              value: d.id,
-              label: `${d.first_name} ${d.last_name}`,
-            }))}
-            value={driver_options
-              .filter((d) => form.driver_ids.includes(String(d.id)))
-              .map((d) => ({
-                value: d.id,
-                label: `${d.first_name} ${d.last_name}`,
-              }))}
-            onChange={(selected) =>
-              set_form((prev) => ({
-                ...prev,
-                driver_ids: selected.map((s) => String(s.value)),
-              }))
-            }
-            placeholder="Select driver(s)..."
-            styles={{
-              control: (base) => ({
-                ...base,
-                borderRadius: 10,
-                borderColor: "#B9B9B9",
-                fontFamily: "var(--primary-font-medium)",
-                fontSize: 14,
-              }),
-            }}
-          />
+          <div>DRIVER <span className="required-icon">*</span></div>
+          <Form.Select
+            name="driver_id"
+            value={form.driver_id}
+            className="nc-modal-custom-select"
+            onChange={handle_change}
+          >
+            <option value="">-- Select Driver --</option>
+            {driver_options.map((d) => (
+              <option key={d.id} value={d.id}>
+                {d.first_name} {d.last_name}
+              </option>
+            ))}
+          </Form.Select>
+          <InputError isValid={is_error.driver_id} message="Driver is required" />
         </Col>
         <Col>
-          <div>HELPER(S)</div>
-          <Select
-            isMulti
-            options={helper_options.map((h) => ({
-              value: h.id,
-              label: `${h.first_name} ${h.last_name}`,
-            }))}
-            value={helper_options
-              .filter((h) => form.helper_ids.includes(String(h.id)))
-              .map((h) => ({
-                value: h.id,
-                label: `${h.first_name} ${h.last_name}`,
-              }))}
-            onChange={(selected) =>
-              set_form((prev) => ({
-                ...prev,
-                helper_ids: selected.map((s) => String(s.value)),
-              }))
-            }
-            placeholder="Select helper(s)..."
-            styles={{
-              control: (base) => ({
-                ...base,
-                borderRadius: 10,
-                borderColor: "#B9B9B9",
-                fontFamily: "var(--primary-font-medium)",
-                fontSize: 14,
-              }),
-            }}
-          />
+          <div>HELPER</div>
+          <Form.Select
+            name="helper_id"
+            value={form.helper_id}
+            className="nc-modal-custom-select"
+            onChange={handle_change}
+          >
+            <option value="">-- No Helper --</option>
+            {helper_options.map((h) => (
+              <option key={h.id} value={h.id}>
+                {h.first_name} {h.last_name}
+              </option>
+            ))}
+          </Form.Select>
         </Col>
       </Row>
+
+      <div className="form-section-label">Fuel</div>
+      <Row className="nc-modal-custom-row">
+        {contract_trip_info && (
+          <Col xs={12} md={6}>
+            <div>AGREED FUEL PRICE (from contract)</div>
+            <Form.Control
+              type="text"
+              readOnly
+              value={`₱${parseFloat(contract_trip_info.fuel_price_per_liter ?? 0).toFixed(2)} / L`}
+              className="nc-modal-custom-input"
+              style={{ background: "#f5f5f5", color: "#888" }}
+            />
+          </Col>
+        )}
+        <Col xs={12} md={6}>
+          <div>ACTUAL FUEL PRICE (₱/L) <span className="required-icon">*</span></div>
+          <Form.Control
+            type="number"
+            step="0.01"
+            name="actual_fuel_price"
+            value={form.actual_fuel_price}
+            className="nc-modal-custom-input"
+            onChange={handle_change}
+            placeholder="e.g. 62.50"
+          />
+          <InputError isValid={is_error.actual_fuel_price} message="Actual fuel price is required" />
+        </Col>
+      </Row>
+
+      {fuel_info_banner(form, route_opts)}
 
       <div className="form-section-label">Additional</div>
       <Row className="nc-modal-custom-row">
@@ -435,48 +636,86 @@ export default function Trips() {
         />
       </div>
       <div className={`manager-container ${inactive ? "inactive" : "active"}`}>
-        <Row className="mb-4">
+        <Row className="mb-3">
           <Col xs={6}>
             <h1 className="page-title">Trips</h1>
           </Col>
           <Col className="d-flex justify-content-end align-items-center">
-            <input
-              type="search"
-              placeholder="Search trips..."
-              value={search_text}
-              onChange={(e) => set_search_text(e.target.value)}
-              className="search-bar"
-              onKeyDown={(e) => {
-                if (e.key === "Enter") fetch_trips();
-              }}
-            />
-            <button
-              className="add-btn"
-              onClick={() => set_show_add_modal(true)}
-            >
+            <button className="add-btn" onClick={() => set_show_add_modal(true)}>
               Log Trip
             </button>
           </Col>
         </Row>
+
+        {/* Filter bar */}
+        <div className="trip-filter-bar mb-3">
+          <Row className="g-2 align-items-center">
+            <Col xs={12} md={5}>
+              <AntSelect
+                showSearch
+                allowClear
+                value={search_value}
+                onChange={(val) => set_search_value(val ?? null)}
+                style={{ width: "100%" }}
+                placeholder="🔍 Search customer, contract, truck, driver, helper, route..."
+                filterOption={false}
+                onSearch={handle_suggestion_search}
+                onSelect={handle_suggestion_select}
+                onClear={handle_reset_filter}
+                loading={suggestion_loading}
+                options={suggestions.map((s) => ({
+                  value: s.value,
+                  label: (
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span>{s.label}</span>
+                      <span style={{ fontSize: 11, color: "#94a3b8", marginLeft: 8 }}>{s.sublabel}</span>
+                    </div>
+                  ),
+                }))}
+                notFoundContent={suggestion_loading ? "Searching..." : "No results"}
+              />
+            </Col>
+            <Col xs={12} md={4}>
+              <RangePicker
+                value={date_range}
+                onChange={handle_range_change}
+                format="YYYY-MM-DD"
+                style={{ width: "100%" }}
+                placeholder={["From date", "To date"]}
+                allowClear
+              />
+            </Col>
+            <Col xs="auto">
+              <button className="cancel-btn" onClick={handle_reset_filter}>
+                Clear
+              </button>
+            </Col>
+          </Row>
+        </div>
+
         <div className="tab-content">
           <Table
             tableHeaders={[
-              "TRIP DATE",
+              "DATE",
+              "CUSTOMER",
               "CONTRACT",
               "ROUTE",
               "TRUCK",
-              "DRIVER(S)",
-              "HELPER(S)",
-              "REMARKS",
+              "DRIVER",
+              "HELPER",
+              "EXCESS",
+              "FUEL SURCHARGE",
             ]}
             headerSelector={[
               "trip_date_fmt",
+              "customer_label",
               "contract_label",
               "route_label",
               "truck_label",
-              "drivers_label",
-              "helpers_label",
-              "remarks",
+              "driver_label",
+              "helper_label",
+              "is_excess",
+              "fuel_additional_charge",
             ]}
             tableData={trip_data}
             showLoader={show_loader}
@@ -486,145 +725,40 @@ export default function Trips() {
         </div>
       </div>
 
+      {/* Add Modal */}
       <AddModal
-        title="TRIP"
+        title="LOG TRIP"
         size="lg"
         show={show_add_modal}
-        onHide={() => set_show_add_modal(false)}
+        onHide={() => {
+          set_show_add_modal(false);
+          set_add_form({ ...empty_form });
+          set_add_route_options([]);
+          set_contract_trip_info(null);
+          set_fuel_preview(0);
+        }}
         onSave={handle_create}
         isClicked={is_clicked}
       >
-        {form_fields(
-          add_form,
-          handle_add_change,
-          handle_add_multi,
-          add_route_options,
-          set_add_form,
-        )}
+        {form_fields(add_form, handle_add_change, add_route_options, set_add_form, false)}
       </AddModal>
+
+      {/* Edit Modal */}
       <EditModal
-        title="TRIP"
+        title="EDIT TRIP"
         size="lg"
         show={show_edit_modal}
-        onHide={() => set_show_edit_modal(false)}
+        onHide={() => {
+          set_show_edit_modal(false);
+          set_fuel_preview(0);
+        }}
         onSave={handle_update}
         isClicked={is_clicked}
       >
-        {form_fields(
-          edit_form,
-          handle_edit_change,
-          handle_edit_multi,
-          edit_route_options,
-          set_edit_form,
-        )}
+        {form_fields(edit_form, handle_edit_change, edit_route_options, set_edit_form, true)}
       </EditModal>
-      <ViewModal
-        title="TRIP DETAILS"
-        size="lg"
-        withButtons
-        show={show_view_modal}
-        onHide={() => set_show_view_modal(false)}
-        onEdit={() => {
-          set_show_edit_modal(true);
-          set_show_view_modal(false);
-        }}
-      >
-        <div className="view-wrapper">
-          <div className="view-header">
-            <div className="view-header-left">
-              <span className="view-title">{edit_form.trip_date ? dateFormat(edit_form.trip_date) : "—"}</span>
-              <span className="view-subtitle">
-                {edit_form.route_label ||
-                  `Route #${edit_form.contract_route_id}`}
-              </span>
-            </div>
-          </div>
-          <div className="view-details">
-            <div className="view-detail-row">
-              <span className="view-detail-label">TRIP DATE</span>
-              <span
-                className={
-                  edit_form.trip_date ? "view-detail-value" : "view-empty-value"
-                }
-              >
-                {edit_form.trip_date ? dateFormat(edit_form.trip_date) : "—"}
-              </span>
-            </div>
-            <div className="view-detail-row">
-              <span className="view-detail-label">CONTRACT</span>
-              <span
-                className={
-                  edit_form.contract_label
-                    ? "view-detail-value"
-                    : "view-empty-value"
-                }
-              >
-                {edit_form.contract_label ||
-                  `Contract #${edit_form.contract_id}`}
-              </span>
-            </div>
-            <div className="view-detail-row">
-              <span className="view-detail-label">ROUTE</span>
-              <span
-                className={
-                  edit_form.route_label
-                    ? "view-detail-value"
-                    : "view-empty-value"
-                }
-              >
-                {edit_form.route_label || "—"}
-              </span>
-            </div>
-            <div className="view-detail-row">
-              <span className="view-detail-label">TRUCK</span>
-              <span
-                className={
-                  edit_form.truck_label
-                    ? "view-detail-value"
-                    : "view-empty-value"
-                }
-              >
-                {edit_form.truck_label || `Truck #${edit_form.truck_id}`}
-              </span>
-            </div>
-            <div className="view-detail-row">
-              <span className="view-detail-label">DRIVER(S)</span>
-              <span
-                className={
-                  edit_form.drivers_label
-                    ? "view-detail-value"
-                    : "view-empty-value"
-                }
-              >
-                {edit_form.drivers_label || "No drivers assigned"}
-              </span>
-            </div>
-            <div className="view-detail-row">
-              <span className="view-detail-label">HELPER(S)</span>
-              <span
-                className={
-                  edit_form.helpers_label
-                    ? "view-detail-value"
-                    : "view-empty-value"
-                }
-              >
-                {edit_form.helpers_label || "No helpers assigned"}
-              </span>
-            </div>
-            <div className="view-detail-row">
-              <span className="view-detail-label">REMARKS</span>
-              <span
-                className={
-                  edit_form.remarks ? "view-detail-value" : "view-empty-value"
-                }
-              >
-                {edit_form.remarks || "No remarks"}
-              </span>
-            </div>
-          </div>
-        </div>
-      </ViewModal>
 
+      {/* Trip Detail / Map Modal */}
       {show_map_modal && selected_trip && (
         <div
           className="trip-modal-overlay"
@@ -639,24 +773,15 @@ export default function Trips() {
                 <button
                   className="add-btn"
                   onClick={() => {
+                    set_contract_trip_info(null);
+                    set_fuel_preview(0);
                     set_edit_form({
                       ...selected_trip,
-                      driver_ids: [],
-                      helper_ids: [],
+                      driver_id: String(selected_trip.driver_id ?? ""),
+                      helper_id: String(selected_trip.helper_id ?? ""),
+                      actual_fuel_price: selected_trip.actual_fuel_price ?? "",
                     });
                     fetch_routes_for_edit(selected_trip.contract_id);
-                    getTripDetails(selected_trip.id).then((res) => {
-                      if (res.data && res.data.data) {
-                        const detail = res.data.data;
-                        const d_ids = (detail.drivers || []).map((d) => String(d.driver_id));
-                        const h_ids = (detail.helpers || []).map((h) => String(h.helper_id));
-                        set_edit_form((prev) => ({
-                          ...prev,
-                          driver_ids: d_ids,
-                          helper_ids: h_ids,
-                        }));
-                      }
-                    });
                     set_show_map_modal(false);
                     set_show_edit_modal(true);
                   }}
@@ -674,36 +799,28 @@ export default function Trips() {
             <div className="trip-modal-body">
               <div className="trip-modal-details">
                 <div className="trip-detail-row">
-                  <FontAwesomeIcon
-                    icon={faCalendarAlt}
-                    className="detail-icon"
-                  />
+                  <FontAwesomeIcon icon={faCalendarAlt} className="detail-icon" />
                   <div>
                     <span className="detail-label">Trip Date</span>
-                    <span className="detail-value">
-                      {dateFormat(selected_trip.trip_date)}
-                    </span>
+                    <span className="detail-value">{dateFormat(selected_trip.trip_date)}</span>
                   </div>
                 </div>
                 <div className="trip-detail-row">
                   <FontAwesomeIcon icon={faBuilding} className="detail-icon" />
                   <div>
                     <span className="detail-label">Customer</span>
-                    <span className="detail-value">
-                      {selected_trip.customer_name || "—"}
-                    </span>
+                    <span className="detail-value">{selected_trip.customer_name || "—"}</span>
                   </div>
                 </div>
                 <div className="trip-detail-row">
-                  <FontAwesomeIcon
-                    icon={faMapMarkerAlt}
-                    className="detail-icon"
-                  />
+                  <FontAwesomeIcon icon={faMapMarkerAlt} className="detail-icon" />
                   <div>
                     <span className="detail-label">Route</span>
                     <span className="detail-value">
-                      {selected_trip.route_origin} →{" "}
-                      {selected_trip.route_destination}
+                      {selected_trip.route_origin} → {selected_trip.route_destination}
+                      {selected_trip.route_distance_km
+                        ? ` (${selected_trip.route_distance_km} km)`
+                        : ""}
                     </span>
                   </div>
                 </div>
@@ -712,29 +829,51 @@ export default function Trips() {
                   <div>
                     <span className="detail-label">Truck</span>
                     <span className="detail-value">
-                      {selected_trip.truck_unit_code} —{" "}
-                      {selected_trip.truck_plate_number}
+                      {selected_trip.truck_unit_code} — {selected_trip.truck_plate_number}
                     </span>
                   </div>
                 </div>
                 <div className="trip-detail-row">
                   <FontAwesomeIcon icon={faUser} className="detail-icon" />
                   <div>
-                    <span className="detail-label">Driver(s)</span>
-                    <span className="detail-value">
-                      {selected_trip.drivers_label || "—"}
-                    </span>
+                    <span className="detail-label">Driver</span>
+                    <span className="detail-value">{selected_trip.driver_label || "—"}</span>
                   </div>
                 </div>
                 <div className="trip-detail-row">
                   <FontAwesomeIcon icon={faUsers} className="detail-icon" />
                   <div>
-                    <span className="detail-label">Helper(s)</span>
-                    <span className="detail-value">
-                      {selected_trip.helpers_label || "—"}
-                    </span>
+                    <span className="detail-label">Helper</span>
+                    <span className="detail-value">{selected_trip.helper_label || "—"}</span>
                   </div>
                 </div>
+                <div className="trip-detail-row">
+                  <FontAwesomeIcon icon={faGasPump} className="detail-icon" />
+                  <div>
+                    <span className="detail-label">Fuel</span>
+                    <span className="detail-value">
+                      Agreed: ₱{parseFloat(selected_trip.agreed_fuel_price ?? 0).toFixed(2)}/L
+                      {" · "}
+                      Actual: ₱{parseFloat(selected_trip.actual_fuel_price ?? 0).toFixed(2)}/L
+                    </span>
+                    {parseFloat(selected_trip.fuel_additional_charge ?? 0) > 0 && (
+                      <span className="detail-value excess-warning">
+                        Fuel surcharge: ₱{parseFloat(selected_trip.fuel_additional_charge).toFixed(2)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                {parseInt(selected_trip.is_excess) === 1 && (
+                  <div className="trip-detail-row">
+                    <FontAwesomeIcon icon={faExclamationTriangle} className="detail-icon" />
+                    <div>
+                      <span className="detail-label">Excess Trip</span>
+                      <span className="detail-value excess-warning">
+                        ₱{parseFloat(selected_trip.excess_charge ?? 0).toFixed(2)} charge
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
               <div className="trip-modal-map">
                 {process.env.REACT_APP_GOOGLE_MAPS_KEY ? (
@@ -747,18 +886,14 @@ export default function Trips() {
                     allowFullScreen
                     src={build_maps_url(
                       selected_trip.route_origin,
-                      selected_trip.route_destination,
+                      selected_trip.route_destination
                     )}
                   />
                 ) : (
                   <div className="map-placeholder">
-                    <FontAwesomeIcon
-                      icon={faMapMarkerAlt}
-                      className="map-placeholder-icon"
-                    />
+                    <FontAwesomeIcon icon={faMapMarkerAlt} className="map-placeholder-icon" />
                     <span className="map-placeholder-text">
-                      {selected_trip.route_origin} →{" "}
-                      {selected_trip.route_destination}
+                      {selected_trip.route_origin} → {selected_trip.route_destination}
                     </span>
                     <span className="map-placeholder-sub">
                       Add REACT_APP_GOOGLE_MAPS_KEY to .env to enable map
