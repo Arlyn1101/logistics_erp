@@ -100,7 +100,9 @@ export default function ContractForm() {
 
   async function load_contract() {
     if (!is_edit) return;
+    console.log("load_contract passed_contract:", passed_contract);
     const response = await getContractDetails(passed_contract.id);
+    console.log("load_contract response:", response);
     if (response.data && response.data.data) {
       const data = response.data.data;
       set_contract_number(data.contract_number || "");
@@ -218,21 +220,79 @@ export default function ContractForm() {
       </div>
 
       <div className={`manager-container ${inactive ? "inactive" : "active"}`}>
-        {/* Page header */}
-        <Row className="mb-4">
-          <Col>
+        {/* Breadcrumb */}
+        <div className="add-customer-breadcrumb">
+          <span className="breadcrumb-link" onClick={() => navigate("/contracts")}>
+            Contracts
+          </span>
+          <span className="breadcrumb-sep">›</span>
+          <span className="breadcrumb-current">
+            {is_edit ? "Edit Contract" : "Add New Contract"}
+          </span>
+        </div>
+
+        {/* Sticky header */}
+        <div className="add-customer-header">
+          <div>
             <h1 className="page-title">
-              {is_edit ? "Edit Contract" : "Add Contract"}
+              {is_edit ? "Edit Contract" : "Add New Contract"}
             </h1>
             <p className="page-subtitle">
               {is_edit
                 ? "Update contract details and routes"
                 : "Fill in contract details and define routes"}
             </p>
+          </div>
+          <div className="add-customer-actions">
+            <button className="cancel-btn" onClick={() => navigate("/contracts")} disabled={is_clicked}>
+              Cancel
+            </button>
+            <button className="save-btn" onClick={handle_save} disabled={is_clicked}>
+              {is_clicked ? "Saving..." : "Save Contract"}
+            </button>
+          </div>
+        </div>
+
+        {/* ── Section 1: Customer ── */}
+        <div className="form-section-label">Customer</div>
+        <Row className="nc-modal-custom-row">
+          <Col>
+            CUSTOMER <span className="required-icon">*</span>
+            <Select
+               classNamePrefix="react-select"
+              options={customer_options}
+              value={selected_customer}
+              onChange={(selected) =>
+                set_form((prev) => ({
+                  ...prev,
+                  customer_id: selected ? selected.value : "",
+                }))
+              }
+              placeholder="Search customer..."
+              isClearable
+              styles={select_style}
+            />
+            <InputError
+              isValid={is_error.customer_id}
+              message="Customer is required"
+            />
+          </Col>
+        </Row>
+        <Row className="nc-modal-custom-row">
+          <Col>
+            AUTHORIZED REPRESENTATIVE
+            <Form.Control
+              type="text"
+              name="authorized_representative"
+              value={form.authorized_representative}
+              className="nc-modal-custom-input"
+              onChange={handle_change}
+              placeholder="Name of person who signed"
+            />
           </Col>
         </Row>
 
-        {/* ── Section 1: Contract Details ── */}
+        {/* ── Section 2: Contract Details ── */}
         <div className="form-section-label">Contract Details</div>
 
         {is_edit && contract_number && (
@@ -309,44 +369,6 @@ export default function ContractForm() {
               dateFormat="yyyy-MM-dd"
               className="nc-modal-custom-input w-100"
               placeholderText="Select end date"
-            />
-          </Col>
-        </Row>
-        {/* ── Section 2: Customer ── */}
-        <div className="form-section-label">Customer</div>
-        <Row className="nc-modal-custom-row">
-          <Col>
-            CUSTOMER <span className="required-icon">*</span>
-            <Select
-               classNamePrefix="react-select"
-              options={customer_options}
-              value={selected_customer}
-              onChange={(selected) =>
-                set_form((prev) => ({
-                  ...prev,
-                  customer_id: selected ? selected.value : "",
-                }))
-              }
-              placeholder="Search customer..."
-              isClearable
-              styles={select_style}
-            />
-            <InputError
-              isValid={is_error.customer_id}
-              message="Customer is required"
-            />
-          </Col>
-        </Row>
-        <Row className="nc-modal-custom-row">
-          <Col>
-            AUTHORIZED REPRESENTATIVE
-            <Form.Control
-              type="text"
-              name="authorized_representative"
-              value={form.authorized_representative}
-              className="nc-modal-custom-input"
-              onChange={handle_change}
-              placeholder="Name of person who signed"
             />
           </Col>
         </Row>
@@ -459,7 +481,7 @@ export default function ContractForm() {
           className="d-flex justify-content-between align-items-center mt-4"
           style={{ marginBottom: 8 }}
         >
-          <div className="form-section-label mb-0">Route Matrix</div>
+          <div className="form-section-label mb-0">Routes</div>
           <button className="add-btn" onClick={add_route}>
             <FontAwesomeIcon icon={faPlus} className="me-1" />
             Add Route
@@ -558,23 +580,6 @@ export default function ContractForm() {
             </Row>
           </div>
         ))}
-
-        {/* ── Single Save Button ── */}
-        <div className="d-flex justify-content-end gap-2 mt-4 mb-5">
-          <button
-            className="button-secondary me-2"
-            onClick={() => navigate("/contracts")}
-          >
-            Cancel
-          </button>
-          <button
-            className="add-btn"
-            onClick={handle_save}
-            disabled={is_clicked}
-          >
-            {is_clicked ? "Saving..." : "Save Contract"}
-          </button>
-        </div>
       </div>
     </div>
   );
