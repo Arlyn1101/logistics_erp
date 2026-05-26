@@ -15,6 +15,7 @@ import Trucks from "./Pages/Manage/Trucks";
 import Users from "./Pages/Manage/Users";
 import Contracts from "./Pages/Contracts/Contracts";
 import ContractForm from "./Pages/Contracts/ContractForm";
+import ContractView from "./Pages/Contracts/ContractView";
 import Trips from "./Pages/Trips/Trips";
 import Trail from "./Pages/Trail/Trail";
 
@@ -56,6 +57,7 @@ function App() {
         {/* Contracts */}
         <Route path="/contracts" element={<PrivateRoute><Contracts /></PrivateRoute>} />
         <Route path="/contracts/form" element={<PrivateRoute><ContractForm /></PrivateRoute>} />
+        <Route path="/contracts/view" element={<PrivateRoute><ContractView /></PrivateRoute>} />
 
         {/* Operations */}
         <Route path="/trips" element={<PrivateRoute><Trips /></PrivateRoute>} />

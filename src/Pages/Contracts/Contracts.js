@@ -7,6 +7,7 @@ import ViewModal from "../../Components/Modals/ViewModal";
 import {
   getAllContracts,
   searchContracts,
+  getContractDetails,
 } from "../../Helpers/apiCalls/Contracts/contractApi";
 import { getAllCustomers } from "../../Helpers/apiCalls/Manage/customerApi";
 import { toastStyle, formatAmount, dateFormat } from "../../Helpers/Utils/Common";
@@ -79,9 +80,7 @@ export default function Contracts() {
   }
 
   function handle_row_click(row) {
-    set_selected_row(row);
-    set_view_form(row);
-    set_show_view_modal(true);
+    navigate("/contracts/view", { state: { contract: get_plain_contract(row) } });
   }
 
   // Strip React elements before passing to navigate
@@ -300,6 +299,48 @@ export default function Contracts() {
                 {view_form.remarks || "No remarks"}
               </span>
             </div>
+
+            <div className="form-section-label mt-3">Routes</div>
+            {view_form.routes && view_form.routes.length > 0 ? (
+              view_form.routes.map((route, index) => (
+                <div
+                  key={index}
+                  style={{
+                    border: "1px solid #e0e0e0",
+                    borderRadius: 8,
+                    padding: "10px 14px",
+                    marginBottom: 8,
+                    background: "#fafafa",
+                  }}
+                >
+                  <div style={{ fontFamily: "var(--primary-font-bold)", fontSize: 13, color: "#2d3e4e", marginBottom: 4 }}>
+                    Route {index + 1}
+                  </div>
+                  <div className="view-detail-row">
+                    <span className="view-detail-label">ORIGIN</span>
+                    <span className="view-detail-value">{route.origin || "—"}</span>
+                  </div>
+                  <div className="view-detail-row">
+                    <span className="view-detail-label">DESTINATION</span>
+                    <span className="view-detail-value">{route.destination || "—"}</span>
+                  </div>
+                  {route.distance_km && (
+                    <div className="view-detail-row">
+                      <span className="view-detail-label">DISTANCE</span>
+                      <span className="view-detail-value">{route.distance_km} km</span>
+                    </div>
+                  )}
+                  {route.remarks && (
+                    <div className="view-detail-row">
+                      <span className="view-detail-label">REMARKS</span>
+                      <span className="view-detail-value">{route.remarks}</span>
+                    </div>
+                  )}
+                </div>
+              ))
+            ) : (
+              <div className="view-empty-value" style={{ padding: "8px 0" }}>No routes defined</div>
+            )}
           </div>
         </div>
       </ViewModal>
