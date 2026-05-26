@@ -51,12 +51,9 @@ const MENU_SECTIONS = [
     items: [
       {
         name: "CONTRACTS",
-        to: "/",
+        to: "/contracts",
         icon: faFileContract,
-        subMenus: [
-          { name: "CONTRACTS",       to: "/contracts" },
-          { name: "CONTRACT ROUTES", to: "/contract-routes" },
-        ],
+        subMenus: [],
       },
     ],
   },

@@ -1,64 +1,32 @@
 import React, { useState, useEffect } from "react";
 import { Col, Form, Row } from "react-bootstrap";
+import { useNavigate } from "react-router-dom";
 import Navbar from "../../Components/Navbar/Navbar";
 import Table from "../../Components/TableTemplate/Table";
-import AddModal from "../../Components/Modals/AddModal";
-import EditModal from "../../Components/Modals/EditModal";
 import ViewModal from "../../Components/Modals/ViewModal";
-import InputError from "../../Components/InputError/InputError";
 import {
   getAllContracts,
   searchContracts,
-  createContract,
-  updateContract,
 } from "../../Helpers/apiCalls/Contracts/contractApi";
 import { getAllCustomers } from "../../Helpers/apiCalls/Manage/customerApi";
-import { validateContract } from "../../Helpers/Validation/Contracts/contractValidation";
-import { toastStyle, formatAmount } from "../../Helpers/Utils/Common";
+import { toastStyle, formatAmount, dateFormat } from "../../Helpers/Utils/Common";
 import toast from "react-hot-toast";
 import "../Manage/Manage.css";
 import "../../Components/Navbar/Navbar.css";
 import "../../Components/Modals/Modal.css";
 
 export default function Contracts() {
+  const navigate = useNavigate();
   const [inactive, set_inactive] = useState(false);
   const [show_loader, set_show_loader] = useState(false);
-  const [is_clicked, set_is_clicked] = useState(false);
   const [search_text, set_search_text] = useState("");
   const [contract_data, set_contract_data] = useState([]);
   const [customer_options, set_customer_options] = useState([]);
   const [selected_row, set_selected_row] = useState({});
   const [active_tab, set_active_tab] = useState("all");
   const [filtered_data, set_filtered_data] = useState([]);
-
-  const [show_add_modal, set_show_add_modal] = useState(false);
-  const [show_edit_modal, set_show_edit_modal] = useState(false);
   const [show_view_modal, set_show_view_modal] = useState(false);
-
-  const empty_form = {
-    customer_id: "",
-    monthly_rate: "",
-    included_trips: "",
-    excess_trip_charge: "",
-    fuel_price_per_liter: "",
-    start_date: "",
-    end_date: "",
-    status: "active",
-    remarks: "",
-  };
-  const [add_form, set_add_form] = useState({ ...empty_form });
-  const [edit_form, set_edit_form] = useState({ ...empty_form });
-  const [is_error, set_is_error] = useState({});
-
-  const handle_add_change = (e) => {
-    const { name, value } = e.target;
-    set_add_form((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handle_edit_change = (e) => {
-    const { name, value } = e.target;
-    set_edit_form((prev) => ({ ...prev, [name]: value }));
-  };
+  const [view_form, set_view_form] = useState({});
 
   function StatusBadge(status) {
     return <span className={`status-badge ${status}`}>{status}</span>;
@@ -98,6 +66,8 @@ export default function Contracts() {
         fuel_price_fmt: `₱ ${formatAmount(a.fuel_price_per_liter)}`,
         excess_fmt: `₱ ${formatAmount(a.excess_trip_charge)}`,
         status_badge: StatusBadge(a.status),
+        start_date_fmt: dateFormat(a.start_date),
+        end_date_fmt: dateFormat(a.end_date) || "Open-ended",
       }));
       set_contract_data(result);
       set_filtered_data(apply_tab_filter(result, active_tab));
@@ -110,248 +80,35 @@ export default function Contracts() {
 
   function handle_row_click(row) {
     set_selected_row(row);
-    set_edit_form(row);
+    set_view_form(row);
     set_show_view_modal(true);
   }
 
-
-  async function handle_create() {
-    if (validateContract(add_form, set_is_error)) {
-      set_is_clicked(true);
-      const response = await createContract(add_form);
-      if (response.data && response.data.response) {
-        toast.success("Contract added successfully!", { style: toastStyle() });
-        set_show_add_modal(false);
-        set_add_form({ ...empty_form });
-        fetch_contracts();
-      } else {
-        toast.error("Failed to add contract.", { style: toastStyle() });
-      }
-      set_is_clicked(false);
-    }
-  }
-
-  async function handle_update() {
-    if (validateContract(edit_form, set_is_error)) {
-      set_is_clicked(true);
-      const response = await updateContract(edit_form);
-      if (response.data && response.data.response) {
-        toast.success("Contract updated successfully!", {
-          style: toastStyle(),
-        });
-        set_show_edit_modal(false);
-        fetch_contracts();
-      } else {
-        toast.error("Failed to update contract.", { style: toastStyle() });
-      }
-      set_is_clicked(false);
-    }
+  // Strip React elements before passing to navigate
+  function get_plain_contract(row) {
+    return {
+      id: row.id,
+      contract_number: row.contract_number,
+      customer_id: row.customer_id,
+      customer_name: row.customer_name,
+      date_signed: row.date_signed,
+      authorized_representative: row.authorized_representative,
+      payment_terms: row.payment_terms,
+      monthly_rate: row.monthly_rate,
+      included_trips: row.included_trips,
+      excess_trip_charge: row.excess_trip_charge,
+      fuel_price_per_liter: row.fuel_price_per_liter,
+      start_date: row.start_date,
+      end_date: row.end_date,
+      status: row.status,
+      remarks: row.remarks,
+    };
   }
 
   useEffect(() => {
     fetch_customers();
     fetch_contracts();
   }, []);
-
-  const form_fields = (form, handle_change, disabled = false, is_edit = false) => (
-    <div className="mt-3">
-      <div className="form-section-label">Contract Information</div>
-      <Row className="nc-modal-custom-row">
-        <Col>
-          <div>
-            CUSTOMER <span className="required-icon">*</span>
-          </div>
-          <Form.Select
-            name="customer_id"
-            value={form.customer_id}
-            className="nc-modal-custom-select"
-            onChange={handle_change}
-          >
-            <option value="">-- Select Customer --</option>
-            {customer_options.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </Form.Select>
-          <InputError
-            isValid={is_error.customer_id}
-            message="Customer is required"
-          />
-        </Col>
-        {is_edit && (
-          <Col>
-            <div>STATUS</div>
-            <div className="status-select-wrap">
-              <span className={`status-dot ${form.status}`}></span>
-              <Form.Select
-                name="status"
-                value={form.status}
-                className="nc-modal-custom-select"
-                onChange={handle_change}
-              >
-                <option value="active">Active</option>
-                <option value="expired">Expired</option>
-                <option value="terminated">Terminated</option>
-              </Form.Select>
-            </div>
-          </Col>
-        )}
-      </Row>
-
-      <div className="form-section-label">Rate Details</div>
-      <Row className="nc-modal-custom-row">
-        <Col>
-          MONTHLY RATE (₱) <span className="required-icon">*</span>
-          <Form.Control
-            type="number"
-            name="monthly_rate"
-            value={form.monthly_rate}
-            className={
-              disabled ? "nc-modal-custom-input-edit" : "nc-modal-custom-input"
-            }
-            onChange={handle_change}
-            disabled={disabled}
-            placeholder="e.g. 10000"
-          />
-          <InputError
-            isValid={is_error.monthly_rate}
-            message="Monthly rate is required"
-          />
-        </Col>
-        <Col>
-          INCLUDED TRIPS / MONTH <span className="required-icon">*</span>
-          <Form.Control
-            type="number"
-            name="included_trips"
-            value={form.included_trips}
-            className={
-              disabled ? "nc-modal-custom-input-edit" : "nc-modal-custom-input"
-            }
-            onChange={handle_change}
-            disabled={disabled}
-            placeholder="e.g. 4"
-          />
-          <InputError
-            isValid={is_error.included_trips}
-            message="Included trips is required"
-          />
-        </Col>
-      </Row>
-
-      <Row className="nc-modal-custom-row">
-        <Col>
-          EXCESS TRIP CHARGE (₱) <span className="required-icon">*</span>
-          <Form.Control
-            type="number"
-            name="excess_trip_charge"
-            value={form.excess_trip_charge}
-            className={
-              disabled ? "nc-modal-custom-input-edit" : "nc-modal-custom-input"
-            }
-            onChange={handle_change}
-            disabled={disabled}
-            placeholder="Charge per trip beyond included"
-          />
-          <InputError
-            isValid={is_error.excess_trip_charge}
-            message="Excess trip charge is required"
-          />
-        </Col>
-        <Col>
-          AGREED FUEL PRICE / LITER (₱) <span className="required-icon">*</span>
-          <Form.Control
-            type="number"
-            name="fuel_price_per_liter"
-            value={form.fuel_price_per_liter}
-            className={
-              disabled ? "nc-modal-custom-input-edit" : "nc-modal-custom-input"
-            }
-            onChange={handle_change}
-            disabled={disabled}
-            placeholder="e.g. 50"
-          />
-          <InputError
-            isValid={is_error.fuel_price_per_liter}
-            message="Fuel price is required"
-          />
-        </Col>
-      </Row>
-
-      <div className="form-section-label">Contract Period</div>
-      <Row className="nc-modal-custom-row">
-        <Col>
-          START DATE <span className="required-icon">*</span>
-          <Form.Control
-            type="date"
-            name="start_date"
-            value={form.start_date}
-            className={
-              disabled ? "nc-modal-custom-input-edit" : "nc-modal-custom-input"
-            }
-            onChange={handle_change}
-            disabled={disabled}
-          />
-          <InputError
-            isValid={is_error.start_date}
-            message="Start date is required"
-          />
-        </Col>
-        <Col>
-          END DATE{" "}
-          <span style={{ color: "#aaa", fontSize: 11, marginLeft: 4 }}>
-            (leave blank if open-ended)
-          </span>
-          <Form.Control
-            type="date"
-            name="end_date"
-            value={form.end_date || ""}
-            className={
-              disabled ? "nc-modal-custom-input-edit" : "nc-modal-custom-input"
-            }
-            onChange={handle_change}
-            disabled={disabled}
-          />
-        </Col>
-      </Row>
-
-      <Row className="nc-modal-custom-row">
-        <Col>
-          REMARKS
-          <Form.Control
-            as="textarea"
-            rows={2}
-            name="remarks"
-            value={form.remarks || ""}
-            className={
-              disabled ? "nc-modal-custom-input-edit" : "nc-modal-custom-input"
-            }
-            onChange={handle_change}
-            disabled={disabled}
-          />
-        </Col>
-      </Row>
-
-      {!disabled && (
-        <div
-          style={{
-            background: "#f0fbfd",
-            border: "1px solid #c0eaf4",
-            borderRadius: 8,
-            padding: "10px 14px",
-            marginTop: 4,
-            fontSize: 12,
-            color: "#2a7a8c",
-            fontFamily: "var(--primary-font-medium)",
-          }}
-        >
-          💡 <strong>Note:</strong> If actual fuel price exceeds the agreed
-          rate, the difference will be billed to the customer based on the route
-          distance and truck's km/liter.
-        </div>
-      )}
-    </div>
-  );
 
   return (
     <div>
@@ -379,7 +136,7 @@ export default function Contracts() {
             />
             <button
               className="add-btn"
-              onClick={() => set_show_add_modal(true)}
+              onClick={() => navigate("/contracts/form")}
             >
               Add
             </button>
@@ -401,6 +158,7 @@ export default function Contracts() {
         <div className="tab-content">
           <Table
             tableHeaders={[
+              "CONTRACT NO.",
               "CUSTOMER",
               "MONTHLY RATE",
               "TRIPS INCL.",
@@ -411,13 +169,14 @@ export default function Contracts() {
               "STATUS",
             ]}
             headerSelector={[
+              "contract_number",
               "customer_name",
               "monthly_rate_fmt",
               "included_trips",
               "excess_fmt",
               "fuel_price_fmt",
-              "start_date",
-              "end_date",
+              "start_date_fmt",
+              "end_date_fmt",
               "status_badge",
             ]}
             tableData={filtered_data}
@@ -428,26 +187,6 @@ export default function Contracts() {
         </div>
       </div>
 
-      <AddModal
-        title="CONTRACT"
-        size="lg"
-        show={show_add_modal}
-        onHide={() => set_show_add_modal(false)}
-        onSave={handle_create}
-        isClicked={is_clicked}
-      >
-        {form_fields(add_form, handle_add_change)}
-      </AddModal>
-      <EditModal
-        title="CONTRACT"
-        size="lg"
-        show={show_edit_modal}
-        onHide={() => set_show_edit_modal(false)}
-        onSave={handle_update}
-        isClicked={is_clicked}
-      >
-        {form_fields(edit_form, handle_edit_change, false, true)}
-      </EditModal>
       <ViewModal
         title="CONTRACT DETAILS"
         size="lg"
@@ -455,92 +194,110 @@ export default function Contracts() {
         show={show_view_modal}
         onHide={() => set_show_view_modal(false)}
         onEdit={() => {
-          set_show_edit_modal(true);
           set_show_view_modal(false);
+          navigate("/contracts/form", {
+            state: { contract: get_plain_contract(view_form) },
+          });
         }}
       >
         <div className="view-wrapper">
           <div className="view-header">
             <div className="view-header-left">
               <span className="view-title">
-                {customer_options.find(
-                  (c) => String(c.id) === String(edit_form.customer_id),
-                )?.name ||
-                  edit_form.customer_name ||
-                  "—"}
+                {view_form.contract_number || "—"}
               </span>
               <span className="view-subtitle">
-                {edit_form.start_date} — {edit_form.end_date || "Open-ended"}
+                {view_form.customer_name || "—"}
               </span>
             </div>
             <span
-              className={`status-badge ${edit_form.status}`}
+              className={`status-badge ${view_form.status}`}
               style={{ alignSelf: "center" }}
             >
-              {edit_form.status}
+              {view_form.status}
             </span>
           </div>
+
           <div className="view-details">
+            <div className="form-section-label">Contract Details</div>
+            <div className="view-detail-row">
+              <span className="view-detail-label">CONTRACT NO.</span>
+              <span className={view_form.contract_number ? "view-detail-value" : "view-empty-value"}>
+                {view_form.contract_number || "—"}
+              </span>
+            </div>
+            <div className="view-detail-row">
+              <span className="view-detail-label">DATE SIGNED</span>
+              <span className={view_form.date_signed ? "view-detail-value" : "view-empty-value"}>
+                {view_form.date_signed ? dateFormat(view_form.date_signed) : "—"}
+              </span>
+            </div>
+
+            <div className="form-section-label mt-3">Customer</div>
+            <div className="view-detail-row">
+              <span className="view-detail-label">CUSTOMER</span>
+              <span className={view_form.customer_name ? "view-detail-value" : "view-empty-value"}>
+                {view_form.customer_name || "—"}
+              </span>
+            </div>
+            <div className="view-detail-row">
+              <span className="view-detail-label">AUTHORIZED REP.</span>
+              <span className={view_form.authorized_representative ? "view-detail-value" : "view-empty-value"}>
+                {view_form.authorized_representative || "—"}
+              </span>
+            </div>
+
+            <div className="form-section-label mt-3">Rate & Billing</div>
             <div className="view-detail-row">
               <span className="view-detail-label">MONTHLY RATE</span>
               <span className="view-detail-value">
-                ₱{edit_form.monthly_rate || "—"}
+                ₱ {formatAmount(view_form.monthly_rate) || "—"}
               </span>
             </div>
             <div className="view-detail-row">
               <span className="view-detail-label">INCLUDED TRIPS</span>
               <span className="view-detail-value">
-                {edit_form.included_trips || "—"}
+                {view_form.included_trips || "—"}
               </span>
             </div>
             <div className="view-detail-row">
               <span className="view-detail-label">EXCESS/TRIP</span>
               <span className="view-detail-value">
-                ₱{edit_form.excess_trip_charge || "—"}
+                ₱ {formatAmount(view_form.excess_trip_charge) || "—"}
               </span>
             </div>
             <div className="view-detail-row">
               <span className="view-detail-label">FUEL PRICE/LITER</span>
               <span className="view-detail-value">
-                ₱{edit_form.fuel_price_per_liter || "—"}
+                ₱ {formatAmount(view_form.fuel_price_per_liter) || "—"}
               </span>
             </div>
             <div className="view-detail-row">
+              <span className="view-detail-label">PAYMENT TERMS</span>
+              <span className={view_form.payment_terms ? "view-detail-value" : "view-empty-value"}>
+                {view_form.payment_terms || "—"}
+              </span>
+            </div>
+
+            <div className="form-section-label mt-3">Contract Duration</div>
+            <div className="view-detail-row">
               <span className="view-detail-label">START DATE</span>
-              <span
-                className={
-                  edit_form.start_date
-                    ? "view-detail-value"
-                    : "view-empty-value"
-                }
-              >
-                {edit_form.start_date || "—"}
+              <span className={view_form.start_date ? "view-detail-value" : "view-empty-value"}>
+                {view_form.start_date ? dateFormat(view_form.start_date) : "—"}
               </span>
             </div>
             <div className="view-detail-row">
               <span className="view-detail-label">END DATE</span>
-              <span
-                className={
-                  edit_form.end_date ? "view-detail-value" : "view-empty-value"
-                }
-              >
-                {edit_form.end_date || "Open-ended"}
+              <span className={view_form.end_date ? "view-detail-value" : "view-empty-value"}>
+                {view_form.end_date ? dateFormat(view_form.end_date) : "Open-ended"}
               </span>
             </div>
-            <div className="view-detail-row">
-              <span className="view-detail-label">STATUS</span>
-              <span className={`status-badge ${edit_form.status}`}>
-                {edit_form.status}
-              </span>
-            </div>
+
+            <div className="form-section-label mt-3">Remarks</div>
             <div className="view-detail-row">
               <span className="view-detail-label">REMARKS</span>
-              <span
-                className={
-                  edit_form.remarks ? "view-detail-value" : "view-empty-value"
-                }
-              >
-                {edit_form.remarks || "No remarks"}
+              <span className={view_form.remarks ? "view-detail-value" : "view-empty-value"}>
+                {view_form.remarks || "No remarks"}
               </span>
             </div>
           </div>

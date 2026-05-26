@@ -370,3 +370,9 @@
   font-size: 13px;
   color: #2d3e4e;
 }
+
+.react-select__single-value,
+.react-select__input input,
+.react-select__option {
+  color: #2d3e4e !important;
+}
