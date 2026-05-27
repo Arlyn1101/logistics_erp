@@ -103,32 +103,55 @@ export default function CustomerDetails() {
       const response = await getCustomerDetails(id);
       if (response.data && response.data.data) {
         const data = response.data.data;
+        const raw_contacts = data.contacts ?? [];
+
+        // 1. Separate the Authorized Signatory from the other contacts
+        const raw_signatory = raw_contacts.find((c) => c.role === "Authorized Signatory");
+        const raw_general_contacts = raw_contacts.filter((c) => c.role !== "Authorized Signatory");
+
         const mapped = {
           ...empty_form,
           ...data,
           same_as_bir: false,
-          contacts: (data.contacts ?? []).map((c) => ({
-            first_name:  c.first_name       ?? "",
-            middle_name: c.middle_name      ?? "",
-            last_name:   c.last_name        ?? "",
-            suffix:      c.suffix           ?? "",
-            number:      c.contact_number   ?? "",
-            email:       c.email            ?? "",
+
+          // 2. Map the Signatory details into its dedicated form object
+          signatory: raw_signatory ? {
+            first_name:  raw_signatory.first_name   ?? "",
+            middle_name: raw_signatory.middle_name  ?? "",
+            last_name:   raw_signatory.last_name    ?? "",
+            suffix:      raw_signatory.suffix       ?? "",
+            position:    raw_signatory.position     ?? "", // Saved from option 1 database column
+            number:      raw_signatory.contact_number ?? "",
+            email:       raw_signatory.email        ?? "",
+            role:        "Authorized Signatory",
+          } : { ...empty_form.signatory }, // Fallback if no signatory row exists yet
+
+          // 3. Map only the generic contacts (HR, Accounting, Finance, etc.)
+          contacts: raw_general_contacts.map((c) => ({
+            first_name:  c.first_name      ?? "",
+            middle_name: c.middle_name     ?? "",
+            last_name:   c.last_name       ?? "",
+            suffix:      c.suffix          ?? "",
+            number:      c.contact_number  ?? "",
+            email:       c.email           ?? "",
             role:        CONTACT_ROLES.includes(c.role) ? c.role : (c.role ? "Others" : ""),
             other_role:  CONTACT_ROLES.includes(c.role) ? "" : (c.role ?? ""),
           })),
         };
+
+        // Ensure there's always at least one empty row for general contacts if empty
         if (!mapped.contacts.length) mapped.contacts = [{ ...empty_contact }];
+
         set_form(mapped);
         set_original_form(mapped);
 
-        // Pre-load cascading lists if region/province/city already set
+        // Pre-load cascading address lists
         if (data.bir_region)   load_provinces(data.bir_region,   "bir",   true);
         if (data.bir_province) load_cities(data.bir_province,    "bir",   true);
-        if (data.bir_city)     load_barangays(data.bir_city,     "bir",   true);
+        if (data.bir_city)     { load_barangays(data.bir_city,     "bir",   true); }
         if (data.trade_region)   load_provinces(data.trade_region,   "trade", true);
         if (data.trade_province) load_cities(data.trade_province,    "trade", true);
-        if (data.trade_city)     load_barangays(data.trade_city,     "trade", true);
+        if (data.trade_city)     { load_barangays(data.trade_city,     "trade", true); }
       } else {
         toast.error("Failed to load customer details.", { style: toastStyle() });
         navigate("/customers");
@@ -238,7 +261,32 @@ export default function CustomerDetails() {
   async function handle_save() {
     if (validateCustomer(form, set_is_error)) {
       set_is_clicked(true);
-      const response = await updateCustomer(form);
+
+      // 1. Format frontend values for backend column consistency
+      const formatted_signatory = {
+        ...form.signatory,
+        contact_number: form.signatory.number, // Sync phone field
+      };
+
+      const formatted_general_contacts = (form.contacts || []).map(c => ({
+        ...c,
+        contact_number: c.number, // Sync general phone fields
+      }));
+
+      // 2. Combine them into a plain JavaScript array (DO NOT STRINGIFY HERE)
+      const combined_contacts = [
+        formatted_signatory,
+        ...formatted_general_contacts
+      ];
+
+      // 3. Keep 'contacts' as a clean array in the payload
+      const payload = {
+        ...form,
+        contacts: combined_contacts 
+      };
+
+      const response = await updateCustomer(payload);
+
       if (response.data && response.data.response) {
         toast.success("Customer updated successfully!", { style: toastStyle() });
         set_original_form({ ...form });
@@ -250,8 +298,6 @@ export default function CustomerDetails() {
     }
   }
 
-  // ── Read-only address display helper ──
-  // Resolves PSGC code → name from loaded lists, falls back to the code itself
   function resolve_name(list, code) {
     if (!code) return "";
     const found = list.find((i) => i.code === code);
@@ -375,6 +421,136 @@ export default function CustomerDetails() {
               ) : <ReadValue value={form.email} />}
             </Col>
           </Row>
+
+          {/* ── Authorized Contract Signatory Section ── */}
+          <div className="biodata-section-label mt-4">Authorized Contract Signatory</div>
+          <p className="text-muted" style={{ fontSize: 12, marginTop: -4, marginBottom: 12 }}>
+            The individual legally authorized to sign corporate agreements (e.g., Owner, CEO, Managing Director).
+          </p>
+
+          {is_edit_mode ? (
+            <>
+              <Row className="nc-modal-custom-row">
+                <Col xs={3}>
+                  <div className="field-label">FIRST NAME <span className="required-icon">*</span></div>
+                  <Form.Control
+                    type="text"
+                    value={form.signatory?.first_name || ""}
+                    className="nc-modal-custom-input"
+                    placeholder="First name"
+                    onChange={(e) => set_form(prev => ({
+                      ...prev,
+                      signatory: { ...prev.signatory, first_name: e.target.value }
+                    }))}
+                  />
+                </Col>
+                <Col xs={3}>
+                  <div className="field-label">MIDDLE NAME</div>
+                  <Form.Control
+                    type="text"
+                    value={form.signatory?.middle_name || ""}
+                    className="nc-modal-custom-input"
+                    placeholder="Middle name"
+                    onChange={(e) => set_form(prev => ({
+                      ...prev,
+                      signatory: { ...prev.signatory, middle_name: e.target.value }
+                    }))}
+                  />
+                </Col>
+                <Col xs={3}>
+                  <div className="field-label">LAST NAME <span className="required-icon">*</span></div>
+                  <Form.Control
+                    type="text"
+                    value={form.signatory?.last_name || ""}
+                    className="nc-modal-custom-input"
+                    placeholder="Last name"
+                    onChange={(e) => set_form(prev => ({
+                      ...prev,
+                      signatory: { ...prev.signatory, last_name: e.target.value }
+                    }))}
+                  />
+                </Col>
+                <Col xs={3}>
+                  <div className="field-label">SUFFIX</div>
+                  <Form.Control
+                    type="text"
+                    value={form.signatory?.suffix || ""}
+                    className="nc-modal-custom-input"
+                    placeholder="e.g. Jr., III"
+                    onChange={(e) => set_form(prev => ({
+                      ...prev,
+                      signatory: { ...prev.signatory, suffix: e.target.value }
+                    }))}
+                  />
+                </Col>
+              </Row>
+
+              <Row className="nc-modal-custom-row mt-2">
+                <Col xs={4}>
+                  <div className="field-label">JOB TITLE / POSITION <span className="required-icon">*</span></div>
+                  <Form.Control
+                    type="text"
+                    value={form.signatory?.position || ""}
+                    className="nc-modal-custom-input"
+                    placeholder="e.g., Chief Executive Officer"
+                    onChange={(e) => set_form(prev => ({
+                      ...prev,
+                      signatory: { ...prev.signatory, position: e.target.value }
+                    }))}
+                  />
+                </Col>
+                <Col xs={4}>
+                  <div className="field-label">CONTACT NUMBER <span className="required-icon">*</span></div>
+                  <Form.Control
+                    type="text"
+                    value={form.signatory?.number || ""}
+                    className="nc-modal-custom-input"
+                    placeholder="09XX-XXX-XXXX"
+                    onChange={(e) => set_form(prev => ({
+                      ...prev,
+                      signatory: { ...prev.signatory, number: e.target.value }
+                    }))}
+                  />
+                </Col>
+                <Col xs={4}>
+                  <div className="field-label">EMAIL ADDRESS <span className="required-icon">*</span></div>
+                  <Form.Control
+                    type="email"
+                    value={form.signatory?.email || ""}
+                    className="nc-modal-custom-input"
+                    placeholder="email@example.com"
+                    onChange={(e) => set_form(prev => ({
+                      ...prev,
+                      signatory: { ...prev.signatory, email: e.target.value }
+                    }))}
+                  />
+                </Col>
+              </Row>
+            </>
+          ) : (
+            <Row className="nc-modal-custom-row">
+              <Col xs={4}>
+                <div className="field-label">FULL NAME</div>
+                <ReadValue value={
+                  [form.signatory?.first_name, form.signatory?.middle_name, form.signatory?.last_name]
+                    .filter(Boolean)
+                    .join(" ") + (form.signatory?.suffix ? `, ${form.signatory.suffix}` : "")
+                } />
+              </Col>
+              <Col xs={4}>
+                <div className="field-label">POSITION / JOB TITLE</div>
+                <ReadValue value={form.signatory?.position} />
+              </Col>
+              <Col xs={2}>
+                <div className="field-label">CONTACT NUMBER</div>
+                <ReadValue value={form.signatory?.number} />
+              </Col>
+              <Col xs={2}>
+                <div className="field-label">EMAIL ADDRESS</div>
+                <ReadValue value={form.signatory?.email} />
+              </Col>
+            </Row>
+          )}
 
           {/* ── Address ── */}
           <div className="biodata-section-label">Address</div>
