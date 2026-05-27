@@ -27,6 +27,8 @@ import ContractForm from "./Pages/Contracts/ContractForm";
 import ContractView from "./Pages/Contracts/ContractView";
 import Trips from "./Pages/Trips/Trips";
 import Trail from "./Pages/Trail/Trail";
+import Billings from "./Pages/Finance/Billings";
+import Payments from "./Pages/Finance/Payments";
 
 // Auth guard — checks localStorage token
 function PrivateRoute({ children }) {
@@ -173,6 +175,24 @@ function App() {
           element={
             <PrivateRoute>
               <ContractView />
+            </PrivateRoute>
+          }
+        />
+
+        {/* Finance */}
+        <Route
+          path="/billings"
+          element={
+            <PrivateRoute>
+              <Billings />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/payments"
+          element={
+            <PrivateRoute>
+              <Payments />
             </PrivateRoute>
           }
         />

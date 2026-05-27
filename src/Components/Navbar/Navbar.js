@@ -58,6 +58,20 @@ const MENU_SECTIONS = [
     ],
   },
   {
+    section: "FINANCE",
+    items: [
+      {
+        name: "FINANCE",
+        to: "/",
+        icon: faFileContract,
+        subMenus: [
+          { name: "BILLINGS", to: "/billings" },
+          { name: "PAYMENTS", to: "/payments" },
+        ],
+      },
+    ],
+  },
+  {
     section: "OPERATIONS",
     items: [
       { name: "TRIPS", to: "/trips", icon: faClipboardList, subMenus: [] },
