@@ -147,3 +147,16 @@ export const deleteContractRoute = async (contract_route_id) => {
     return { error: error.response };
   }
 };
+
+export const getContractTripSummary = async (contract_id) => {
+  try {
+    const response = await getAPICall(`${BASE_URL}/contracts/trip_summary`, {
+      token: get_token(),
+      contract_id,
+    });
+    return { data: response.data };
+  } catch (error) {
+    return { error: error.response };
+  }
+};
+

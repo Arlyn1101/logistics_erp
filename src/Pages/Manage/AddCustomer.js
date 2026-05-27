@@ -9,7 +9,7 @@ import { toastStyle } from "../../Helpers/Utils/Common";
 import toast from "react-hot-toast";
 import { Upload } from "antd";
 import "antd/dist/reset.css";
-import "../Manage/AddCustomer.css";
+import "../Manage/Manage.css";
 import "../../Components/Navbar/Navbar.css";
 
 const { Dragger } = Upload;

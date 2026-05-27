@@ -1,5 +1,10 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import "./App.css";
 
@@ -10,7 +15,11 @@ import Customers from "./Pages/Manage/Customers";
 import AddCustomer from "./Pages/Manage/AddCustomer";
 import CustomerDetails from "./Pages/Manage/CustomerDetails";
 import Drivers from "./Pages/Manage/Drivers";
+import DriverForm from "./Pages/Manage/DriverForm";
+import DriverDetails from "./Pages/Manage/DriverDetails";
 import Helpers from "./Pages/Manage/Helpers";
+import HelperForm from "./Pages/Manage/HelperForm";
+import HelperDetails from "./Pages/Manage/HelperDetails";
 import Trucks from "./Pages/Manage/Trucks";
 import Users from "./Pages/Manage/Users";
 import Contracts from "./Pages/Contracts/Contracts";
@@ -43,27 +52,150 @@ function App() {
         <Route path="/" element={<Login />} />
 
         {/* Protected */}
-        <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+        <Route
+          path="/dashboard"
+          element={
+            <PrivateRoute>
+              <Dashboard />
+            </PrivateRoute>
+          }
+        />
 
         {/* Manage */}
-        <Route path="/customers" element={<PrivateRoute><Customers /></PrivateRoute>} />
-        <Route path="/customers/new" element={<PrivateRoute><AddCustomer /></PrivateRoute>} />
-        <Route path="/customers/:id" element={<PrivateRoute><CustomerDetails  /></PrivateRoute>} />
-        <Route path="/drivers" element={<PrivateRoute><Drivers /></PrivateRoute>} />
-        <Route path="/helpers" element={<PrivateRoute><Helpers /></PrivateRoute>} />
-        <Route path="/trucks" element={<PrivateRoute><Trucks /></PrivateRoute>} />
-        <Route path="/users" element={<PrivateRoute><Users /></PrivateRoute>} />
+        <Route
+          path="/customers"
+          element={
+            <PrivateRoute>
+              <Customers />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/customers/new"
+          element={
+            <PrivateRoute>
+              <AddCustomer />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/customers/:id"
+          element={
+            <PrivateRoute>
+              <CustomerDetails />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/drivers"
+          element={
+            <PrivateRoute>
+              <Drivers />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/drivers/form"
+          element={
+            <PrivateRoute>
+              <DriverForm />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/drivers/:id"
+          element={
+            <PrivateRoute>
+              <DriverDetails />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/helpers"
+          element={
+            <PrivateRoute>
+              <Helpers />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/helpers/form"
+          element={
+            <PrivateRoute>
+              <HelperForm />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/helpers/:id"
+          element={
+            <PrivateRoute>
+              <HelperDetails />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/trucks"
+          element={
+            <PrivateRoute>
+              <Trucks />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/users"
+          element={
+            <PrivateRoute>
+              <Users />
+            </PrivateRoute>
+          }
+        />
 
         {/* Contracts */}
-        <Route path="/contracts" element={<PrivateRoute><Contracts /></PrivateRoute>} />
-        <Route path="/contracts/form" element={<PrivateRoute><ContractForm /></PrivateRoute>} />
-        <Route path="/contracts/view" element={<PrivateRoute><ContractView /></PrivateRoute>} />
+        <Route
+          path="/contracts"
+          element={
+            <PrivateRoute>
+              <Contracts />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/contracts/form"
+          element={
+            <PrivateRoute>
+              <ContractForm />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/contracts/view"
+          element={
+            <PrivateRoute>
+              <ContractView />
+            </PrivateRoute>
+          }
+        />
 
         {/* Operations */}
-        <Route path="/trips" element={<PrivateRoute><Trips /></PrivateRoute>} />
+        <Route
+          path="/trips"
+          element={
+            <PrivateRoute>
+              <Trips />
+            </PrivateRoute>
+          }
+        />
 
         {/* System */}
-        <Route path="/trail" element={<PrivateRoute><Trail /></PrivateRoute>} />
+        <Route
+          path="/trail"
+          element={
+            <PrivateRoute>
+              <Trail />
+            </PrivateRoute>
+          }
+        />
 
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />

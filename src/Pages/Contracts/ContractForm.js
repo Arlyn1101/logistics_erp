@@ -29,12 +29,6 @@ const empty_route = {
   remarks: "",
 };
 
-const payment_terms_options = [
-  { value: "Net 15", label: "Net 15" },
-  { value: "Net 30", label: "Net 30" },
-  { value: "Net 60", label: "Net 60" },
-];
-
 const select_style = {
   control: (base) => ({
     ...base,
@@ -69,7 +63,7 @@ export default function ContractForm() {
     customer_id: "",
     date_signed: "",
     authorized_representative: "",
-    payment_terms: "",
+    payment_terms_days: "",          // FIX: changed to number input
     monthly_rate: "",
     included_trips: "",
     excess_trip_charge: "",
@@ -100,18 +94,24 @@ export default function ContractForm() {
 
   async function load_contract() {
     if (!is_edit) return;
-    console.log("load_contract passed_contract:", passed_contract);
     const response = await getContractDetails(passed_contract.id);
-    console.log("load_contract response:", response);
     if (response.data && response.data.data) {
       const data = response.data.data;
       set_contract_number(data.contract_number || "");
+
+      // FIX: parse payment_terms — strip "Net " prefix and store just the number
+      let payment_days = "";
+      if (data.payment_terms) {
+        const match = data.payment_terms.match(/\d+/);
+        payment_days = match ? match[0] : data.payment_terms;
+      }
+
       set_form({
         id: data.id,
         customer_id: data.customer_id,
         date_signed: data.date_signed || "",
         authorized_representative: data.authorized_representative || "",
-        payment_terms: data.payment_terms || "",
+        payment_terms_days: payment_days,
         monthly_rate: data.monthly_rate,
         included_trips: data.included_trips,
         excess_trip_charge: data.excess_trip_charge,
@@ -171,7 +171,15 @@ export default function ContractForm() {
   };
 
   async function handle_save() {
-    if (!validateContract(form, set_is_error)) return;
+    // Build payment_terms string for backend: "Net X days"
+    const payload = {
+      ...form,
+      payment_terms: form.payment_terms_days
+        ? `Net ${form.payment_terms_days} days`
+        : "",
+    };
+
+    if (!validateContract(payload, set_is_error)) return;
     set_is_clicked(true);
 
     const valid_routes = routes.filter(
@@ -179,14 +187,12 @@ export default function ContractForm() {
     );
 
     const response = is_edit
-      ? await updateContract(form, valid_routes)
-      : await createContract(form, valid_routes);
+      ? await updateContract(payload, valid_routes)
+      : await createContract(payload, valid_routes);
 
     if (response.data && response.data.response) {
       toast.success(
-        is_edit
-          ? "Contract updated successfully!"
-          : "Contract added successfully!",
+        is_edit ? "Contract updated successfully!" : "Contract added successfully!",
         { style: toastStyle() },
       );
       navigate("/contracts");
@@ -206,9 +212,6 @@ export default function ContractForm() {
     customer_options.find(
       (c) => String(c.value) === String(form.customer_id),
     ) || null;
-
-  const selected_payment_terms =
-    payment_terms_options.find((p) => p.value === form.payment_terms) || null;
 
   return (
     <div>
@@ -259,7 +262,7 @@ export default function ContractForm() {
           <Col>
             CUSTOMER <span className="required-icon">*</span>
             <Select
-               classNamePrefix="react-select"
+              classNamePrefix="react-select"
               options={customer_options}
               value={selected_customer}
               onChange={(selected) =>
@@ -272,12 +275,10 @@ export default function ContractForm() {
               isClearable
               styles={select_style}
             />
-            <InputError
-              isValid={is_error.customer_id}
-              message="Customer is required"
-            />
+            <InputError isValid={is_error.customer_id} message="Customer is required" />
           </Col>
         </Row>
+        {/* FIX: removed placeholder text from authorized representative */}
         <Row className="nc-modal-custom-row">
           <Col>
             AUTHORIZED REPRESENTATIVE
@@ -287,7 +288,6 @@ export default function ContractForm() {
               value={form.authorized_representative}
               className="nc-modal-custom-input"
               onChange={handle_change}
-              placeholder="Name of person who signed"
             />
           </Col>
         </Row>
@@ -299,20 +299,14 @@ export default function ContractForm() {
           <Row className="nc-modal-custom-row">
             <Col>
               CONTRACT NUMBER
-              <div
-                style={{
-                  fontFamily: "var(--primary-font-bold)",
-                  fontSize: 16,
-                  color: "#2d3e4e",
-                  padding: "6px 0",
-                }}
-              >
+              <div style={{ fontFamily: "var(--primary-font-bold)", fontSize: 16, color: "#2d3e4e", padding: "6px 0" }}>
                 {contract_number}
               </div>
             </Col>
           </Row>
         )}
 
+        {/* FIX: 3 date fields in one row */}
         <Row className="nc-modal-custom-row">
           <Col>
             DATE OF CONTRACT
@@ -321,11 +315,37 @@ export default function ContractForm() {
               onChange={(date) => handle_date_change("date_signed", date)}
               dateFormat="yyyy-MM-dd"
               className="nc-modal-custom-input w-100"
-              placeholderText="Select date of contract"
+              placeholderText="Select date"
             />
           </Col>
-          {is_edit && (
-            <Col>
+          <Col>
+            START DATE <span className="required-icon">*</span>
+            <ReactDatePicker
+              selected={form.start_date ? new Date(form.start_date) : null}
+              onChange={(date) => handle_date_change("start_date", date)}
+              dateFormat="yyyy-MM-dd"
+              className="nc-modal-custom-input w-100"
+              placeholderText="Select start date"
+            />
+            <InputError isValid={is_error.start_date} message="Start date is required" />
+          </Col>
+          {/* FIX: end date is now required */}
+          <Col>
+            END DATE <span className="required-icon">*</span>
+            <ReactDatePicker
+              selected={form.end_date ? new Date(form.end_date) : null}
+              onChange={(date) => handle_date_change("end_date", date)}
+              dateFormat="yyyy-MM-dd"
+              className="nc-modal-custom-input w-100"
+              placeholderText="Select end date"
+            />
+            <InputError isValid={is_error.end_date} message="End date is required" />
+          </Col>
+        </Row>
+
+        {is_edit && (
+          <Row className="nc-modal-custom-row">
+            <Col xs={4}>
               STATUS
               <div className="status-select-wrap">
                 <span className={status_dot_class}></span>
@@ -341,37 +361,8 @@ export default function ContractForm() {
                 </Form.Select>
               </div>
             </Col>
-          )}
-        </Row>
-        <Row className="nc-modal-custom-row">
-          <Col>
-            START DATE <span className="required-icon">*</span>
-            <ReactDatePicker
-              selected={form.start_date ? new Date(form.start_date) : null}
-              onChange={(date) => handle_date_change("start_date", date)}
-              dateFormat="yyyy-MM-dd"
-              className="nc-modal-custom-input w-100"
-              placeholderText="Select start date"
-            />
-            <InputError
-              isValid={is_error.start_date}
-              message="Start date is required"
-            />
-          </Col>
-          <Col>
-            END DATE{" "}
-            <span style={{ color: "#aaa", fontSize: 11, marginLeft: 4 }}>
-              (leave blank if open-ended)
-            </span>
-            <ReactDatePicker
-              selected={form.end_date ? new Date(form.end_date) : null}
-              onChange={(date) => handle_date_change("end_date", date)}
-              dateFormat="yyyy-MM-dd"
-              className="nc-modal-custom-input w-100"
-              placeholderText="Select end date"
-            />
-          </Col>
-        </Row>
+          </Row>
+        )}
 
         {/* ── Section 3: Rate & Billing ── */}
         <div className="form-section-label">Rate & Billing</div>
@@ -386,10 +377,7 @@ export default function ContractForm() {
               onChange={handle_change}
               placeholder="e.g. 10000"
             />
-            <InputError
-              isValid={is_error.monthly_rate}
-              message="Monthly rate is required"
-            />
+            <InputError isValid={is_error.monthly_rate} message="Monthly rate is required" />
           </Col>
           <Col>
             INCLUDED TRIPS / MONTH <span className="required-icon">*</span>
@@ -401,10 +389,7 @@ export default function ContractForm() {
               onChange={handle_change}
               placeholder="e.g. 4"
             />
-            <InputError
-              isValid={is_error.included_trips}
-              message="Included trips is required"
-            />
+            <InputError isValid={is_error.included_trips} message="Included trips is required" />
           </Col>
         </Row>
         <Row className="nc-modal-custom-row">
@@ -418,14 +403,10 @@ export default function ContractForm() {
               onChange={handle_change}
               placeholder="Charge per extra trip"
             />
-            <InputError
-              isValid={is_error.excess_trip_charge}
-              message="Excess trip charge is required"
-            />
+            <InputError isValid={is_error.excess_trip_charge} message="Excess trip charge is required" />
           </Col>
           <Col>
-            AGREED FUEL PRICE / LITER (₱){" "}
-            <span className="required-icon">*</span>
+            AGREED FUEL PRICE / LITER (₱) <span className="required-icon">*</span>
             <Form.Control
               type="number"
               name="fuel_price_per_liter"
@@ -434,49 +415,33 @@ export default function ContractForm() {
               onChange={handle_change}
               placeholder="e.g. 50"
             />
-            <InputError
-              isValid={is_error.fuel_price_per_liter}
-              message="Fuel price is required"
-            />
+            <InputError isValid={is_error.fuel_price_per_liter} message="Fuel price is required" />
           </Col>
         </Row>
+
+        {/* FIX: payment terms → number input with "days" label */}
         <Row className="nc-modal-custom-row">
           <Col xs={6}>
             PAYMENT TERMS
-            <Select
-              classNamePrefix="react-select"
-              options={payment_terms_options}
-              value={selected_payment_terms}
-              onChange={(selected) =>
-                set_form((prev) => ({
-                  ...prev,
-                  payment_terms: selected ? selected.value : "",
-                }))
-              }
-              placeholder="Select payment terms..."
-              isClearable
-              styles={select_style}
-            />
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <Form.Control
+                type="number"
+                name="payment_terms_days"
+                value={form.payment_terms_days}
+                className="nc-modal-custom-input"
+                onChange={handle_change}
+                placeholder="e.g. 30"
+                min={1}
+                style={{ width: 120, flex: "0 0 120px" }}
+              />
+              <span style={{ fontFamily: "var(--primary-font-medium)", fontSize: 14, color: "#2d3e4e", whiteSpace: "nowrap" }}>
+                days{form.payment_terms_days ? ` (Net ${form.payment_terms_days})` : ""}
+              </span>
+            </div>
           </Col>
         </Row>
 
-        {/* ── Section 5: Remarks ── */}
-        <div className="form-section-label">Remarks</div>
-        <Row className="nc-modal-custom-row">
-          <Col>
-            <Form.Control
-              as="textarea"
-              rows={2}
-              name="remarks"
-              value={form.remarks || ""}
-              className="nc-modal-custom-input"
-              onChange={handle_change}
-              placeholder="Optional notes about this contract"
-            />
-          </Col>
-        </Row>
-
-        {/* ── Section 6: Route Matrix ── */}
+        {/* ── Section 4: Routes ── */}
         <div
           className="d-flex justify-content-between align-items-center mt-4"
           style={{ marginBottom: 8 }}
@@ -490,8 +455,7 @@ export default function ContractForm() {
 
         {routes.length === 0 && (
           <p style={{ color: "#aaa", fontSize: 13 }}>
-            No routes added yet. Click "Add Route" to define pickup and delivery
-            points.
+            No routes added yet. Click "Add Route" to define pickup and delivery points.
           </p>
         )}
 
@@ -507,23 +471,13 @@ export default function ContractForm() {
             }}
           >
             <div className="d-flex justify-content-between align-items-center mb-2">
-              <span
-                style={{
-                  fontFamily: "var(--primary-font-medium)",
-                  fontSize: 13,
-                  color: "#2d3e4e",
-                }}
-              >
+              <span style={{ fontFamily: "var(--primary-font-medium)", fontSize: 13, color: "#2d3e4e" }}>
                 Route {index + 1}
               </span>
               {routes.length > 1 && (
                 <button
                   className="button-warning"
-                  style={{
-                    width: "auto",
-                    padding: "2px 10px",
-                    fontSize: 12,
-                  }}
+                  style={{ width: "auto", padding: "2px 10px", fontSize: 12 }}
                   onClick={() => remove_route(index)}
                 >
                   <FontAwesomeIcon icon={faTrash} />
@@ -580,6 +534,23 @@ export default function ContractForm() {
             </Row>
           </div>
         ))}
+
+        {/* FIX: Remarks moved to last */}
+        <div className="form-section-label">Remarks</div>
+        <Row className="nc-modal-custom-row">
+          <Col>
+            <Form.Control
+              as="textarea"
+              rows={2}
+              name="remarks"
+              value={form.remarks || ""}
+              className="nc-modal-custom-input"
+              onChange={handle_change}
+              placeholder="Optional notes about this contract"
+            />
+          </Col>
+        </Row>
+
       </div>
     </div>
   );
