@@ -13,9 +13,6 @@ import { faDownload, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { validateDriver } from "../../Helpers/Validation/Manage/driverValidation";
 import { toastStyle } from "../../Helpers/Utils/Common";
 import toast from "react-hot-toast";
-import moment from "moment";
-import ReactDatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
 import "../Manage/Manage.css";
 import "../../Components/Navbar/Navbar.css";
 import "../../Components/Modals/Modal.css";
@@ -28,7 +25,10 @@ export default function DriverForm() {
 
   const [inactive, set_inactive] = useState(false);
   const [is_clicked, set_is_clicked] = useState(false);
-  const [is_error, set_is_error] = useState({ first_name: false, last_name: false });
+  const [is_error, set_is_error] = useState({
+    first_name: false,
+    last_name: false,
+  });
 
   const empty_form = {
     first_name: "",
@@ -57,12 +57,13 @@ export default function DriverForm() {
   };
 
   const safe_date = (val) => {
-  if (!val || val === "0000-00-00" || val === "0000-00-00 00:00:00") return null;
-  const d = moment(val, "YYYY-MM-DD", true);
-  return d.isValid() ? d.toDate() : null;
-};
+    if (!val || val === "0000-00-00" || val === "0000-00-00 00:00:00")
+      return null;
+    const d = new Date(val + "T00:00:00");
+    return isNaN(d.getTime()) ? null : d;
+  };
 
-const [form, set_form] = useState({ ...empty_form });
+  const [form, set_form] = useState({ ...empty_form });
   const [attachments, set_attachments] = useState([]);
 
   async function load_driver() {
@@ -79,7 +80,10 @@ const [form, set_form] = useState({ ...empty_form });
         contact_number: data.contact_number || "",
         address: data.address || "",
         status: data.status || "active",
-        birthdate: data.birthdate && data.birthdate !== "0000-00-00" ? data.birthdate : "",
+        birthdate:
+          data.birthdate && data.birthdate !== "0000-00-00"
+            ? data.birthdate
+            : "",
         gender: data.gender || "",
         civil_status: data.civil_status || "",
         nationality: data.nationality || "",
@@ -87,10 +91,14 @@ const [form, set_form] = useState({ ...empty_form });
         email: data.email || "",
         emergency_contact_name: data.emergency_contact_name || "",
         emergency_contact_number: data.emergency_contact_number || "",
-        emergency_contact_relationship: data.emergency_contact_relationship || "",
+        emergency_contact_relationship:
+          data.emergency_contact_relationship || "",
         emergency_contact_address: data.emergency_contact_address || "",
         license_number: data.license_number || "",
-        license_expiry: data.license_expiry && data.license_expiry !== "0000-00-00" ? data.license_expiry : "",
+        license_expiry:
+          data.license_expiry && data.license_expiry !== "0000-00-00"
+            ? data.license_expiry
+            : "",
         sss_number: data.sss_number || "",
         pagibig_number: data.pagibig_number || "",
         philhealth_number: data.philhealth_number || "",
@@ -108,13 +116,6 @@ const [form, set_form] = useState({ ...empty_form });
     set_form((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handle_date_change = (field, date) => {
-    set_form((prev) => ({
-      ...prev,
-      [field]: date ? moment(date).format("YYYY-MM-DD") : "",
-    }));
-  };
-
   async function handle_save() {
     if (!validateDriver(form, set_is_error)) return;
     set_is_clicked(true);
@@ -124,13 +125,13 @@ const [form, set_form] = useState({ ...empty_form });
     if (response.data && response.data.response) {
       toast.success(
         is_edit ? "Driver updated successfully!" : "Driver added successfully!",
-        { style: toastStyle() }
+        { style: toastStyle() },
       );
       navigate("/drivers");
     } else {
       toast.error(
         is_edit ? "Failed to update driver." : "Failed to add driver.",
-        { style: toastStyle() }
+        { style: toastStyle() },
       );
     }
     set_is_clicked(false);
@@ -149,10 +150,12 @@ const [form, set_form] = useState({ ...empty_form });
       </div>
 
       <div className={`manager-container ${inactive ? "inactive" : "active"}`}>
-
         {/* Breadcrumb */}
         <div className="add-customer-breadcrumb">
-          <span className="breadcrumb-link" onClick={() => navigate("/drivers")}>
+          <span
+            className="breadcrumb-link"
+            onClick={() => navigate("/drivers")}
+          >
             Drivers
           </span>
           <span className="breadcrumb-sep">›</span>
@@ -192,12 +195,13 @@ const [form, set_form] = useState({ ...empty_form });
         </div>
 
         <div className="biodata-card">
-
           {/* ── Section 1: Driver Information ── */}
           <div className="biodata-section-label">Driver Information</div>
           <Row className="nc-modal-custom-row">
             <Col>
-              <div className="field-label">FIRST NAME <span className="required-icon">*</span></div>
+              <div className="field-label">
+                FIRST NAME <span className="required-icon">*</span>
+              </div>
               <Form.Control
                 type="text"
                 name="first_name"
@@ -205,7 +209,10 @@ const [form, set_form] = useState({ ...empty_form });
                 className="nc-modal-custom-input"
                 onChange={handle_change}
               />
-              <InputError isValid={is_error.first_name} message="First name is required" />
+              <InputError
+                isValid={is_error.first_name}
+                message="First name is required"
+              />
             </Col>
             <Col>
               <div className="field-label">MIDDLE NAME</div>
@@ -218,7 +225,9 @@ const [form, set_form] = useState({ ...empty_form });
               />
             </Col>
             <Col>
-              <div className="field-label">LAST NAME <span className="required-icon">*</span></div>
+              <div className="field-label">
+                LAST NAME <span className="required-icon">*</span>
+              </div>
               <Form.Control
                 type="text"
                 name="last_name"
@@ -226,7 +235,10 @@ const [form, set_form] = useState({ ...empty_form });
                 className="nc-modal-custom-input"
                 onChange={handle_change}
               />
-              <InputError isValid={is_error.last_name} message="Last name is required" />
+              <InputError
+                isValid={is_error.last_name}
+                message="Last name is required"
+              />
             </Col>
             <Col xs={2}>
               <div className="field-label">SUFFIX</div>
@@ -297,12 +309,12 @@ const [form, set_form] = useState({ ...empty_form });
           <Row className="nc-modal-custom-row">
             <Col>
               <div className="field-label">BIRTHDATE</div>
-              <ReactDatePicker
-                selected={safe_date(form.birthdate)}
-                onChange={(date) => handle_date_change("birthdate", date)}
-                dateFormat="yyyy-MM-dd"
-                className="nc-modal-custom-input w-100"
-                placeholderText="Select date"
+              <Form.Control
+                type="date"
+                name="birthdate"
+                value={form.birthdate}
+                className="nc-modal-custom-input"
+                onChange={handle_change}
               />
             </Col>
             <Col>
@@ -330,7 +342,6 @@ const [form, set_form] = useState({ ...empty_form });
                 <option value="single">Single</option>
                 <option value="married">Married</option>
                 <option value="widowed">Widowed</option>
-                <option value="separated">Separated</option>
               </Form.Select>
             </Col>
           </Row>
@@ -420,12 +431,12 @@ const [form, set_form] = useState({ ...empty_form });
             </Col>
             <Col>
               <div className="field-label">LICENSE EXPIRY</div>
-              <ReactDatePicker
-                selected={safe_date(form.license_expiry)}
-                onChange={(date) => handle_date_change("license_expiry", date)}
-                dateFormat="yyyy-MM-dd"
-                className="nc-modal-custom-input w-100"
-                placeholderText="Select date"
+              <Form.Control
+                type="date"
+                name="license_expiry"
+                value={form.license_expiry}
+                className="nc-modal-custom-input"
+                onChange={handle_change}
               />
             </Col>
           </Row>
@@ -481,7 +492,7 @@ const [form, set_form] = useState({ ...empty_form });
             </Col>
           </Row>
 
-        {/* ── Section 6: Documents ── */}
+          {/* ── Section 6: Documents ── */}
           <div className="biodata-section-label">Documents</div>
           <div className="field-label">LICENSE FILE</div>
           <input
@@ -507,9 +518,8 @@ const [form, set_form] = useState({ ...empty_form });
               </div>
             </div>
           )}
-
-        </div>{/* end biodata-card */}
-
+        </div>
+        {/* end biodata-card */}
       </div>
     </div>
   );
