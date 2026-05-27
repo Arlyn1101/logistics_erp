@@ -44,20 +44,24 @@ export const createCustomer = async (form, attachments = []) => {
     form_data.append('token', get_token());
 
     const flat_fields = [
-      'trade_name', 'bir_name', 'business_type',         // ← business_type added
-      'bir_region', 'bir_province', 'bir_city',
-      'bir_barangay', 'bir_street',
-      'trade_region', 'trade_province', 'trade_city',
-      'trade_barangay', 'trade_street',
-      'tin', 'term', 'credit_limit', 'vat_type', 'bir_2307',
-      'email', 'address',
+      'trade_name', 'bir_name', 'business_type',
+      'bir_region', 'bir_province', 'bir_city', 'bir_barangay', 'bir_street',
+      'trade_region', 'trade_province', 'trade_city', 'trade_barangay', 'trade_street',
+      'tin', 'term', 'credit_limit', 'vat_type', 'bir_2307', 'email', 'address',
     ];
     flat_fields.forEach((key) => {
       form_data.append(key, form[key] ?? '');
     });
 
-    // Send contacts as JSON string
-    form_data.append('contacts', JSON.stringify(form.contacts ?? []));
+    // ── HERE IS THE MERGE LOGIC ──
+    // Put your hardcoded signatory object into index 0, followed cleanly by the remaining contacts
+    const combined_contacts = [
+      form.signatory,
+      ...(form.contacts || [])
+    ];
+
+    // Stringify and append the array to payload
+    form_data.append('contacts', JSON.stringify(combined_contacts));
 
     attachments.forEach((file) => {
       form_data.append('attachments[]', file.originFileObj);

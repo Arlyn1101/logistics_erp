@@ -50,6 +50,19 @@ export default function AddCustomer() {
     vat_type: '', 
     bir_2307: '',
     contacts: [{ ...empty_contact }],
+
+    signatory: {
+      first_name: "",
+      middle_name: "",
+      last_name: "",
+      suffix: "",
+      number: "",
+      email: "",
+      position: "",
+      role: "Authorized Signatory", 
+    },
+
+    contacts: [],
   };
 
   const [form, set_form] = useState({ ...empty_form });
@@ -270,6 +283,109 @@ useEffect(() => {
                 <Form.Control type="email" name="email" value={form.email}
                   className="nc-modal-custom-input" onChange={handle_change}
                   placeholder="e.g. email@example.com" />
+              </Col>
+            </Row>
+
+            {/* ── Authorized Contract Signatory Section ── */}
+            <div className="biodata-section-label mt-4">Authorized Contract Signatory</div>
+            <p className="text-muted" style={{ fontSize: 12, marginTop: -4, marginBottom: 12 }}>
+              The individual legally authorized to sign corporate agreements (e.g., Owner, CEO, Managing Director).
+            </p>
+
+            <Row className="nc-modal-custom-row">
+              <Col xs={3}>
+                <div className="field-label">FIRST NAME <span className="required-icon">*</span></div>
+                <Form.Control
+                  type="text"
+                  value={form.signatory.first_name}
+                  className="nc-modal-custom-input"
+                  placeholder="First name"
+                  onChange={(e) => set_form(prev => ({
+                    ...prev,
+                    signatory: { ...prev.signatory, first_name: e.target.value }
+                  }))}
+                />
+              </Col>
+              <Col xs={3}>
+                <div className="field-label">MIDDLE NAME</div>
+                <Form.Control
+                  type="text"
+                  value={form.signatory.middle_name}
+                  className="nc-modal-custom-input"
+                  placeholder="Middle name"
+                  onChange={(e) => set_form(prev => ({
+                    ...prev,
+                    signatory: { ...prev.signatory, middle_name: e.target.value }
+                  }))}
+                />
+              </Col>
+              <Col xs={3}>
+                <div className="field-label">LAST NAME <span className="required-icon">*</span></div>
+                <Form.Control
+                  type="text"
+                  value={form.signatory.last_name}
+                  className="nc-modal-custom-input"
+                  placeholder="Last name"
+                  onChange={(e) => set_form(prev => ({
+                    ...prev,
+                    signatory: { ...prev.signatory, last_name: e.target.value }
+                  }))}
+                />
+              </Col>
+              <Col xs={3}>
+                <div className="field-label">SUFFIX</div>
+                <Form.Control
+                  type="text"
+                  value={form.signatory.suffix}
+                  className="nc-modal-custom-input"
+                  placeholder="e.g. Jr., III"
+                  onChange={(e) => set_form(prev => ({
+                    ...prev,
+                    signatory: { ...prev.signatory, suffix: e.target.value }
+                  }))}
+                />
+              </Col>
+            </Row>
+
+            <Row className="nc-modal-custom-row mt-2">
+              <Col xs={4}>
+                <div className="field-label">JOB TITLE / POSITION <span className="required-icon">*</span></div>
+                <Form.Control
+                  type="text"
+                  value={form.signatory.position}
+                  className="nc-modal-custom-input"
+                  placeholder="e.g., Chief Executive Officer"
+                  onChange={(e) => set_form(prev => ({
+                    ...prev,
+                    signatory: { ...prev.signatory, position: e.target.value }
+                  }))}
+                />
+              </Col>
+              <Col xs={4}>
+                <div className="field-label">CONTACT NUMBER <span className="required-icon">*</span></div>
+                <Form.Control
+                  type="text"
+                  value={form.signatory.number}
+                  className="nc-modal-custom-input"
+                  placeholder="09XX-XXX-XXXX"
+                  onChange={(e) => set_form(prev => ({
+                    ...prev,
+                    signatory: { ...prev.signatory, number: e.target.value }
+                  }))}
+                />
+              </Col>
+              <Col xs={4}>
+                <div className="field-label">EMAIL ADDRESS <span className="required-icon">*</span></div>
+                <Form.Control
+                  type="email"
+                  value={form.signatory.email}
+                  className="nc-modal-custom-input"
+                  placeholder="email@example.com"
+                  onChange={(e) => set_form(prev => ({
+                    ...prev,
+                    signatory: { ...prev.signatory, email: e.target.value }
+                  }))}
+                />
               </Col>
             </Row>
 
