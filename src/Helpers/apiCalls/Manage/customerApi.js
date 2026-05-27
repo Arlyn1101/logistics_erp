@@ -43,20 +43,27 @@ export const createCustomer = async (form, attachments = []) => {
     const form_data = new FormData();
     form_data.append('token', get_token());
 
-    // append all form fields
-    Object.keys(form).forEach((key) => {
+    const flat_fields = [
+      'trade_name', 'bir_name', 'business_type',         // ← business_type added
+      'bir_region', 'bir_province', 'bir_city',
+      'bir_barangay', 'bir_street',
+      'trade_region', 'trade_province', 'trade_city',
+      'trade_barangay', 'trade_street',
+      'tin', 'term', 'credit_limit', 'vat_type', 'bir_2307',
+      'email', 'address',
+    ];
+    flat_fields.forEach((key) => {
       form_data.append(key, form[key] ?? '');
     });
 
-    // append files
+    // Send contacts as JSON string
+    form_data.append('contacts', JSON.stringify(form.contacts ?? []));
+
     attachments.forEach((file) => {
       form_data.append('attachments[]', file.originFileObj);
     });
 
-    const response = await postAPICall(
-      `${BASE_URL}/customers/create`,
-      form_data
-    );
+    const response = await postAPICall(`${BASE_URL}/customers/create`, form_data);
     return { data: response.data };
   } catch (error) {
     return { error: error.response };
@@ -66,9 +73,29 @@ export const createCustomer = async (form, attachments = []) => {
 export const updateCustomer = async (form) => {
   try {
     const response = await postAPICall(`${BASE_URL}/customers/update`, {
-      token: get_token(),
-      customer_id: form.id,
-      ...form,
+      token:          get_token(),
+      customer_id:    form.id,
+      trade_name:     form.trade_name,
+      bir_name:       form.bir_name,
+      business_type:  form.business_type,       // ← new
+      bir_region:     form.bir_region,           // ← new
+      bir_province:   form.bir_province,
+      bir_city:       form.bir_city,
+      bir_barangay:   form.bir_barangay,
+      bir_street:     form.bir_street,
+      trade_region:   form.trade_region,         // ← new
+      trade_province: form.trade_province,
+      trade_city:     form.trade_city,
+      trade_barangay: form.trade_barangay,
+      trade_street:   form.trade_street,
+      tin:            form.tin,
+      term:           form.term,
+      credit_limit:   form.credit_limit,
+      vat_type:       form.vat_type,
+      bir_2307:       form.bir_2307,
+      email:          form.email,
+      address:        form.address,
+      contacts:       JSON.stringify(form.contacts ?? []),
     });
     return { data: response.data };
   } catch (error) {
