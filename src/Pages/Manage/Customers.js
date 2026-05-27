@@ -33,6 +33,8 @@ export default function Customers() {
   const [show_edit_modal, set_show_edit_modal] = useState(false);
   const [show_view_modal, set_show_view_modal] = useState(false);
 
+  const empty_contact = { name: "", number: "", role: "" };
+
   const empty_form = {
     first_name: "",
     last_name: "",
@@ -48,24 +50,31 @@ export default function Customers() {
     payee: "",
     vat_type: "",
     bir_2307: "",
-    contact_person: "",
-    contact_number: "",
+    contacts: [{ ...empty_contact }],
     email: "",
     address: "",
   };
   const [add_form, set_add_form] = useState({ ...empty_form });
   const [edit_form, set_edit_form] = useState({ ...empty_form });
-  const [is_error, set_is_error] = useState({ first_name: false, last_name: false });
+  const [is_error, set_is_error] = useState({ first_name: false, last_name: false, tin_duplicate: false });
 
-  const handle_add_change = (e) => {
-    const { name, value } = e.target;
-    set_add_form((prev) => ({ ...prev, [name]: value }));
-  };
 
-  const handle_edit_change = (e) => {
-    const { name, value } = e.target;
-    set_edit_form((prev) => ({ ...prev, [name]: value }));
-  };
+  async function handle_tin_blur(tin_value, current_id = null) {
+    if (!tin_value.trim()) {
+      set_is_error((prev) => ({ ...prev, tin_duplicate: false }));
+      return;
+    }
+    const existing = customer_data.find(
+      (c) =>
+        c.tin &&
+        c.tin.trim() === tin_value.trim() &&
+        (current_id === null || String(c.id) !== String(current_id))
+    );
+    set_is_error((prev) => ({ ...prev, tin_duplicate: !!existing }));
+    if (existing) {
+      toast.error("A customer with this TIN already exists.", { style: toastStyle() });
+    }
+  }
 
   function handle_select_change(e, row) {
     set_selected_row(row);
@@ -125,6 +134,7 @@ export default function Customers() {
   }
 
   async function handle_create() {
+    if (is_error.tin_duplicate) return;
     if (validateCustomer(add_form, set_is_error)) {
       set_is_clicked(true);
       const response = await createCustomer(add_form);
@@ -140,14 +150,14 @@ export default function Customers() {
     }
   }
 
+
   async function handle_update() {
+    if (is_error.tin_duplicate) return;
     if (validateCustomer(edit_form, set_is_error)) {
       set_is_clicked(true);
       const response = await updateCustomer(edit_form);
       if (response.data && response.data.response) {
-        toast.success("Customer updated successfully!", {
-          style: toastStyle(),
-        });
+        toast.success("Customer updated successfully!", { style: toastStyle() });
         set_show_edit_modal(false);
         fetch_customers();
       } else {
@@ -157,234 +167,298 @@ export default function Customers() {
     }
   }
 
+
   React.useEffect(() => {
     fetch_customers();
   }, [fetch_customers]);
 
+  const handle_add_change = (e) => {
+    const { name, value } = e.target;
+    set_add_form((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handle_edit_change = (e) => {
+    const { name, value } = e.target;
+    set_edit_form((prev) => ({ ...prev, [name]: value }));
+  };
+
   // ─── Add / Edit form ───────────────────────────────────────────────────────
-  const form_fields = (form, handle_change) => (
-    <div className="mt-3">
+  const CONTACT_ROLES = ["Accounting", "Admin", "Purchasing", "HR", "Others"];
 
-      {/* Customer Name */}
-      <div className="form-section-label">Customer Name</div>
-      <Row className="nc-modal-custom-row">
-        <Col>
-          FIRST NAME <span className="required-icon">*</span>
-          <Form.Control
-            type="text"
-            name="first_name"
-            value={form.first_name}
-            className="nc-modal-custom-input"
-            onChange={handle_change}
-          />
-          <InputError isValid={is_error.first_name} message="First name is required" />
-        </Col>
-        <Col>
-          LAST NAME <span className="required-icon">*</span>
-          <Form.Control
-            type="text"
-            name="last_name"
-            value={form.last_name}
-            className="nc-modal-custom-input"
-            onChange={handle_change}
-          />
-          <InputError isValid={is_error.last_name} message="Last name is required" />
-        </Col>
-      </Row>
-      <Row className="nc-modal-custom-row">
-        <Col>
-          MIDDLE NAME
-          <Form.Control
-            type="text"
-            name="middle_name"
-            value={form.middle_name}
-            className="nc-modal-custom-input"
-            onChange={handle_change}
-          />
-        </Col>
-        <Col>
-          SUFFIX
-          <Form.Control
-            type="text"
-            name="suffix"
-            value={form.suffix}
-            className="nc-modal-custom-input"
-            onChange={handle_change}
-          />
-        </Col>
-      </Row>
+const handle_contact_change = (form_setter, index, field, value) => {
+  form_setter((prev) => {
+    const updated = [...prev.contacts];
+    updated[index] = { ...updated[index], [field]: value };
+    return { ...prev, contacts: updated };
+  });
+};
 
-      {/* Customer Information */}
-      <div className="form-section-label">Customer Information</div>
-      <Row className="nc-modal-custom-row">
-        <Col>
-          TRADE NAME
-          <Form.Control
-            type="text"
-            name="trade_name"
-            value={form.trade_name}
-            className="nc-modal-custom-input"
-            onChange={handle_change}
-          />
-        </Col>
-        <Col>
-          BIR NAME
-          <Form.Control
-            type="text"
-            name="bir_name"
-            value={form.bir_name}
-            className="nc-modal-custom-input"
-            onChange={handle_change}
-          />
-        </Col>
-      </Row>
-      <Row className="nc-modal-custom-row">
-        <Col>
-          TRADE ADDRESS
-          <Form.Control
-            as="textarea"
-            rows={2}
-            name="trade_address"
-            value={form.trade_address}
-            className="nc-modal-custom-input"
-            onChange={handle_change}
-          />
-        </Col>
-        <Col>
-          BIR REGISTERED ADDRESS
-          <Form.Control
-            as="textarea"
-            rows={2}
-            name="bir_address"
-            value={form.bir_address}
-            className="nc-modal-custom-input"
-            onChange={handle_change}
-          />
-        </Col>
-      </Row>
-      <Row className="nc-modal-custom-row">
-        <Col>
-          TIN
-          <Form.Control
-            type="text"
-            name="tin"
-            value={form.tin}
-            className="nc-modal-custom-input"
-            onChange={handle_change}
-          />
-        </Col>
-        <Col>
-          PAYEE
-          <Form.Control
-            type="text"
-            name="payee"
-            value={form.payee}
-            className="nc-modal-custom-input"
-            onChange={handle_change}
-          />
-        </Col>
-      </Row>
-      <Row className="nc-modal-custom-row">
-        <Col>
-          TERM (DAYS)
-          <Form.Control
-            type="number"
-            name="term"
-            value={form.term}
-            className="nc-modal-custom-input"
-            onChange={handle_change}
-          />
-        </Col>
-        <Col>
-          CREDIT LIMIT
-          <Form.Control
-            type="number"
-            name="credit_limit"
-            value={form.credit_limit}
-            className="nc-modal-custom-input"
-            onChange={handle_change}
-          />
-        </Col>
-      </Row>
-      <Row className="nc-modal-custom-row">
-        <Col>
-          VAT TYPE
-          <Form.Select
-            name="vat_type"
-            value={form.vat_type}
-            className="nc-modal-custom-input"
-            onChange={handle_change}
-          >
-            <option value="">Select</option>
-            <option value="VAT">VAT</option>
-            <option value="NVAT">NVAT</option>
-          </Form.Select>
-        </Col>
-        <Col>
-          BIR 2307
-          <Form.Select
-            name="bir_2307"
-            value={form.bir_2307}
-            className="nc-modal-custom-input"
-            onChange={handle_change}
-          >
-            <option value="">Select</option>
-            <option value="1%">1%</option>
-            <option value="2%">2%</option>
-          </Form.Select>
-        </Col>
-      </Row>
+const add_contact = (form_setter) => {
+  form_setter((prev) => ({
+    ...prev,
+    contacts: [...prev.contacts, { ...empty_contact }],
+  }));
+};
 
-      {/* Contact Details */}
-      <div className="form-section-label">Contact Details</div>
-      <Row className="nc-modal-custom-row">
-        <Col>
-          CONTACT PERSON
-          <Form.Control
-            type="text"
-            name="contact_person"
-            value={form.contact_person}
-            className="nc-modal-custom-input"
-            onChange={handle_change}
-          />
-        </Col>
-        <Col>
-          CONTACT NUMBER
-          <Form.Control
-            type="text"
-            name="contact_number"
-            value={form.contact_number}
-            className="nc-modal-custom-input"
-            onChange={handle_change}
-          />
-        </Col>
-      </Row>
-      <Row className="nc-modal-custom-row">
-        <Col>
-          EMAIL
-          <Form.Control
-            type="email"
-            name="email"
-            value={form.email}
-            className="nc-modal-custom-input"
-            onChange={handle_change}
-          />
-        </Col>
-        <Col>
-          ADDRESS
-          <Form.Control
-            as="textarea"
-            rows={2}
-            name="address"
-            value={form.address}
-            className="nc-modal-custom-input"
-            onChange={handle_change}
-          />
-        </Col>
-      </Row>
+const remove_contact = (form_setter, index) => {
+  form_setter((prev) => {
+    const updated = prev.contacts.filter((_, i) => i !== index);
+    return { ...prev, contacts: updated.length ? updated : [{ ...empty_contact }] };
+  });
+};
 
-    </div>
-  );
+const form_fields = (form, handle_change, form_setter) => (
+  <div className="mt-3">
+
+    {/* Customer Name */}
+    <div className="form-section-label">Customer Name</div>
+    <Row className="nc-modal-custom-row">
+      <Col>
+        FIRST NAME <span className="required-icon">*</span>
+        <Form.Control
+          type="text"
+          name="first_name"
+          value={form.first_name}
+          className="nc-modal-custom-input"
+          onChange={handle_change}
+        />
+        <InputError isValid={is_error.first_name} message="First name is required" />
+      </Col>
+      <Col>
+        LAST NAME <span className="required-icon">*</span>
+        <Form.Control
+          type="text"
+          name="last_name"
+          value={form.last_name}
+          className="nc-modal-custom-input"
+          onChange={handle_change}
+        />
+        <InputError isValid={is_error.last_name} message="Last name is required" />
+      </Col>
+    </Row>
+    <Row className="nc-modal-custom-row">
+      <Col>
+        MIDDLE NAME
+        <Form.Control
+          type="text"
+          name="middle_name"
+          value={form.middle_name}
+          className="nc-modal-custom-input"
+          onChange={handle_change}
+        />
+      </Col>
+      <Col>
+        SUFFIX
+        <Form.Control
+          type="text"
+          name="suffix"
+          value={form.suffix}
+          className="nc-modal-custom-input"
+          onChange={handle_change}
+        />
+      </Col>
+    </Row>
+
+    {/* Customer Information */}
+    <div className="form-section-label">Customer Information</div>
+    <Row className="nc-modal-custom-row">
+      <Col>
+        TRADE NAME
+        <Form.Control
+          type="text"
+          name="trade_name"
+          value={form.trade_name}
+          className="nc-modal-custom-input"
+          onChange={handle_change}
+        />
+      </Col>
+      <Col>
+        BIR NAME
+        <Form.Control
+          type="text"
+          name="bir_name"
+          value={form.bir_name}
+          className="nc-modal-custom-input"
+          onChange={handle_change}
+        />
+      </Col>
+    </Row>
+    <Row className="nc-modal-custom-row">
+      <Col>
+        TRADE ADDRESS
+        <Form.Control
+          as="textarea"
+          rows={2}
+          name="trade_address"
+          value={form.trade_address}
+          className="nc-modal-custom-input"
+          onChange={handle_change}
+        />
+      </Col>
+      <Col>
+        BIR REGISTERED ADDRESS
+        <Form.Control
+          as="textarea"
+          rows={2}
+          name="bir_address"
+          value={form.bir_address}
+          className="nc-modal-custom-input"
+          onChange={handle_change}
+        />
+      </Col>
+    </Row>
+    <Row className="nc-modal-custom-row">
+      <Col>
+        TIN
+        <Form.Control
+          type="text"
+          name="tin"
+          value={form.tin}
+          className="nc-modal-custom-input"
+          onChange={(e) => {
+            handle_change(e);
+            set_is_error((prev) => ({ ...prev, tin_duplicate: false }));
+          }}
+          onBlur={(e) => handle_tin_blur(e.target.value, form.id ?? null)}
+        />
+        <InputError isValid={is_error.tin_duplicate} message="A customer with this TIN already exists" />
+      </Col>
+    </Row>
+    <Row className="nc-modal-custom-row">
+      <Col>
+        TERM (DAYS)
+        <Form.Control
+          type="number"
+          name="term"
+          value={form.term}
+          className="nc-modal-custom-input"
+          onChange={handle_change}
+        />
+      </Col>
+      <Col>
+        CREDIT LIMIT
+        <Form.Control
+          type="number"
+          name="credit_limit"
+          value={form.credit_limit}
+          className="nc-modal-custom-input"
+          onChange={handle_change}
+        />
+      </Col>
+    </Row>
+    <Row className="nc-modal-custom-row">
+      <Col>
+        VAT TYPE
+        <Form.Select
+          name="vat_type"
+          value={form.vat_type}
+          className="nc-modal-custom-input"
+          onChange={handle_change}
+        >
+          <option value="">Select</option>
+          <option value="VAT">VAT</option>
+          <option value="NVAT">NVAT</option>
+        </Form.Select>
+      </Col>
+      <Col>
+        BIR 2307
+        <Form.Select
+          name="bir_2307"
+          value={form.bir_2307}
+          className="nc-modal-custom-input"
+          onChange={handle_change}
+        >
+          <option value="">Select</option>
+          <option value="1%">1%</option>
+          <option value="2%">2%</option>
+        </Form.Select>
+      </Col>
+    </Row>
+
+    {/* Contact Details */}
+    <div className="form-section-label">Contact Details</div>
+    {form.contacts.map((contact, index) => (
+      <div key={index} className="nc-modal-custom-row contact-entry">
+        <Row className="mb-2 align-items-end">
+          <Col>
+            CONTACT PERSON
+            <Form.Control
+              type="text"
+              value={contact.name}
+              className="nc-modal-custom-input"
+              onChange={(e) => handle_contact_change(form_setter, index, "name", e.target.value)}
+            />
+          </Col>
+          <Col>
+            CONTACT NUMBER
+            <Form.Control
+              type="text"
+              value={contact.number}
+              className="nc-modal-custom-input"
+              onChange={(e) => handle_contact_change(form_setter, index, "number", e.target.value)}
+            />
+          </Col>
+          <Col>
+            ROLE
+            <Form.Select
+              value={contact.role}
+              className="nc-modal-custom-input"
+              onChange={(e) => handle_contact_change(form_setter, index, "role", e.target.value)}
+            >
+              <option value="">Select Role</option>
+              {CONTACT_ROLES.map((r) => (
+                <option key={r} value={r}>{r}</option>
+              ))}
+            </Form.Select>
+          </Col>
+          <Col xs="auto" className="d-flex align-items-end pb-1">
+            {form.contacts.length > 1 && (
+              <button
+                type="button"
+                className="btn btn-sm btn-outline-danger"
+                onClick={() => remove_contact(form_setter, index)}
+              >
+                Remove
+              </button>
+            )}
+          </Col>
+        </Row>
+      </div>
+    ))}
+    <button
+      type="button"
+      className="btn btn-sm btn-outline-primary mt-1 mb-3"
+      onClick={() => add_contact(form_setter)}
+    >
+      + Add Contact Person
+    </button>
+
+    <Row className="nc-modal-custom-row">
+      <Col>
+        EMAIL
+        <Form.Control
+          type="email"
+          name="email"
+          value={form.email}
+          className="nc-modal-custom-input"
+          onChange={handle_change}
+        />
+      </Col>
+      <Col>
+        ADDRESS
+        <Form.Control
+          as="textarea"
+          rows={2}
+          name="address"
+          value={form.address}
+          className="nc-modal-custom-input"
+          onChange={handle_change}
+        />
+      </Col>
+    </Row>
+
+  </div>
+);
 
   // ─── View modal record card ────────────────────────────────────────────────
   function view_content(form) {
@@ -566,7 +640,7 @@ export default function Customers() {
         onSave={handle_create}
         isClicked={is_clicked}
       >
-        {form_fields(add_form, handle_add_change)}
+        {form_fields(add_form, handle_add_change, set_add_form)}
       </AddModal>
 
       <EditModal
@@ -577,7 +651,7 @@ export default function Customers() {
         onSave={handle_update}
         isClicked={is_clicked}
       >
-        {form_fields(edit_form, handle_edit_change)}
+        {form_fields(edit_form, handle_edit_change, set_edit_form)}
       </EditModal>
 
       <ViewModal
