@@ -244,6 +244,11 @@
   color: #fff;
 }
 
+.status-badge.completed {
+  background: #27ae60;
+  color: #fff;
+}
+
 /* ── View modal — fleet record card ── */
 .truck-view-wrapper {
   padding: 8px 4px;
