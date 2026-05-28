@@ -1,10 +1,16 @@
 import React, { useState } from "react";
 import { Modal, Row, Col, Form } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faUniversity } from "@fortawesome/free-solid-svg-icons";
+import { faUniversity, faDownload, faTrash, faPaperclip } from "@fortawesome/free-solid-svg-icons";
 import toast from "react-hot-toast";
 import moment from "moment";
-import { createPayment } from "../../Helpers/apiCalls/Finance/paymentApi";
+import {
+  createPayment,
+  uploadPaymentAttachments,
+  getPaymentAttachments,
+  deletePaymentAttachment,
+  downloadPaymentAttachment,
+} from "../../Helpers/apiCalls/Finance/paymentApi";
 import { toastStyle } from "../../Helpers/Utils/Common";
 
 const BANKS = [
@@ -38,7 +44,8 @@ export default function PaymentModal({ show, onHide, billing, on_success }) {
 
   const [form, set_form]         = useState({ ...empty_form });
   const [is_clicked, set_is_clicked] = useState(false);
-  const [is_error, set_is_error] = useState({});
+  const [is_error, set_is_error]           = useState({});
+  const [new_attachments, set_new_attachments] = useState([]);
 
   const fmt = (val) =>
     `₱ ${parseFloat(val || 0).toLocaleString("en-PH", { minimumFractionDigits: 2 })}`;
@@ -103,6 +110,10 @@ export default function PaymentModal({ show, onHide, billing, on_success }) {
     set_is_clicked(true);
     const response = await createPayment({ ...form, billing_id: billing.id });
     if (response.data && response.data.status === "success") {
+      const payment_id = response.data.payment_id;
+      if (new_attachments.length > 0 && payment_id) {
+        await uploadPaymentAttachments(payment_id, new_attachments);
+      }
       toast.success("Payment recorded successfully!", { style: toastStyle() });
       on_success();
       onHide();
@@ -115,6 +126,7 @@ export default function PaymentModal({ show, onHide, billing, on_success }) {
   function handle_close() {
     set_form({ ...empty_form });
     set_is_error({});
+    set_new_attachments([]);
     onHide();
   }
 
@@ -482,6 +494,53 @@ export default function PaymentModal({ show, onHide, billing, on_success }) {
             </Row>
           </>
         )}
+
+        {/* Supporting Documents */}
+        <div className="form-section-label mt-3">Supporting Documents</div>
+        <Row className="nc-modal-custom-row">
+          <Col>
+            <div className="field-label">
+              ATTACH FILES <span className="edit-optional px-1">(Optional)</span>
+            </div>
+            <input
+              type="file"
+              multiple
+              accept=".pdf,.jpg,.jpeg,.png"
+              className="nc-modal-custom-input"
+              onChange={(e) => {
+                const files = Array.from(e.target.files);
+                set_new_attachments((prev) => [...prev, ...files]);
+                e.target.value = "";
+              }}
+            />
+            <small style={{ color: "#8a9ab0" }}>
+              Accepted: PDF, JPG, PNG — e.g. deposit slip, transfer screenshot, check photo
+            </small>
+            {new_attachments.length > 0 && (
+              <div className="mt-2">
+                {new_attachments.map((file, i) => (
+                  <div key={i} className="attachment-row">
+                    <span className="attachment-name">
+                      <FontAwesomeIcon icon={faPaperclip} className="me-1" />
+                      {file.name}
+                    </span>
+                    <div className="attachment-actions">
+                      <button
+                        type="button"
+                        className="attachment-btn attachment-remove"
+                        onClick={() =>
+                          set_new_attachments((prev) => prev.filter((_, idx) => idx !== i))
+                        }
+                      >
+                        <FontAwesomeIcon icon={faTrash} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Col>
+        </Row>
 
         {/* Remarks */}
         <Row className="nc-modal-custom-row mt-2">
