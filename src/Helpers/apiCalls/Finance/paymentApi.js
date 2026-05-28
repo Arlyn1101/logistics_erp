@@ -37,11 +37,22 @@ export const getPaymentDetails = async (payment_id) => {
   }
 };
 
-export const createPayment = async (data) => {
+export const createPayment = async (form) => {
   try {
     const response = await postAPICall(`${BASE_URL}/contract_billing_payments/create`, {
-      token: get_token(),
-      ...data,
+      token:            get_token(),
+      billing_id:       form.billing_id,
+      payment_date:     form.payment_date,
+      payment_method:   form.payment_method,
+      amount:           form.amount,
+      reference_number: form.reference_number || null,
+      check_number:     form.check_number     || null,
+      check_date:       form.check_date       || null,
+      bank_name:        form.bank_name        || null,
+      deposit_date:     form.deposit_date     || null,
+      deposited_to:     form.deposited_to     || null,
+      transfer_date:    form.transfer_date    || null,
+      remarks:          form.remarks          || null,
     });
     return { data: response.data };
   } catch (error) {

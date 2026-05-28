@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import PaymentModal from "../../Components/Modals/PaymentModal";
 import { Col, Form, Row } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../../Components/Navbar/Navbar";
@@ -15,6 +16,8 @@ export default function Billings() {
   const [active_tab, set_active_tab] = useState("all");
   const [billing_data, set_billing_data] = useState([]);
   const [filtered_data, set_filtered_data] = useState([]);
+  const [show_payment_modal, set_show_payment_modal] = useState(false);
+  const [selected_billing, set_selected_billing] = useState(null);
 
   function StatusBadge(status) {
     const map = {
@@ -56,7 +59,8 @@ export default function Billings() {
     if (action === "view-billing") {
       navigate("/billings/view", { state: { billing: row } });
     } else if (action === "add-payment") {
-      navigate("/payments/form", { state: { billing: row } });
+      set_selected_billing(row);
+      set_show_payment_modal(true);
     }
   }
 
@@ -171,6 +175,13 @@ export default function Billings() {
           />
         </div>
       </div>
+
+      <PaymentModal
+        show={show_payment_modal}
+        onHide={() => set_show_payment_modal(false)}
+        billing={selected_billing}
+        on_success={() => fetch_billings()}
+      />
     </div>
   );
 }
