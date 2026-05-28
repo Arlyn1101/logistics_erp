@@ -16,9 +16,6 @@ import { faDownload, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { validateHelper } from "../../Helpers/Validation/Manage/helperValidation";
 import { toastStyle } from "../../Helpers/Utils/Common";
 import toast from "react-hot-toast";
-import moment from "moment";
-import ReactDatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
 import "../Manage/Manage.css";
 import "../../Components/Navbar/Navbar.css";
 import "../../Components/Modals/Modal.css";
@@ -82,7 +79,7 @@ export default function HelperForm() {
         contact_number: data.contact_number || "",
         address: data.address || "",
         status: data.status || "active",
-        birthdate: data.birthdate || "",
+        birthdate: data.birthdate && data.birthdate !== "0000-00-00" ? data.birthdate : "",
         gender: data.gender || "",
         civil_status: data.civil_status || "",
         nationality: data.nationality || "",
@@ -108,13 +105,6 @@ export default function HelperForm() {
   const handle_change = (e) => {
     const { name, value } = e.target;
     set_form((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handle_date_change = (field, date) => {
-    set_form((prev) => ({
-      ...prev,
-      [field]: date ? moment(date).format("YYYY-MM-DD") : "",
-    }));
   };
 
   async function handle_save() {
@@ -299,12 +289,12 @@ export default function HelperForm() {
           <Row className="nc-modal-custom-row">
             <Col>
               <div className="field-label">BIRTHDATE</div>
-              <ReactDatePicker
-                selected={form.birthdate ? new Date(form.birthdate) : null}
-                onChange={(date) => handle_date_change("birthdate", date)}
-                dateFormat="yyyy-MM-dd"
-                className="nc-modal-custom-input w-100"
-                placeholderText="Select date"
+              <Form.Control
+                type="date"
+                name="birthdate"
+                value={form.birthdate}
+                className="nc-modal-custom-input"
+                onChange={handle_change}
               />
             </Col>
             <Col>
@@ -332,7 +322,6 @@ export default function HelperForm() {
                 <option value="single">Single</option>
                 <option value="married">Married</option>
                 <option value="widowed">Widowed</option>
-                <option value="separated">Separated</option>
               </Form.Select>
             </Col>
           </Row>

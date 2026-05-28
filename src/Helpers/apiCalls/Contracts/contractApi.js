@@ -13,12 +13,11 @@ export const getAllContracts = async () => {
   }
 };
 
-export const searchContracts = async (name = null, status = null) => {
+export const searchContracts = async (filters = {}) => {
   try {
     const response = await getAPICall(`${BASE_URL}/contracts/search`, {
       token: get_token(),
-      name,
-      status,
+      ...filters,
     });
     return { data: response.data };
   } catch (error) {
@@ -153,6 +152,18 @@ export const getContractTripSummary = async (contract_id) => {
     const response = await getAPICall(`${BASE_URL}/contracts/trip_summary`, {
       token: get_token(),
       contract_id,
+    });
+    return { data: response.data };
+  } catch (error) {
+    return { error: error.response };
+  }
+};
+
+export const getContractSuggestions = async (keyword) => {
+  try {
+    const response = await getAPICall(`${BASE_URL}/contracts/get_suggestions`, {
+      token: get_token(),
+      keyword,
     });
     return { data: response.data };
   } catch (error) {

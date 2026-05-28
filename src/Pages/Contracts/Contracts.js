@@ -8,19 +8,33 @@ import {
   getAllContracts,
   searchContracts,
   getContractDetails,
+  getContractSuggestions,
 } from "../../Helpers/apiCalls/Contracts/contractApi";
 import { getAllCustomers } from "../../Helpers/apiCalls/Manage/customerApi";
-import { toastStyle, formatAmount, dateFormat } from "../../Helpers/Utils/Common";
+import { Select as AntSelect, DatePicker as AntDatePicker } from "antd";
+import moment from "moment";
+import {
+  toastStyle,
+  formatAmount,
+  dateFormat,
+} from "../../Helpers/Utils/Common";
 import toast from "react-hot-toast";
 import "../Manage/Manage.css";
 import "../../Components/Navbar/Navbar.css";
 import "../../Components/Modals/Modal.css";
+
+const { RangePicker } = AntDatePicker;
 
 export default function Contracts() {
   const navigate = useNavigate();
   const [inactive, set_inactive] = useState(false);
   const [show_loader, set_show_loader] = useState(false);
   const [search_text, set_search_text] = useState("");
+  const [suggestions, set_suggestions] = useState([]);
+  const [suggestion_loading, set_suggestion_loading] = useState(false);
+  const [active_filter, set_active_filter] = useState(null);
+  const [search_value, set_search_value] = useState(null);
+  const [date_range, set_date_range] = useState([null, null]);
   const [contract_data, set_contract_data] = useState([]);
   const [customer_options, set_customer_options] = useState([]);
   const [selected_row, set_selected_row] = useState({});
@@ -48,6 +62,74 @@ export default function Contracts() {
     return contract_data.filter((row) => row.status === tab).length;
   }
 
+  async function handle_suggestion_search(keyword) {
+    if (!keyword || keyword.trim().length < 1) {
+      set_suggestions([]);
+      return;
+    }
+    set_suggestion_loading(true);
+    const res = await getContractSuggestions(keyword);
+    if (res.data?.data) {
+      const data = res.data.data;
+      const type_map = [
+        {
+          key: "customers",
+          type: "customer_id",
+          icon: "🏢",
+          label: "Customer",
+        },
+        {
+          key: "contracts",
+          type: "contract_id",
+          icon: "📄",
+          label: "Contract",
+        },
+      ];
+      const options = type_map.flatMap(({ key, type, icon, label }) =>
+        (data[key] || []).map((item) => ({
+          value: `${type}::${item.id}`,
+          label: `${icon} ${item.label}`,
+          sublabel: label,
+        })),
+      );
+      set_suggestions(options);
+    }
+    set_suggestion_loading(false);
+  }
+
+  function handle_suggestion_select(value, option) {
+    const [type, id] = value.split("::");
+    set_active_filter({ type, id, label: option.label });
+
+    let filtered = contract_data;
+    if (type === "contract_id") {
+      filtered = contract_data.filter((row) => String(row.id) === String(id));
+    } else if (type === "customer_id") {
+      filtered = contract_data.filter((row) => String(row.customer_id) === String(id));
+    }
+    set_filtered_data(apply_tab_filter(filtered, active_tab));
+  }
+
+  function handle_range_change(dates) {
+    set_date_range(dates || [null, null]);
+    const filters = {
+      customer_id: "",
+      contract_id: "",
+      ...(active_filter ? { [active_filter.type]: active_filter.id } : {}),
+      date_from: dates?.[0] ? moment(dates[0]).format("YYYY-MM-DD") : "",
+      date_to: dates?.[1] ? moment(dates[1]).format("YYYY-MM-DD") : "",
+    };
+    fetch_contracts(filters);
+  }
+
+  function handle_reset_filter() {
+    set_active_filter(null);
+    set_date_range([null, null]);
+    set_suggestions([]);
+    set_search_value(null);
+    set_filtered_data(apply_tab_filter(contract_data, active_tab));
+  }
+
   async function fetch_customers() {
     const response = await getAllCustomers();
     if (response.data && response.data.data) {
@@ -55,10 +137,13 @@ export default function Contracts() {
     }
   }
 
-  async function fetch_contracts() {
+  async function fetch_contracts(filters = {}) {
     set_show_loader(true);
-    const response = search_text
-      ? await searchContracts(search_text)
+    const has_filter = Object.values(filters).some(
+      (v) => v !== "" && v !== null,
+    );
+    const response = has_filter
+      ? await searchContracts(filters)
       : await getAllContracts();
     if (response.data && response.data.data) {
       const result = response.data.data.map((a) => ({
@@ -71,7 +156,7 @@ export default function Contracts() {
         end_date_fmt: dateFormat(a.end_date) || "Open-ended",
       }));
       set_contract_data(result);
-      set_filtered_data(apply_tab_filter(result, active_tab));
+      set_filtered_data(result);
     } else {
       set_contract_data([]);
       set_filtered_data([]);
@@ -80,7 +165,9 @@ export default function Contracts() {
   }
 
   function handle_row_click(row) {
-    navigate("/contracts/view", { state: { contract: get_plain_contract(row) } });
+    navigate("/contracts/view", {
+      state: { contract: get_plain_contract(row) },
+    });
   }
 
   // Strip React elements before passing to navigate
@@ -119,39 +206,66 @@ export default function Contracts() {
       </div>
       <div className={`manager-container ${inactive ? "inactive" : "active"}`}>
         <Row className="mb-4">
-          <Col xs={6}>
+          <Col>
             <h1 className="page-title">Contracts</h1>
           </Col>
-          <Col className="d-flex justify-content-end align-items-center">
-            <input
-              type="search"
-              placeholder="Search contract..."
-              value={search_text}
-              onChange={(e) => set_search_text(e.target.value)}
-              className="search-bar"
-              onKeyDown={(e) => {
-                if (e.key === "Enter") fetch_contracts();
-              }}
+        </Row>
+
+        <div className="d-flex align-items-center justify-content-between mb-3" style={{ marginTop: 8 }}>
+          <div className="filter-tabs" style={{ marginBottom: 0 }}>
+            {["all", "active", "expired", "terminated"].map((tab) => (
+              <button
+                key={tab}
+                className={`filter-tab-btn ${active_tab === tab ? "active" : ""}`}
+                onClick={() => handle_tab_change(tab)}
+              >
+                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                <span className="tab-count">{get_tab_count(tab)}</span>
+              </button>
+            ))}
+          </div>
+
+          <div className="d-flex align-items-center gap-2">
+            <AntSelect
+              showSearch
+              allowClear
+              value={search_value}
+              onChange={(val) => set_search_value(val ?? null)}
+              style={{ width: 280 }}
+              placeholder="🔍 Search customer, contract number..."
+              filterOption={false}
+              onSearch={handle_suggestion_search}
+              onSelect={handle_suggestion_select}
+              onClear={handle_reset_filter}
+              loading={suggestion_loading}
+              size="small"
+              options={suggestions.map((s) => ({
+                value: s.value,
+                label: (
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span>{s.label}</span>
+                    <span style={{ fontSize: 11, color: "#94a3b8", marginLeft: 8 }}>{s.sublabel}</span>
+                  </div>
+                ),
+              }))}
+              notFoundContent={suggestion_loading ? "Searching..." : "No results"}
             />
-            <button
-              className="add-btn"
-              onClick={() => navigate("/contracts/form")}
-            >
+            <RangePicker
+              value={date_range}
+              onChange={handle_range_change}
+              format="YYYY-MM-DD"
+              style={{ width: 220 }}
+              placeholder={["Start from", "Start to"]}
+              allowClear
+              size="small"
+            />
+            <button className="cancel-btn" style={{ padding: "4px 20px", fontSize: 12, minWidth: 80, height: 30 }} onClick={handle_reset_filter}>
+              Clear
+            </button>
+            <button className="add-btn" style={{ padding: "4px 20px", fontSize: 12, minWidth: 80, height: 30 }} onClick={() => navigate("/contracts/form")}>
               Add
             </button>
-          </Col>
-        </Row>
-        <div className="filter-tabs mb-3">
-          {["all", "active", "expired", "terminated"].map((tab) => (
-            <button
-              key={tab}
-              className={`filter-tab-btn ${active_tab === tab ? "active" : ""}`}
-              onClick={() => handle_tab_change(tab)}
-            >
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
-              <span className="tab-count">{get_tab_count(tab)}</span>
-            </button>
-          ))}
+          </div>
         </div>
 
         <div className="tab-content">
@@ -221,27 +335,53 @@ export default function Contracts() {
             <div className="form-section-label">Contract Details</div>
             <div className="view-detail-row">
               <span className="view-detail-label">CONTRACT NO.</span>
-              <span className={view_form.contract_number ? "view-detail-value" : "view-empty-value"}>
+              <span
+                className={
+                  view_form.contract_number
+                    ? "view-detail-value"
+                    : "view-empty-value"
+                }
+              >
                 {view_form.contract_number || "—"}
               </span>
             </div>
             <div className="view-detail-row">
               <span className="view-detail-label">DATE SIGNED</span>
-              <span className={view_form.date_signed ? "view-detail-value" : "view-empty-value"}>
-                {view_form.date_signed ? dateFormat(view_form.date_signed) : "—"}
+              <span
+                className={
+                  view_form.date_signed
+                    ? "view-detail-value"
+                    : "view-empty-value"
+                }
+              >
+                {view_form.date_signed
+                  ? dateFormat(view_form.date_signed)
+                  : "—"}
               </span>
             </div>
 
             <div className="form-section-label mt-3">Customer</div>
             <div className="view-detail-row">
               <span className="view-detail-label">CUSTOMER</span>
-              <span className={view_form.customer_name ? "view-detail-value" : "view-empty-value"}>
+              <span
+                className={
+                  view_form.customer_name
+                    ? "view-detail-value"
+                    : "view-empty-value"
+                }
+              >
                 {view_form.customer_name || "—"}
               </span>
             </div>
             <div className="view-detail-row">
               <span className="view-detail-label">AUTHORIZED REP.</span>
-              <span className={view_form.authorized_representative ? "view-detail-value" : "view-empty-value"}>
+              <span
+                className={
+                  view_form.authorized_representative
+                    ? "view-detail-value"
+                    : "view-empty-value"
+                }
+              >
                 {view_form.authorized_representative || "—"}
               </span>
             </div>
@@ -273,7 +413,13 @@ export default function Contracts() {
             </div>
             <div className="view-detail-row">
               <span className="view-detail-label">PAYMENT TERMS</span>
-              <span className={view_form.payment_terms ? "view-detail-value" : "view-empty-value"}>
+              <span
+                className={
+                  view_form.payment_terms
+                    ? "view-detail-value"
+                    : "view-empty-value"
+                }
+              >
                 {view_form.payment_terms || "—"}
               </span>
             </div>
@@ -281,21 +427,37 @@ export default function Contracts() {
             <div className="form-section-label mt-3">Contract Duration</div>
             <div className="view-detail-row">
               <span className="view-detail-label">START DATE</span>
-              <span className={view_form.start_date ? "view-detail-value" : "view-empty-value"}>
+              <span
+                className={
+                  view_form.start_date
+                    ? "view-detail-value"
+                    : "view-empty-value"
+                }
+              >
                 {view_form.start_date ? dateFormat(view_form.start_date) : "—"}
               </span>
             </div>
             <div className="view-detail-row">
               <span className="view-detail-label">END DATE</span>
-              <span className={view_form.end_date ? "view-detail-value" : "view-empty-value"}>
-                {view_form.end_date ? dateFormat(view_form.end_date) : "Open-ended"}
+              <span
+                className={
+                  view_form.end_date ? "view-detail-value" : "view-empty-value"
+                }
+              >
+                {view_form.end_date
+                  ? dateFormat(view_form.end_date)
+                  : "Open-ended"}
               </span>
             </div>
 
             <div className="form-section-label mt-3">Remarks</div>
             <div className="view-detail-row">
               <span className="view-detail-label">REMARKS</span>
-              <span className={view_form.remarks ? "view-detail-value" : "view-empty-value"}>
+              <span
+                className={
+                  view_form.remarks ? "view-detail-value" : "view-empty-value"
+                }
+              >
                 {view_form.remarks || "No remarks"}
               </span>
             </div>
@@ -313,21 +475,34 @@ export default function Contracts() {
                     background: "#fafafa",
                   }}
                 >
-                  <div style={{ fontFamily: "var(--primary-font-bold)", fontSize: 13, color: "#2d3e4e", marginBottom: 4 }}>
+                  <div
+                    style={{
+                      fontFamily: "var(--primary-font-bold)",
+                      fontSize: 13,
+                      color: "#2d3e4e",
+                      marginBottom: 4,
+                    }}
+                  >
                     Route {index + 1}
                   </div>
                   <div className="view-detail-row">
                     <span className="view-detail-label">ORIGIN</span>
-                    <span className="view-detail-value">{route.origin || "—"}</span>
+                    <span className="view-detail-value">
+                      {route.origin || "—"}
+                    </span>
                   </div>
                   <div className="view-detail-row">
                     <span className="view-detail-label">DESTINATION</span>
-                    <span className="view-detail-value">{route.destination || "—"}</span>
+                    <span className="view-detail-value">
+                      {route.destination || "—"}
+                    </span>
                   </div>
                   {route.distance_km && (
                     <div className="view-detail-row">
                       <span className="view-detail-label">DISTANCE</span>
-                      <span className="view-detail-value">{route.distance_km} km</span>
+                      <span className="view-detail-value">
+                        {route.distance_km} km
+                      </span>
                     </div>
                   )}
                   {route.remarks && (
@@ -339,7 +514,9 @@ export default function Contracts() {
                 </div>
               ))
             ) : (
-              <div className="view-empty-value" style={{ padding: "8px 0" }}>No routes defined</div>
+              <div className="view-empty-value" style={{ padding: "8px 0" }}>
+                No routes defined
+              </div>
             )}
           </div>
         </div>

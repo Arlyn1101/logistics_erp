@@ -115,6 +115,34 @@ export default function ContractView() {
     );
   }
 
+  const card_style = {
+    background: "#fff",
+    border: "1px solid #edf0f4",
+    borderRadius: 10,
+    padding: "16px",
+    height: "100%",
+  };
+
+  const stat_card_style = {
+    background: "#f7fbfd",
+    border: "1px solid #edf0f4",
+    borderRadius: 8,
+    padding: "10px 12px",
+  };
+
+  const stat_label_style = {
+    fontSize: 11,
+    color: "#7a8fa6",
+    fontFamily: "var(--primary-font-medium)",
+    marginBottom: 4,
+  };
+
+  const stat_value_style = {
+    fontSize: 20,
+    fontFamily: "var(--primary-font-bold)",
+    color: "#2d3e4e",
+  };
+
   const detail = (label, value, empty = "—") => (
     <div className="view-detail-row">
       <span className="view-detail-label">{label}</span>
@@ -150,243 +178,191 @@ export default function ContractView() {
           </span>
         </div>
 
-        {/* Sticky header */}
+        {/* Header */}
         <div className="add-customer-header">
           <div>
             <h1 className="page-title">{contract.contract_number || "Contract Details"}</h1>
             <p className="page-subtitle">{contract.customer_name || "—"}</p>
           </div>
           <div className="add-customer-actions">
-            <button className="cancel-btn" onClick={() => navigate("/contracts")}>
-              Back
-            </button>
-            <button
-              className="save-btn"
-              onClick={() =>
-                navigate("/contracts/form", {
-                  state: { contract: get_plain_contract(contract) },
-                })
-              }
-            >
+            <button className="cancel-btn" onClick={() => navigate("/contracts")}>Back</button>
+            <button className="save-btn" onClick={() => navigate("/contracts/form", { state: { contract: get_plain_contract(contract) } })}>
               Edit Contract
             </button>
           </div>
         </div>
 
-        {/* ── Condensed: Customer + Contract Details side by side ── */}
-        <Row>
-          <Col md={6}>
-            <div className="form-section-label">Customer</div>
-            <div className="view-details">
-              {detail("CUSTOMER", contract.customer_name)}
-              {detail("AUTHORIZED REP.", contract.authorized_representative)}
+      <div className="biodata-card">
+
+          {/* ── Customer ── */}
+          <div className="biodata-section-label">Customer</div>
+          <Row className="nc-modal-custom-row">
+            <Col xs={6}>
+              <div className="field-label">CUSTOMER</div>
+              <div className="detail-value">{contract.customer_name || "—"}</div>
+            </Col>
+            <Col xs={6}>
+              <div className="field-label">AUTHORIZED REPRESENTATIVE</div>
+              <div className="detail-value">{contract.authorized_representative || "—"}</div>
+            </Col>
+          </Row>
+
+          {/* ── Contract Details ── */}
+          <div className="biodata-section-label">Contract Details</div>
+          <Row className="nc-modal-custom-row">
+            <Col xs={3}>
+              <div className="field-label">CONTRACT NO.</div>
+              <div className="detail-value">{contract.contract_number || "—"}</div>
+            </Col>
+            <Col xs={3}>
+              <div className="field-label">DATE SIGNED</div>
+              <div className="detail-value">{contract.date_signed ? dateFormat(contract.date_signed) : "—"}</div>
+            </Col>
+            <Col xs={3}>
+              <div className="field-label">START DATE</div>
+              <div className="detail-value">{contract.start_date ? dateFormat(contract.start_date) : "—"}</div>
+            </Col>
+            <Col xs={3}>
+              <div className="field-label">END DATE</div>
+              <div className="detail-value">{contract.end_date ? dateFormat(contract.end_date) : "Open-ended"}</div>
+            </Col>
+          </Row>
+          <Row className="nc-modal-custom-row">
+            <Col xs={3}>
+              <div className="field-label">STATUS</div>
+              <span className={`status-badge ${contract.status}`}>{contract.status}</span>
+            </Col>
+            <Col xs={3}>
+              <div className="field-label">PAYMENT TERMS</div>
+              <div className="detail-value">{contract.payment_terms || "—"}</div>
+            </Col>
+          </Row>
+
+          {/* ── Rate & Billing ── */}
+          <div className="biodata-section-label">Rate & Billing</div>
+          <Row className="nc-modal-custom-row">
+            <Col xs={3}>
+              <div className="field-label">MONTHLY RATE</div>
+              <div className="detail-value">₱ {formatAmount(contract.monthly_rate || 0)}</div>
+            </Col>
+            <Col xs={3}>
+              <div className="field-label">INCLUDED TRIPS / MONTH</div>
+              <div className="detail-value">{contract.included_trips || "—"}</div>
+            </Col>
+            <Col xs={3}>
+              <div className="field-label">EXCESS TRIP CHARGE</div>
+              <div className="detail-value">₱ {formatAmount(contract.excess_trip_charge || 0)}</div>
+            </Col>
+            <Col xs={3}>
+              <div className="field-label">FUEL PRICE / LITER</div>
+              <div className="detail-value">₱ {formatAmount(contract.fuel_price_per_liter || 0)}</div>
+            </Col>
+          </Row>
+
+        </div>
+
+        {/* ── Trip Usage + Routes side by side ── */}
+        <Row className="g-3 mb-3 mt-3">
+
+          {/* Trip Usage */}
+          <Col xs={12} md={6}>
+            <div style={card_style}>
+              <div className="form-section-label" style={{ marginBottom: 10 }}>Trip Usage</div>
+              {trip_summary === null ? (
+                <p style={{ color: "#aaa", fontSize: 13 }}>Trip usage data unavailable.</p>
+              ) : (
+                <>
+                  <Row className="g-2 mb-3">
+                    <Col xs={6}>
+                      <div style={stat_card_style}>
+                        <div style={stat_label_style}>TRIPS USED</div>
+                        <div style={stat_value_style}>
+                          {used}
+                          <span style={{ fontSize: 12, color: "#7a8fa6", marginLeft: 4 }}>/ {included}</span>
+                        </div>
+                      </div>
+                    </Col>
+                    <Col xs={6}>
+                      <div style={{ ...stat_card_style, background: excess > 0 ? "#fff5f5" : "#f7fbfd", border: `1px solid ${excess > 0 ? "#f5c6cb" : "#edf0f4"}` }}>
+                        <div style={stat_label_style}>EXCESS TRIPS</div>
+                        <div style={{ ...stat_value_style, color: excess > 0 ? "#c0392b" : "#2d3e4e" }}>
+                          {excess}
+                          {excess > 0 && <span style={{ fontSize: 11, marginLeft: 4 }}>+₱{formatAmount(excess * (contract.excess_trip_charge || 0))}</span>}
+                        </div>
+                      </div>
+                    </Col>
+                  </Row>
+                  <div style={{ fontSize: 11, color: "#7a8fa6", marginBottom: 4, fontFamily: "var(--primary-font-medium)" }}>USAGE</div>
+                  <div style={{ background: "#e0e0e0", borderRadius: 6, height: 8, overflow: "hidden", marginBottom: 4 }}>
+                    <div style={{ width: `${pct}%`, background: bar_color, height: "100%", borderRadius: 6, transition: "width 0.3s" }} />
+                  </div>
+                  <div style={{ fontSize: 12, color: bar_color, fontFamily: "var(--primary-font-bold)" }}>{pct}%</div>
+                </>
+              )}
             </div>
           </Col>
-          <Col md={6}>
-            <div className="form-section-label">Contract Details</div>
-            <div className="view-details">
-              {detail("CONTRACT NO.", contract.contract_number)}
-              {detail("DATE OF CONTRACT", contract.date_signed ? dateFormat(contract.date_signed) : null)}
-              <div className="view-detail-row">
-                <span className="view-detail-label">STATUS</span>
-                <span className={`status-badge ${contract.status}`}>{contract.status}</span>
+
+          {/* Routes */}
+          <Col xs={12} md={6}>
+            <div style={card_style}>
+              <div className="form-section-label" style={{ marginBottom: 10 }}>
+                Routes <span style={{ color: "#aaa", fontSize: 12 }}>({routes.length})</span>
               </div>
-              {detail("START DATE", contract.start_date ? dateFormat(contract.start_date) : null)}
-              {detail("END DATE", contract.end_date ? dateFormat(contract.end_date) : "Open-ended")}
+              {routes.length === 0 ? (
+                <p style={{ color: "#aaa", fontSize: 13 }}>No routes defined.</p>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {routes.map((route, i) => (
+                    <div key={i} style={{ background: "#f7fbfd", border: "1px solid #edf0f4", borderRadius: 8, padding: "10px 12px" }}>
+                      <div style={{ fontFamily: "var(--primary-font-bold)", fontSize: 12, color: "#7a8fa6", marginBottom: 4 }}>Route {i + 1}</div>
+                      <div style={{ fontSize: 13, color: "#2d3e4e", fontFamily: "var(--primary-font-medium)" }}>
+                        {route.origin || "—"} → {route.destination || "—"}
+                      </div>
+                      {route.distance_km && <div style={{ fontSize: 12, color: "#7a8fa6" }}>{route.distance_km} km</div>}
+                      {route.remarks && <div style={{ fontSize: 12, color: "#7a8fa6" }}>{route.remarks}</div>}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </Col>
+
+          {/* Remarks */}
+          {contract.remarks && (
+            <Col xs={12} md={6}>
+              <div style={card_style}>
+                <div className="form-section-label" style={{ marginBottom: 10 }}>Remarks</div>
+                <p style={{ fontSize: 13, color: "#2d3e4e", margin: 0 }}>{contract.remarks}</p>
+              </div>
+            </Col>
+          )}
+
         </Row>
 
-        {/* ── Condensed: Rate & Billing ── */}
-        <div className="form-section-label mt-3">Rate & Billing</div>
-        <div className="view-details">
-          <Row>
-            <Col md={6}>
-              {detail("MONTHLY RATE", contract.monthly_rate ? `₱ ${formatAmount(contract.monthly_rate)}` : null)}
-              {detail("INCLUDED TRIPS / MONTH", contract.included_trips)}
-              {detail("EXCESS / TRIP", contract.excess_trip_charge ? `₱ ${formatAmount(contract.excess_trip_charge)}` : null)}
-            </Col>
-            <Col md={6}>
-              {detail("FUEL PRICE / LITER", contract.fuel_price_per_liter ? `₱ ${formatAmount(contract.fuel_price_per_liter)}` : null)}
-              {detail("PAYMENT TERMS", contract.payment_terms)}
-            </Col>
-          </Row>
-        </div>
-
-        {/* ── Trip Usage Summary ── */}
-        <div className="form-section-label mt-3">Trip Usage Summary</div>
-        {trip_summary === null ? (
-          <p style={{ color: "#aaa", fontSize: 13 }}>Trip usage data unavailable.</p>
-        ) : (
-          <>
-            {/* Summary cards */}
-            <Row className="mb-3" style={{ gap: 0 }}>
-              <Col xs={4}>
-                <div style={{
-                  background: "#f7fbfd",
-                  border: "1px solid #edf0f4",
-                  borderRadius: 10,
-                  padding: "14px 18px",
-                  marginRight: 10,
-                }}>
-                  <div style={{ fontSize: 11, color: "#7a8fa6", fontFamily: "var(--primary-font-medium)", marginBottom: 4 }}>
-                    TRIPS USED
-                  </div>
-                  <div style={{ fontSize: 22, fontFamily: "var(--primary-font-bold)", color: "#2d3e4e" }}>
-                    {used}
-                    <span style={{ fontSize: 13, color: "#7a8fa6", fontFamily: "var(--primary-font-medium)", marginLeft: 4 }}>
-                      / {included} included
-                    </span>
-                  </div>
-                </div>
-              </Col>
-              <Col xs={4}>
-                <div style={{
-                  background: excess > 0 ? "#fff5f5" : "#f7fbfd",
-                  border: `1px solid ${excess > 0 ? "#f5c6cb" : "#edf0f4"}`,
-                  borderRadius: 10,
-                  padding: "14px 18px",
-                  marginRight: 10,
-                }}>
-                  <div style={{ fontSize: 11, color: "#7a8fa6", fontFamily: "var(--primary-font-medium)", marginBottom: 4 }}>
-                    EXCESS TRIPS
-                  </div>
-                  <div style={{ fontSize: 22, fontFamily: "var(--primary-font-bold)", color: excess > 0 ? "#c0392b" : "#2d3e4e" }}>
-                    {excess}
-                    {excess > 0 && (
-                      <span style={{ fontSize: 13, color: "#c0392b", fontFamily: "var(--primary-font-medium)", marginLeft: 4 }}>
-                        (+₱ {formatAmount(excess * (contract.excess_trip_charge || 0))})
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </Col>
-              <Col xs={4}>
-                <div style={{
-                  background: "#f7fbfd",
-                  border: "1px solid #edf0f4",
-                  borderRadius: 10,
-                  padding: "14px 18px",
-                }}>
-                  <div style={{ fontSize: 11, color: "#7a8fa6", fontFamily: "var(--primary-font-medium)", marginBottom: 8 }}>
-                    USAGE
-                  </div>
-                  <div style={{
-                    background: "#e0e0e0",
-                    borderRadius: 6,
-                    height: 10,
-                    overflow: "hidden",
-                    marginBottom: 4,
-                  }}>
-                    <div style={{
-                      width: `${pct}%`,
-                      background: bar_color,
-                      height: "100%",
-                      borderRadius: 6,
-                      transition: "width 0.3s",
-                    }} />
-                  </div>
-                  <div style={{ fontSize: 12, color: bar_color, fontFamily: "var(--primary-font-bold)" }}>
-                    {pct}%
-                  </div>
-                </div>
-              </Col>
-            </Row>
-
-            {/* Trip list */}
-            {trip_summary.trips && trip_summary.trips.length > 0 ? (
-              <div style={{ border: "1px solid #edf0f4", borderRadius: 10, overflow: "hidden" }}>
-                <div style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 2fr 2fr 1fr",
-                  background: "#f0f4f8",
-                  padding: "8px 14px",
-                  fontFamily: "var(--primary-font-bold)",
-                  fontSize: 11,
-                  color: "#7a8fa6",
-                  letterSpacing: "0.5px",
-                }}>
-                  <span>DATE</span>
-                  <span>ORIGIN → DESTINATION</span>
-                  <span>ROUTE</span>
-                  <span>STATUS</span>
-                </div>
-                {trip_summary.trips.map((trip, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr 2fr 2fr 1fr",
-                      padding: "9px 14px",
-                      borderTop: "1px solid #edf0f4",
-                      fontSize: 13,
-                      background: i % 2 === 0 ? "#fff" : "#fafbfc",
-                      alignItems: "center",
-                    }}
-                  >
-                    <span style={{ color: "#2d3e4e", fontFamily: "var(--primary-font-medium)" }}>
-                      {trip.trip_date ? dateFormat(trip.trip_date) : "—"}
-                    </span>
-                    <span style={{ color: "#2d3e4e" }}>
-                      {trip.origin || "—"} → {trip.destination || "—"}
-                    </span>
-                    <span style={{ color: "#7a8fa6" }}>
-                      {trip.route_name || "—"}
-                    </span>
-                    <span className={`status-badge ${trip.status}`} style={{ fontSize: 11 }}>
-                      {trip.status || "—"}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p style={{ color: "#aaa", fontSize: 13 }}>No trips logged under this contract yet.</p>
-            )}
-          </>
-        )}
-
-        {/* ── Remarks ── */}
-        {contract.remarks && (
-          <>
-            <div className="form-section-label mt-3">Remarks</div>
-            <div className="view-details">
-              {detail("REMARKS", contract.remarks, "No remarks")}
+        {/* ── Trip List ── */}
+        {trip_summary?.trips && trip_summary.trips.length > 0 && (
+          <div style={{ ...card_style, marginBottom: 24 }}>
+            <div className="form-section-label" style={{ marginBottom: 10 }}>
+              Trip Log <span style={{ color: "#aaa", fontSize: 12 }}>({trip_summary.trips.length})</span>
             </div>
-          </>
-        )}
-
-        {/* ── Routes ── */}
-        <div className="form-section-label mt-3">
-          Routes{" "}
-          <span style={{ fontFamily: "var(--primary-font-medium)", fontSize: 13, color: "#aaa" }}>
-            ({routes.length})
-          </span>
-        </div>
-
-        {routes.length === 0 ? (
-          <p style={{ color: "#aaa", fontSize: 13 }}>No routes defined for this contract.</p>
-        ) : (
-          <Row>
-            {routes.map((route, index) => (
-              <Col md={6} key={index}>
-                <div style={{
-                  border: "1px solid #e0e0e0",
-                  borderRadius: 8,
-                  padding: "12px 16px",
-                  marginBottom: 12,
-                  background: "#fafafa",
-                }}>
-                  <div style={{ fontFamily: "var(--primary-font-bold)", fontSize: 13, color: "#2d3e4e", marginBottom: 8 }}>
-                    Route {index + 1}
-                  </div>
-                  {detail("ORIGIN", route.origin)}
-                  {detail("DESTINATION", route.destination)}
-                  {route.distance_km && detail("DISTANCE", `${route.distance_km} km`)}
-                  {route.remarks && detail("REMARKS", route.remarks)}
+            <div style={{ border: "1px solid #edf0f4", borderRadius: 8, overflow: "hidden", maxHeight: 300, overflowY: "auto" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "100px 1fr", background: "#f0f4f8", padding: "7px 14px", fontFamily: "var(--primary-font-bold)", fontSize: 11, color: "#7a8fa6", letterSpacing: "0.5px", position: "sticky", top: 0 }}>
+                <span>DATE</span>
+                <span>ROUTE</span>
+              </div>
+              {trip_summary.trips.map((trip, i) => (
+                <div key={i} style={{ display: "grid", gridTemplateColumns: "100px 1fr", padding: "7px 14px", borderTop: "1px solid #edf0f4", fontSize: 13, background: i % 2 === 0 ? "#fff" : "#fafbfc", alignItems: "center" }}>
+                  <span style={{ color: "#7a8fa6", fontSize: 12 }}>{trip.trip_date ? dateFormat(trip.trip_date) : "—"}</span>
+                  <span style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                    <span style={{ color: "#2d3e4e" }}>{trip.origin || "—"} → {trip.destination || "—"}</span>
+                    <span className={`status-badge ${trip.is_excess == 1 ? "excess" : "included"}`} style={{ fontSize: 10, padding: "1px 7px" }}>
+                      {trip.is_excess == 1 ? "Excess" : "Included"}
+                    </span>
+                  </span>
                 </div>
-              </Col>
-            ))}
-          </Row>
+              ))}
+            </div>
+          </div>
         )}
 
       </div>

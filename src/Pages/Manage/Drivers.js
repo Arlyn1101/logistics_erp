@@ -6,7 +6,9 @@ import Table from "../../Components/TableTemplate/Table";
 import {
   getAllDrivers,
   searchDrivers,
+  getDriverSuggestions,
 } from "../../Helpers/apiCalls/Manage/driverApi";
+import { Select as AntSelect } from "antd";
 import { toastStyle, dateFormat } from "../../Helpers/Utils/Common";
 import toast from "react-hot-toast";
 import "../Manage/Manage.css";
@@ -18,6 +20,10 @@ export default function Drivers() {
   const [inactive, set_inactive] = useState(false);
   const [show_loader, set_show_loader] = useState(false);
   const [search_text, set_search_text] = useState("");
+  const [suggestions, set_suggestions] = useState([]);
+  const [suggestion_loading, set_suggestion_loading] = useState(false);
+  const [active_filter, set_active_filter] = useState(null);
+  const [search_value, set_search_value] = useState(null);
   const [active_tab, set_active_tab] = useState("all");
   const [driver_data, set_driver_data] = useState([]);
   const [filtered_data, set_filtered_data] = useState([]);
@@ -36,7 +42,13 @@ export default function Drivers() {
       return (
         <span
           className="status-badge"
-          style={{ background: "#c0392b", color: "#fff", borderRadius: "12px", padding: "3px 10px", fontSize: "12px" }}
+          style={{
+            background: "#c0392b",
+            color: "#fff",
+            borderRadius: "12px",
+            padding: "3px 10px",
+            fontSize: "12px",
+          }}
         >
           {dateFormat(expiry)} (Expired)
         </span>
@@ -46,14 +58,22 @@ export default function Drivers() {
       return (
         <span
           className="status-badge"
-          style={{ background: "#e0a030", color: "#fff", borderRadius: "12px", padding: "3px 10px", fontSize: "12px" }}
+          style={{
+            background: "#e0a030",
+            color: "#fff",
+            borderRadius: "12px",
+            padding: "3px 10px",
+            fontSize: "12px",
+          }}
         >
           {dateFormat(expiry)} (Expiring)
         </span>
       );
     }
     return (
-      <span style={{ color: "#2d3e4e", fontFamily: "var(--primary-font-medium)" }}>
+      <span
+        style={{ color: "#2d3e4e", fontFamily: "var(--primary-font-medium)" }}
+      >
         {dateFormat(expiry)}
       </span>
     );
@@ -104,6 +124,38 @@ export default function Drivers() {
     };
   }
 
+  async function handle_suggestion_search(keyword) {
+    if (!keyword || keyword.trim().length < 1) {
+      set_suggestions([]);
+      return;
+    }
+    set_suggestion_loading(true);
+    const res = await getDriverSuggestions(keyword);
+    if (res.data?.data?.drivers) {
+      const options = res.data.data.drivers.map((item) => ({
+        value: `driver_id::${item.id}`,
+        label: `🧑 ${item.label}`,
+        sublabel: "Driver",
+      }));
+      set_suggestions(options);
+    }
+    set_suggestion_loading(false);
+  }
+
+  function handle_suggestion_select(value, option) {
+    const [type, id] = value.split("::");
+    set_active_filter({ type, id, label: option.label });
+    const filtered = driver_data.filter((row) => String(row.id) === String(id));
+    set_filtered_data(apply_tab_filter(filtered, active_tab));
+  }
+
+  function handle_reset_filter() {
+    set_active_filter(null);
+    set_suggestions([]);
+    set_search_value(null);
+    set_filtered_data(apply_tab_filter(driver_data, active_tab));
+  }
+
   async function fetch_drivers() {
     set_show_loader(true);
     const response = search_text
@@ -135,7 +187,12 @@ export default function Drivers() {
 
   // ─── View modal content ────────────────────────────────────────────────────
   function view_content(form) {
-    const full_name = [form.first_name, form.middle_name, form.last_name, form.suffix]
+    const full_name = [
+      form.first_name,
+      form.middle_name,
+      form.last_name,
+      form.suffix,
+    ]
       .filter(Boolean)
       .join(" ");
 
@@ -163,9 +220,14 @@ export default function Drivers() {
         <div className="view-header">
           <div className="view-header-left">
             <span className="view-title">{full_name || "—"}</span>
-            <span className="view-subtitle">{form.license_number || "No license number"}</span>
+            <span className="view-subtitle">
+              {form.license_number || "No license number"}
+            </span>
           </div>
-          <span className={`status-badge ${form.status}`} style={{ alignSelf: "center" }}>
+          <span
+            className={`status-badge ${form.status}`}
+            style={{ alignSelf: "center" }}
+          >
             {form.status}
           </span>
         </div>
@@ -177,7 +239,10 @@ export default function Drivers() {
           {detail("ADDRESS", form.address)}
 
           <div className="form-section-label mt-3">Personal Information</div>
-          {detail("BIRTHDATE", form.birthdate ? dateFormat(form.birthdate) : null)}
+          {detail(
+            "BIRTHDATE",
+            form.birthdate ? dateFormat(form.birthdate) : null,
+          )}
           {detail("GENDER", form.gender)}
           {detail("CIVIL STATUS", form.civil_status)}
           {detail("NATIONALITY", form.nationality)}
@@ -194,12 +259,24 @@ export default function Drivers() {
           <div className="view-detail-row">
             <span className="view-detail-label">LICENSE EXPIRY</span>
             <span
-              className={form.license_expiry ? "view-detail-value" : "view-empty-value"}
-              style={expiry_color ? { color: expiry_color, fontFamily: "var(--primary-font-bold)" } : {}}
+              className={
+                form.license_expiry ? "view-detail-value" : "view-empty-value"
+              }
+              style={
+                expiry_color
+                  ? {
+                      color: expiry_color,
+                      fontFamily: "var(--primary-font-bold)",
+                    }
+                  : {}
+              }
             >
               {form.license_expiry ? dateFormat(form.license_expiry) : "—"}
               {diff_days !== null && diff_days < 0 && " (Expired)"}
-              {diff_days !== null && diff_days >= 0 && diff_days <= 30 && ` (Expiring in ${diff_days}d)`}
+              {diff_days !== null &&
+                diff_days >= 0 &&
+                diff_days <= 30 &&
+                ` (Expiring in ${diff_days}d)`}
             </span>
           </div>
 
@@ -226,18 +303,50 @@ export default function Drivers() {
         <Row className="mb-4">
           <Col xs={6}>
             <h1 className="page-title">Drivers</h1>
-            <p className="page-subtitle">Manage driver records and license details</p>
+            <p className="page-subtitle">
+              Manage driver records and license details
+            </p>
           </Col>
           <Col className="d-flex justify-content-end align-items-center">
-            <input
-              type="search"
-              placeholder="Search driver..."
-              value={search_text}
-              onChange={(e) => set_search_text(e.target.value)}
-              className="search-bar"
-              onKeyDown={(e) => { if (e.key === "Enter") fetch_drivers(); }}
+            <AntSelect
+              showSearch
+              allowClear
+              value={search_value}
+              onChange={(val) => set_search_value(val ?? null)}
+              style={{ width: 280, marginRight: 8 }}
+              placeholder="🔍 Search name, license..."
+              filterOption={false}
+              onSearch={handle_suggestion_search}
+              onSelect={handle_suggestion_select}
+              onClear={handle_reset_filter}
+              loading={suggestion_loading}
+              options={suggestions.map((s) => ({
+                value: s.value,
+                label: (
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
+                    <span>{s.label}</span>
+                    <span
+                      style={{ fontSize: 11, color: "#94a3b8", marginLeft: 8 }}
+                    >
+                      {s.sublabel}
+                    </span>
+                  </div>
+                ),
+              }))}
+              notFoundContent={
+                suggestion_loading ? "Searching..." : "No results"
+              }
             />
-            <button className="add-btn" onClick={() => navigate("/drivers/form")}>
+            <button
+              className="add-btn"
+              onClick={() => navigate("/drivers/form")}
+            >
               Add
             </button>
           </Col>
@@ -259,8 +368,20 @@ export default function Drivers() {
         <div className="tab-content">
           <Table
             onRowClick={handle_row_click}
-            tableHeaders={["NAME", "CONTACT NO.", "LICENSE NO.", "LICENSE EXPIRY", "STATUS"]}
-            headerSelector={["full_name", "contact_number", "license_number", "expiry_badge", "status_badge"]}
+            tableHeaders={[
+              "NAME",
+              "CONTACT NO.",
+              "LICENSE NO.",
+              "LICENSE EXPIRY",
+              "STATUS",
+            ]}
+            headerSelector={[
+              "full_name",
+              "contact_number",
+              "license_number",
+              "expiry_badge",
+              "status_badge",
+            ]}
             tableData={filtered_data}
             showLoader={show_loader}
             withActionData={true}

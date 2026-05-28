@@ -71,7 +71,12 @@ export const createHelper = async (form, attachments = []) => {
       form_data.append("attachments[]", renamed);
     });
 
-    const response = await axios.post(`${BASE_URL}/helpers/create`, form_data);
+    const response = await axios.post(`${BASE_URL}/helpers/create`, form_data, {
+      headers: {
+        "api-key": "logistics-erp-api-key",
+        "user-key": localStorage.getItem("user_id") || null,
+      },
+    });
     return { data: response.data };
   } catch (error) {
     return { error: error.response };
@@ -112,7 +117,12 @@ export const updateHelper = async (form, attachments = []) => {
       form_data.append("attachments[]", renamed);
     });
 
-    const response = await axios.post(`${BASE_URL}/helpers/update`, form_data);
+    const response = await axios.post(`${BASE_URL}/helpers/update`, form_data, {
+      headers: {
+        "api-key": "logistics-erp-api-key",
+        "user-key": localStorage.getItem("user_id") || null,
+      },
+    });
     return { data: response.data };
   } catch (error) {
     return { error: error.response };
@@ -153,6 +163,18 @@ export const deleteHelperAttachment = async (attachment_id) => {
     const response = await postAPICall(`${BASE_URL}/helpers/delete_attachment`, {
       token: get_token(),
       attachment_id,
+    });
+    return { data: response.data };
+  } catch (error) {
+    return { error: error.response };
+  }
+};
+
+export const getHelperSuggestions = async (keyword) => {
+  try {
+    const response = await getAPICall(`${BASE_URL}/helpers/get_suggestions`, {
+      token: get_token(),
+      keyword,
     });
     return { data: response.data };
   } catch (error) {

@@ -111,3 +111,15 @@ export const getTripSuggestions = async (keyword) => {
     return { error: error.response };
   }
 };
+
+export const completeTrip = async (trip_id) => {
+  try {
+    const response = await postAPICall(`${BASE_URL}/trips/complete`, {
+      token: get_token(),
+      trip_id,
+    });
+    return { data: response.data };
+  } catch (error) {
+    return { error: error.response };
+  }
+};

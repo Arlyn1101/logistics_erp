@@ -197,3 +197,15 @@ export const deleteDriverAttachment = async (attachment_id) => {
     return { error: error.response };
   }
 };
+
+export const getDriverSuggestions = async (keyword) => {
+  try {
+    const response = await getAPICall(`${BASE_URL}/drivers/get_suggestions`, {
+      token: get_token(),
+      keyword,
+    });
+    return { data: response.data };
+  } catch (error) {
+    return { error: error.response };
+  }
+};

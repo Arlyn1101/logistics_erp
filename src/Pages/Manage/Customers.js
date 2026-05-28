@@ -12,7 +12,9 @@ import {
   searchCustomers,
   createCustomer,
   updateCustomer,
+  getCustomerSuggestions,
 } from "../../Helpers/apiCalls/Manage/customerApi";
+import { Select as AntSelect } from "antd";
 import { validateCustomer } from "../../Helpers/Validation/Manage/customerValidation";
 import { toastStyle } from "../../Helpers/Utils/Common";
 import toast from "react-hot-toast";
@@ -26,6 +28,10 @@ export default function Customers() {
   const [show_loader, set_show_loader] = useState(false);
   const [is_clicked, set_is_clicked] = useState(false);
   const [search_text, set_search_text] = useState("");
+  const [suggestions, set_suggestions] = useState([]);
+  const [suggestion_loading, set_suggestion_loading] = useState(false);
+  const [active_filter, set_active_filter] = useState(null);
+  const [search_value, set_search_value] = useState(null);
   const [customer_data, set_customer_data] = useState([]);
   const [selected_row, set_selected_row] = useState({});
 
@@ -56,8 +62,11 @@ export default function Customers() {
   };
   const [add_form, set_add_form] = useState({ ...empty_form });
   const [edit_form, set_edit_form] = useState({ ...empty_form });
-  const [is_error, set_is_error] = useState({ first_name: false, last_name: false, tin_duplicate: false });
-
+  const [is_error, set_is_error] = useState({
+    first_name: false,
+    last_name: false,
+    tin_duplicate: false,
+  });
 
   async function handle_tin_blur(tin_value, current_id = null) {
     if (!tin_value.trim()) {
@@ -68,11 +77,13 @@ export default function Customers() {
       (c) =>
         c.tin &&
         c.tin.trim() === tin_value.trim() &&
-        (current_id === null || String(c.id) !== String(current_id))
+        (current_id === null || String(c.id) !== String(current_id)),
     );
     set_is_error((prev) => ({ ...prev, tin_duplicate: !!existing }));
     if (existing) {
-      toast.error("A customer with this TIN already exists.", { style: toastStyle() });
+      toast.error("A customer with this TIN already exists.", {
+        style: toastStyle(),
+      });
     }
   }
 
@@ -86,7 +97,6 @@ export default function Customers() {
     }
     e.target.value = "";
   }
-
 
   function ActionBtn(row) {
     return (
@@ -128,7 +138,6 @@ export default function Customers() {
     set_show_loader(false);
   }, [search_text]);
 
-
   function handle_row_click(row) {
     navigate(`/customers/${row.id}`);
   }
@@ -150,14 +159,15 @@ export default function Customers() {
     }
   }
 
-
   async function handle_update() {
     if (is_error.tin_duplicate) return;
     if (validateCustomer(edit_form, set_is_error)) {
       set_is_clicked(true);
       const response = await updateCustomer(edit_form);
       if (response.data && response.data.response) {
-        toast.success("Customer updated successfully!", { style: toastStyle() });
+        toast.success("Customer updated successfully!", {
+          style: toastStyle(),
+        });
         set_show_edit_modal(false);
         fetch_customers();
       } else {
@@ -167,6 +177,33 @@ export default function Customers() {
     }
   }
 
+  const handle_suggestion_search = async (keyword) => {
+    if (!keyword) { set_suggestions([]); return; }
+    set_suggestion_loading(true);
+    const response = await getCustomerSuggestions(keyword);
+    const items = response.data?.data?.customers || [];
+    set_suggestions(
+      items.map((c) => ({
+        value: String(c.id),
+        label: c.label,
+        sublabel: c.tin || "",
+      }))
+    );
+    set_suggestion_loading(false);
+  };
+
+  const handle_suggestion_select = (val) => {
+    set_search_value(val);
+    const match = customer_data.find((c) => String(c.id) === String(val));
+    if (match) set_customer_data([match]);
+    else fetch_customers();
+  };
+
+  const handle_reset_filter = () => {
+    set_search_value(null);
+    set_suggestions([]);
+    fetch_customers();
+  };
 
   React.useEffect(() => {
     fetch_customers();
@@ -185,280 +222,313 @@ export default function Customers() {
   // ─── Add / Edit form ───────────────────────────────────────────────────────
   const CONTACT_ROLES = ["Accounting", "Admin", "Purchasing", "HR", "Others"];
 
-const handle_contact_change = (form_setter, index, field, value) => {
-  form_setter((prev) => {
-    const updated = [...prev.contacts];
-    updated[index] = { ...updated[index], [field]: value };
-    return { ...prev, contacts: updated };
-  });
-};
+  const handle_contact_change = (form_setter, index, field, value) => {
+    form_setter((prev) => {
+      const updated = [...prev.contacts];
+      updated[index] = { ...updated[index], [field]: value };
+      return { ...prev, contacts: updated };
+    });
+  };
 
-const add_contact = (form_setter) => {
-  form_setter((prev) => ({
-    ...prev,
-    contacts: [...prev.contacts, { ...empty_contact }],
-  }));
-};
+  const add_contact = (form_setter) => {
+    form_setter((prev) => ({
+      ...prev,
+      contacts: [...prev.contacts, { ...empty_contact }],
+    }));
+  };
 
-const remove_contact = (form_setter, index) => {
-  form_setter((prev) => {
-    const updated = prev.contacts.filter((_, i) => i !== index);
-    return { ...prev, contacts: updated.length ? updated : [{ ...empty_contact }] };
-  });
-};
+  const remove_contact = (form_setter, index) => {
+    form_setter((prev) => {
+      const updated = prev.contacts.filter((_, i) => i !== index);
+      return {
+        ...prev,
+        contacts: updated.length ? updated : [{ ...empty_contact }],
+      };
+    });
+  };
 
-const form_fields = (form, handle_change, form_setter) => (
-  <div className="mt-3">
+  const form_fields = (form, handle_change, form_setter) => (
+    <div className="mt-3">
+      {/* Customer Name */}
+      <div className="form-section-label">Customer Name</div>
+      <Row className="nc-modal-custom-row">
+        <Col>
+          FIRST NAME <span className="required-icon">*</span>
+          <Form.Control
+            type="text"
+            name="first_name"
+            value={form.first_name}
+            className="nc-modal-custom-input"
+            onChange={handle_change}
+          />
+          <InputError
+            isValid={is_error.first_name}
+            message="First name is required"
+          />
+        </Col>
+        <Col>
+          LAST NAME <span className="required-icon">*</span>
+          <Form.Control
+            type="text"
+            name="last_name"
+            value={form.last_name}
+            className="nc-modal-custom-input"
+            onChange={handle_change}
+          />
+          <InputError
+            isValid={is_error.last_name}
+            message="Last name is required"
+          />
+        </Col>
+      </Row>
+      <Row className="nc-modal-custom-row">
+        <Col>
+          MIDDLE NAME
+          <Form.Control
+            type="text"
+            name="middle_name"
+            value={form.middle_name}
+            className="nc-modal-custom-input"
+            onChange={handle_change}
+          />
+        </Col>
+        <Col>
+          SUFFIX
+          <Form.Control
+            type="text"
+            name="suffix"
+            value={form.suffix}
+            className="nc-modal-custom-input"
+            onChange={handle_change}
+          />
+        </Col>
+      </Row>
 
-    {/* Customer Name */}
-    <div className="form-section-label">Customer Name</div>
-    <Row className="nc-modal-custom-row">
-      <Col>
-        FIRST NAME <span className="required-icon">*</span>
-        <Form.Control
-          type="text"
-          name="first_name"
-          value={form.first_name}
-          className="nc-modal-custom-input"
-          onChange={handle_change}
-        />
-        <InputError isValid={is_error.first_name} message="First name is required" />
-      </Col>
-      <Col>
-        LAST NAME <span className="required-icon">*</span>
-        <Form.Control
-          type="text"
-          name="last_name"
-          value={form.last_name}
-          className="nc-modal-custom-input"
-          onChange={handle_change}
-        />
-        <InputError isValid={is_error.last_name} message="Last name is required" />
-      </Col>
-    </Row>
-    <Row className="nc-modal-custom-row">
-      <Col>
-        MIDDLE NAME
-        <Form.Control
-          type="text"
-          name="middle_name"
-          value={form.middle_name}
-          className="nc-modal-custom-input"
-          onChange={handle_change}
-        />
-      </Col>
-      <Col>
-        SUFFIX
-        <Form.Control
-          type="text"
-          name="suffix"
-          value={form.suffix}
-          className="nc-modal-custom-input"
-          onChange={handle_change}
-        />
-      </Col>
-    </Row>
+      {/* Customer Information */}
+      <div className="form-section-label">Customer Information</div>
+      <Row className="nc-modal-custom-row">
+        <Col>
+          TRADE NAME
+          <Form.Control
+            type="text"
+            name="trade_name"
+            value={form.trade_name}
+            className="nc-modal-custom-input"
+            onChange={handle_change}
+          />
+        </Col>
+        <Col>
+          BIR NAME
+          <Form.Control
+            type="text"
+            name="bir_name"
+            value={form.bir_name}
+            className="nc-modal-custom-input"
+            onChange={handle_change}
+          />
+        </Col>
+      </Row>
+      <Row className="nc-modal-custom-row">
+        <Col>
+          TRADE ADDRESS
+          <Form.Control
+            as="textarea"
+            rows={2}
+            name="trade_address"
+            value={form.trade_address}
+            className="nc-modal-custom-input"
+            onChange={handle_change}
+          />
+        </Col>
+        <Col>
+          BIR REGISTERED ADDRESS
+          <Form.Control
+            as="textarea"
+            rows={2}
+            name="bir_address"
+            value={form.bir_address}
+            className="nc-modal-custom-input"
+            onChange={handle_change}
+          />
+        </Col>
+      </Row>
+      <Row className="nc-modal-custom-row">
+        <Col>
+          TIN
+          <Form.Control
+            type="text"
+            name="tin"
+            value={form.tin}
+            className="nc-modal-custom-input"
+            onChange={(e) => {
+              handle_change(e);
+              set_is_error((prev) => ({ ...prev, tin_duplicate: false }));
+            }}
+            onBlur={(e) => handle_tin_blur(e.target.value, form.id ?? null)}
+          />
+          <InputError
+            isValid={is_error.tin_duplicate}
+            message="A customer with this TIN already exists"
+          />
+        </Col>
+      </Row>
+      <Row className="nc-modal-custom-row">
+        <Col>
+          TERM (DAYS)
+          <Form.Control
+            type="number"
+            name="term"
+            value={form.term}
+            className="nc-modal-custom-input"
+            onChange={handle_change}
+          />
+        </Col>
+        <Col>
+          CREDIT LIMIT
+          <Form.Control
+            type="number"
+            name="credit_limit"
+            value={form.credit_limit}
+            className="nc-modal-custom-input"
+            onChange={handle_change}
+          />
+        </Col>
+      </Row>
+      <Row className="nc-modal-custom-row">
+        <Col>
+          VAT TYPE
+          <Form.Select
+            name="vat_type"
+            value={form.vat_type}
+            className="nc-modal-custom-input"
+            onChange={handle_change}
+          >
+            <option value="">Select</option>
+            <option value="VAT">VAT</option>
+            <option value="NVAT">NVAT</option>
+          </Form.Select>
+        </Col>
+        <Col>
+          BIR 2307
+          <Form.Select
+            name="bir_2307"
+            value={form.bir_2307}
+            className="nc-modal-custom-input"
+            onChange={handle_change}
+          >
+            <option value="">Select</option>
+            <option value="1%">1%</option>
+            <option value="2%">2%</option>
+          </Form.Select>
+        </Col>
+      </Row>
 
-    {/* Customer Information */}
-    <div className="form-section-label">Customer Information</div>
-    <Row className="nc-modal-custom-row">
-      <Col>
-        TRADE NAME
-        <Form.Control
-          type="text"
-          name="trade_name"
-          value={form.trade_name}
-          className="nc-modal-custom-input"
-          onChange={handle_change}
-        />
-      </Col>
-      <Col>
-        BIR NAME
-        <Form.Control
-          type="text"
-          name="bir_name"
-          value={form.bir_name}
-          className="nc-modal-custom-input"
-          onChange={handle_change}
-        />
-      </Col>
-    </Row>
-    <Row className="nc-modal-custom-row">
-      <Col>
-        TRADE ADDRESS
-        <Form.Control
-          as="textarea"
-          rows={2}
-          name="trade_address"
-          value={form.trade_address}
-          className="nc-modal-custom-input"
-          onChange={handle_change}
-        />
-      </Col>
-      <Col>
-        BIR REGISTERED ADDRESS
-        <Form.Control
-          as="textarea"
-          rows={2}
-          name="bir_address"
-          value={form.bir_address}
-          className="nc-modal-custom-input"
-          onChange={handle_change}
-        />
-      </Col>
-    </Row>
-    <Row className="nc-modal-custom-row">
-      <Col>
-        TIN
-        <Form.Control
-          type="text"
-          name="tin"
-          value={form.tin}
-          className="nc-modal-custom-input"
-          onChange={(e) => {
-            handle_change(e);
-            set_is_error((prev) => ({ ...prev, tin_duplicate: false }));
-          }}
-          onBlur={(e) => handle_tin_blur(e.target.value, form.id ?? null)}
-        />
-        <InputError isValid={is_error.tin_duplicate} message="A customer with this TIN already exists" />
-      </Col>
-    </Row>
-    <Row className="nc-modal-custom-row">
-      <Col>
-        TERM (DAYS)
-        <Form.Control
-          type="number"
-          name="term"
-          value={form.term}
-          className="nc-modal-custom-input"
-          onChange={handle_change}
-        />
-      </Col>
-      <Col>
-        CREDIT LIMIT
-        <Form.Control
-          type="number"
-          name="credit_limit"
-          value={form.credit_limit}
-          className="nc-modal-custom-input"
-          onChange={handle_change}
-        />
-      </Col>
-    </Row>
-    <Row className="nc-modal-custom-row">
-      <Col>
-        VAT TYPE
-        <Form.Select
-          name="vat_type"
-          value={form.vat_type}
-          className="nc-modal-custom-input"
-          onChange={handle_change}
-        >
-          <option value="">Select</option>
-          <option value="VAT">VAT</option>
-          <option value="NVAT">NVAT</option>
-        </Form.Select>
-      </Col>
-      <Col>
-        BIR 2307
-        <Form.Select
-          name="bir_2307"
-          value={form.bir_2307}
-          className="nc-modal-custom-input"
-          onChange={handle_change}
-        >
-          <option value="">Select</option>
-          <option value="1%">1%</option>
-          <option value="2%">2%</option>
-        </Form.Select>
-      </Col>
-    </Row>
-
-    {/* Contact Details */}
-    <div className="form-section-label">Contact Details</div>
-    {form.contacts.map((contact, index) => (
-      <div key={index} className="nc-modal-custom-row contact-entry">
-        <Row className="mb-2 align-items-end">
-          <Col>
-            CONTACT PERSON
-            <Form.Control
-              type="text"
-              value={contact.name}
-              className="nc-modal-custom-input"
-              onChange={(e) => handle_contact_change(form_setter, index, "name", e.target.value)}
-            />
-          </Col>
-          <Col>
-            CONTACT NUMBER
-            <Form.Control
-              type="text"
-              value={contact.number}
-              className="nc-modal-custom-input"
-              onChange={(e) => handle_contact_change(form_setter, index, "number", e.target.value)}
-            />
-          </Col>
-          <Col>
-            ROLE
-            <Form.Select
-              value={contact.role}
-              className="nc-modal-custom-input"
-              onChange={(e) => handle_contact_change(form_setter, index, "role", e.target.value)}
-            >
-              <option value="">Select Role</option>
-              {CONTACT_ROLES.map((r) => (
-                <option key={r} value={r}>{r}</option>
-              ))}
-            </Form.Select>
-          </Col>
-          <Col xs="auto" className="d-flex align-items-end pb-1">
-            {form.contacts.length > 1 && (
-              <button
-                type="button"
-                className="btn btn-sm btn-outline-danger"
-                onClick={() => remove_contact(form_setter, index)}
+      {/* Contact Details */}
+      <div className="form-section-label">Contact Details</div>
+      {form.contacts.map((contact, index) => (
+        <div key={index} className="nc-modal-custom-row contact-entry">
+          <Row className="mb-2 align-items-end">
+            <Col>
+              CONTACT PERSON
+              <Form.Control
+                type="text"
+                value={contact.name}
+                className="nc-modal-custom-input"
+                onChange={(e) =>
+                  handle_contact_change(
+                    form_setter,
+                    index,
+                    "name",
+                    e.target.value,
+                  )
+                }
+              />
+            </Col>
+            <Col>
+              CONTACT NUMBER
+              <Form.Control
+                type="text"
+                value={contact.number}
+                className="nc-modal-custom-input"
+                onChange={(e) =>
+                  handle_contact_change(
+                    form_setter,
+                    index,
+                    "number",
+                    e.target.value,
+                  )
+                }
+              />
+            </Col>
+            <Col>
+              ROLE
+              <Form.Select
+                value={contact.role}
+                className="nc-modal-custom-input"
+                onChange={(e) =>
+                  handle_contact_change(
+                    form_setter,
+                    index,
+                    "role",
+                    e.target.value,
+                  )
+                }
               >
-                Remove
-              </button>
-            )}
-          </Col>
-        </Row>
-      </div>
-    ))}
-    <button
-      type="button"
-      className="btn btn-sm btn-outline-primary mt-1 mb-3"
-      onClick={() => add_contact(form_setter)}
-    >
-      + Add Contact Person
-    </button>
+                <option value="">Select Role</option>
+                {CONTACT_ROLES.map((r) => (
+                  <option key={r} value={r}>
+                    {r}
+                  </option>
+                ))}
+              </Form.Select>
+            </Col>
+            <Col xs="auto" className="d-flex align-items-end pb-1">
+              {form.contacts.length > 1 && (
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline-danger"
+                  onClick={() => remove_contact(form_setter, index)}
+                >
+                  Remove
+                </button>
+              )}
+            </Col>
+          </Row>
+        </div>
+      ))}
+      <button
+        type="button"
+        className="btn btn-sm btn-outline-primary mt-1 mb-3"
+        onClick={() => add_contact(form_setter)}
+      >
+        + Add Contact Person
+      </button>
 
-    <Row className="nc-modal-custom-row">
-      <Col>
-        EMAIL
-        <Form.Control
-          type="email"
-          name="email"
-          value={form.email}
-          className="nc-modal-custom-input"
-          onChange={handle_change}
-        />
-      </Col>
-      <Col>
-        ADDRESS
-        <Form.Control
-          as="textarea"
-          rows={2}
-          name="address"
-          value={form.address}
-          className="nc-modal-custom-input"
-          onChange={handle_change}
-        />
-      </Col>
-    </Row>
-
-  </div>
-);
+      <Row className="nc-modal-custom-row">
+        <Col>
+          EMAIL
+          <Form.Control
+            type="email"
+            name="email"
+            value={form.email}
+            className="nc-modal-custom-input"
+            onChange={handle_change}
+          />
+        </Col>
+        <Col>
+          ADDRESS
+          <Form.Control
+            as="textarea"
+            rows={2}
+            name="address"
+            value={form.address}
+            className="nc-modal-custom-input"
+            onChange={handle_change}
+          />
+        </Col>
+      </Row>
+    </div>
+  );
 
   // ─── View modal record card ────────────────────────────────────────────────
   function view_content(form) {
@@ -471,86 +541,132 @@ const form_fields = (form, handle_change, form_setter) => (
                 .filter(Boolean)
                 .join(" ") || "—"}
             </span>
-            <span className="view-subtitle">{form.trade_name || "No trade name"}</span>
+            <span className="view-subtitle">
+              {form.trade_name || "No trade name"}
+            </span>
           </div>
         </div>
 
         <div className="view-details">
           <div className="view-detail-row">
             <span className="view-detail-label">BIR NAME</span>
-            <span className={form.bir_name ? "view-detail-value" : "view-empty-value"}>
+            <span
+              className={
+                form.bir_name ? "view-detail-value" : "view-empty-value"
+              }
+            >
               {form.bir_name || "—"}
             </span>
           </div>
           <div className="view-detail-row">
             <span className="view-detail-label">TIN</span>
-            <span className={form.tin ? "view-detail-value" : "view-empty-value"}>
+            <span
+              className={form.tin ? "view-detail-value" : "view-empty-value"}
+            >
               {form.tin || "—"}
             </span>
           </div>
           <div className="view-detail-row">
             <span className="view-detail-label">TRADE ADDRESS</span>
-            <span className={form.trade_address ? "view-detail-value" : "view-empty-value"}>
+            <span
+              className={
+                form.trade_address ? "view-detail-value" : "view-empty-value"
+              }
+            >
               {form.trade_address || "—"}
             </span>
           </div>
           <div className="view-detail-row">
             <span className="view-detail-label">BIR ADDRESS</span>
-            <span className={form.bir_address ? "view-detail-value" : "view-empty-value"}>
+            <span
+              className={
+                form.bir_address ? "view-detail-value" : "view-empty-value"
+              }
+            >
               {form.bir_address || "—"}
             </span>
           </div>
           <div className="view-detail-row">
             <span className="view-detail-label">TERM</span>
-            <span className={form.term ? "view-detail-value" : "view-empty-value"}>
+            <span
+              className={form.term ? "view-detail-value" : "view-empty-value"}
+            >
               {form.term ? `${form.term} days` : "—"}
             </span>
           </div>
           <div className="view-detail-row">
             <span className="view-detail-label">CREDIT LIMIT</span>
-            <span className={form.credit_limit ? "view-detail-value" : "view-empty-value"}>
+            <span
+              className={
+                form.credit_limit ? "view-detail-value" : "view-empty-value"
+              }
+            >
               {form.credit_limit || "—"}
             </span>
           </div>
           <div className="view-detail-row">
             <span className="view-detail-label">PAYEE</span>
-            <span className={form.payee ? "view-detail-value" : "view-empty-value"}>
+            <span
+              className={form.payee ? "view-detail-value" : "view-empty-value"}
+            >
               {form.payee || "—"}
             </span>
           </div>
           <div className="view-detail-row">
             <span className="view-detail-label">VAT TYPE</span>
-            <span className={form.vat_type ? "view-detail-value" : "view-empty-value"}>
+            <span
+              className={
+                form.vat_type ? "view-detail-value" : "view-empty-value"
+              }
+            >
               {form.vat_type || "—"}
             </span>
           </div>
           <div className="view-detail-row">
             <span className="view-detail-label">BIR 2307</span>
-            <span className={form.bir_2307 ? "view-detail-value" : "view-empty-value"}>
+            <span
+              className={
+                form.bir_2307 ? "view-detail-value" : "view-empty-value"
+              }
+            >
               {form.bir_2307 || "—"}
             </span>
           </div>
           <div className="view-detail-row">
             <span className="view-detail-label">CONTACT PERSON</span>
-            <span className={form.contact_person ? "view-detail-value" : "view-empty-value"}>
+            <span
+              className={
+                form.contact_person ? "view-detail-value" : "view-empty-value"
+              }
+            >
               {form.contact_person || "—"}
             </span>
           </div>
           <div className="view-detail-row">
             <span className="view-detail-label">CONTACT NO.</span>
-            <span className={form.contact_number ? "view-detail-value" : "view-empty-value"}>
+            <span
+              className={
+                form.contact_number ? "view-detail-value" : "view-empty-value"
+              }
+            >
               {form.contact_number || "—"}
             </span>
           </div>
           <div className="view-detail-row">
             <span className="view-detail-label">EMAIL</span>
-            <span className={form.email ? "view-detail-value" : "view-empty-value"}>
+            <span
+              className={form.email ? "view-detail-value" : "view-empty-value"}
+            >
               {form.email || "—"}
             </span>
           </div>
           <div className="view-detail-row">
             <span className="view-detail-label">ADDRESS</span>
-            <span className={form.address ? "view-detail-value" : "view-empty-value"}>
+            <span
+              className={
+                form.address ? "view-detail-value" : "view-empty-value"
+              }
+            >
               {form.address || "—"}
             </span>
           </div>
@@ -577,36 +693,40 @@ const form_fields = (form, handle_change, form_setter) => (
             </p>
           </Col>
           <Col className="d-flex justify-content-end align-items-center">
-            <input
-              type="search"
-              name="search"
-              placeholder="Search customer..."
-              value={search_text}
-              onChange={(e) => {
-                const val = e.target.value;
-                set_search_text(val);
-                if (val === "") {
-                  set_show_loader(true);
-                  getAllCustomers().then((response) => {
-                    if (response.data && response.data.data) {
-                      const result = response.data.data.map((c) => ({
-                        ...c,
-                        full_name: [c.first_name, c.middle_name, c.last_name, c.suffix]
-                          .filter(Boolean)
-                          .join(" "),
-                      }));
-                      set_customer_data(result);
-                    } else {
-                      set_customer_data([]);
-                    }
-                    set_show_loader(false);
-                  });
-                }
-              }}
-              className="search-bar"
-              onKeyDown={(e) => {
-                if (e.key === "Enter") fetch_customers();
-              }}
+            <AntSelect
+              showSearch
+              allowClear
+              value={search_value}
+              onChange={(val) => set_search_value(val ?? null)}
+              style={{ width: 280, marginRight: 8 }}
+              placeholder="🔍 Search name, trade name, TIN..."
+              filterOption={false}
+              onSearch={handle_suggestion_search}
+              onSelect={handle_suggestion_select}
+              onClear={handle_reset_filter}
+              loading={suggestion_loading}
+              options={suggestions.map((s) => ({
+                value: s.value,
+                label: (
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
+                    <span>{s.label}</span>
+                    <span
+                      style={{ fontSize: 11, color: "#94a3b8", marginLeft: 8 }}
+                    >
+                      {s.sublabel}
+                    </span>
+                  </div>
+                ),
+              }))}
+              notFoundContent={
+                suggestion_loading ? "Searching..." : "No results"
+              }
             />
             <button
               className="add-btn"
@@ -619,9 +739,21 @@ const form_fields = (form, handle_change, form_setter) => (
 
         <div className="tab-content">
           <Table
-            onRowClick={handle_row_click}   // ← keep only this one
-            tableHeaders={["TRADE NAME", "TIN", "CONTACT PERSON", "CONTACT NO.", "EMAIL"]}
-            headerSelector={["trade_name", "tin",  "full_name", "contact_number", "email"]}
+            onRowClick={handle_row_click} // ← keep only this one
+            tableHeaders={[
+              "TRADE NAME",
+              "TIN",
+              "CONTACT PERSON",
+              "CONTACT NO.",
+              "EMAIL",
+            ]}
+            headerSelector={[
+              "trade_name",
+              "tin",
+              "full_name",
+              "contact_number",
+              "email",
+            ]}
             tableData={customer_data}
             showLoader={show_loader}
             withActionData={true}

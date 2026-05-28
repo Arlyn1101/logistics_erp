@@ -185,3 +185,16 @@ export const getTruckSuggestions = async (keyword) => {
     return { error: error.response };
   }
 };
+
+export const updateTruckStatus = async (truck_id, status) => {
+  try {
+    const response = await postAPICall(`${BASE_URL}/trucks/update_status`, {
+      token: get_token(),
+      truck_id,
+      status,
+    });
+    return { data: response.data };
+  } catch (error) {
+    return { error: error.response };
+  }
+};

@@ -9,7 +9,7 @@ import {
   updateContract,
   getContractDetails,
 } from "../../Helpers/apiCalls/Contracts/contractApi";
-import { getAllCustomers } from "../../Helpers/apiCalls/Manage/customerApi";
+import { getAllCustomers, getCustomerContacts } from "../../Helpers/apiCalls/Manage/customerApi";
 import { validateContract } from "../../Helpers/Validation/Contracts/contractValidation";
 import { toastStyle, dateFormat } from "../../Helpers/Utils/Common";
 import toast from "react-hot-toast";
@@ -58,6 +58,7 @@ export default function ContractForm() {
   const [is_clicked, set_is_clicked] = useState(false);
   const [customer_options, set_customer_options] = useState([]);
   const [is_error, set_is_error] = useState({});
+const [signatory_options, set_signatory_options] = useState([]);
 
   const empty_form = {
     customer_id: "",
@@ -256,11 +257,12 @@ export default function ContractForm() {
           </div>
         </div>
 
+        <div className="biodata-card">
         {/* ── Section 1: Customer ── */}
-        <div className="form-section-label">Customer</div>
-        <Row className="nc-modal-custom-row">
-          <Col>
-            CUSTOMER <span className="required-icon">*</span>
+        <div className="biodata-section-label">Customer</div>
+       <Row className="nc-modal-custom-row">
+          <Col xs={6}>
+            <div className="field-label">CUSTOMER <span className="required-icon">*</span></div>
             <Select
               classNamePrefix="react-select"
               options={customer_options}
@@ -277,11 +279,8 @@ export default function ContractForm() {
             />
             <InputError isValid={is_error.customer_id} message="Customer is required" />
           </Col>
-        </Row>
-        {/* FIX: removed placeholder text from authorized representative */}
-        <Row className="nc-modal-custom-row">
-          <Col>
-            AUTHORIZED REPRESENTATIVE
+          <Col xs={6}>
+            <div className="field-label">AUTHORIZED REPRESENTATIVE</div>
             <Form.Control
               type="text"
               name="authorized_representative"
@@ -293,7 +292,7 @@ export default function ContractForm() {
         </Row>
 
         {/* ── Section 2: Contract Details ── */}
-        <div className="form-section-label">Contract Details</div>
+        <div className="biodata-section-label">Contract Details</div>
 
         {is_edit && contract_number && (
           <Row className="nc-modal-custom-row">
@@ -309,7 +308,7 @@ export default function ContractForm() {
         {/* FIX: 3 date fields in one row */}
         <Row className="nc-modal-custom-row">
           <Col>
-            DATE OF CONTRACT
+            <div className="field-label">DATE OF CONTRACT</div>
             <ReactDatePicker
               selected={form.date_signed ? new Date(form.date_signed) : null}
               onChange={(date) => handle_date_change("date_signed", date)}
@@ -319,7 +318,7 @@ export default function ContractForm() {
             />
           </Col>
           <Col>
-            START DATE <span className="required-icon">*</span>
+            <div className="field-label">START DATE <span className="required-icon">*</span></div>
             <ReactDatePicker
               selected={form.start_date ? new Date(form.start_date) : null}
               onChange={(date) => handle_date_change("start_date", date)}
@@ -331,7 +330,7 @@ export default function ContractForm() {
           </Col>
           {/* FIX: end date is now required */}
           <Col>
-            END DATE <span className="required-icon">*</span>
+            <div className="field-label">END DATE <span className="required-icon">*</span></div>
             <ReactDatePicker
               selected={form.end_date ? new Date(form.end_date) : null}
               onChange={(date) => handle_date_change("end_date", date)}
@@ -346,7 +345,7 @@ export default function ContractForm() {
         {is_edit && (
           <Row className="nc-modal-custom-row">
             <Col xs={4}>
-              STATUS
+              <div className="field-label">STATUS</div>
               <div className="status-select-wrap">
                 <span className={status_dot_class}></span>
                 <Form.Select
@@ -365,10 +364,10 @@ export default function ContractForm() {
         )}
 
         {/* ── Section 3: Rate & Billing ── */}
-        <div className="form-section-label">Rate & Billing</div>
+        <div className="biodata-section-label">Rate & Billing</div>
         <Row className="nc-modal-custom-row">
           <Col>
-            MONTHLY RATE (₱) <span className="required-icon">*</span>
+            <div className="field-label">MONTHLY RATE (₱) <span className="required-icon">*</span></div>
             <Form.Control
               type="number"
               name="monthly_rate"
@@ -380,7 +379,7 @@ export default function ContractForm() {
             <InputError isValid={is_error.monthly_rate} message="Monthly rate is required" />
           </Col>
           <Col>
-            INCLUDED TRIPS / MONTH <span className="required-icon">*</span>
+            <div className="field-label">INCLUDED TRIPS / MONTH <span className="required-icon">*</span></div>
             <Form.Control
               type="number"
               name="included_trips"
@@ -394,7 +393,7 @@ export default function ContractForm() {
         </Row>
         <Row className="nc-modal-custom-row">
           <Col>
-            EXCESS TRIP CHARGE (₱) <span className="required-icon">*</span>
+            <div className="field-label">EXCESS TRIP CHARGE (₱) <span className="required-icon">*</span></div>
             <Form.Control
               type="number"
               name="excess_trip_charge"
@@ -406,7 +405,7 @@ export default function ContractForm() {
             <InputError isValid={is_error.excess_trip_charge} message="Excess trip charge is required" />
           </Col>
           <Col>
-            AGREED FUEL PRICE / LITER (₱) <span className="required-icon">*</span>
+            <div className="field-label">AGREED FUEL PRICE / LITER (₱) <span className="required-icon">*</span></div>
             <Form.Control
               type="number"
               name="fuel_price_per_liter"
@@ -422,7 +421,7 @@ export default function ContractForm() {
         {/* FIX: payment terms → number input with "days" label */}
         <Row className="nc-modal-custom-row">
           <Col xs={6}>
-            PAYMENT TERMS
+            <div className="field-label">PAYMENT TERMS</div>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <Form.Control
                 type="number"
@@ -446,7 +445,7 @@ export default function ContractForm() {
           className="d-flex justify-content-between align-items-center mt-4"
           style={{ marginBottom: 8 }}
         >
-          <div className="form-section-label mb-0">Routes</div>
+          <div className="biodata-section-label mb-0">Routes</div>
           <button className="add-btn" onClick={add_route}>
             <FontAwesomeIcon icon={faPlus} className="me-1" />
             Add Route
@@ -536,7 +535,7 @@ export default function ContractForm() {
         ))}
 
         {/* FIX: Remarks moved to last */}
-        <div className="form-section-label">Remarks</div>
+        <div className="biodata-section-label">Remarks</div>
         <Row className="nc-modal-custom-row">
           <Col>
             <Form.Control
@@ -551,6 +550,7 @@ export default function ContractForm() {
           </Col>
         </Row>
 
+        </div> {/* end biodata-card */}
       </div>
     </div>
   );

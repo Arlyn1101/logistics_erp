@@ -56,7 +56,7 @@ export const createCustomer = async (form, attachments = []) => {
     // ── HERE IS THE MERGE LOGIC ──
     // Put your hardcoded signatory object into index 0, followed cleanly by the remaining contacts
     const combined_contacts = [
-      form.signatory,
+      ...(form.signatories || []),
       ...(form.contacts || [])
     ];
 
@@ -112,6 +112,30 @@ export const deleteCustomer = async (customer_id) => {
     const response = await postAPICall(`${BASE_URL}/customers/delete`, {
       token: get_token(),
       customer_id,
+    });
+    return { data: response.data };
+  } catch (error) {
+    return { error: error.response };
+  }
+};
+
+export const getCustomerContacts = async (customer_id) => {
+  try {
+    const response = await getAPICall(`${BASE_URL}/customers/get_contacts`, {
+      token: get_token(),
+      customer_id,
+    });
+    return { data: response.data };
+  } catch (error) {
+    return { error: error.response };
+  }
+};
+
+export const getCustomerSuggestions = async (keyword) => {
+  try {
+    const response = await getAPICall(`${BASE_URL}/customers/get_suggestions`, {
+      token: get_token(),
+      keyword,
     });
     return { data: response.data };
   } catch (error) {

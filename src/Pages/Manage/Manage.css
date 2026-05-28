@@ -2,7 +2,7 @@
   font-family: var(--primary-font-medium);
   font-size: 28px;
   line-height: 1.2;
-  color: #5E5E5E;
+  color: #5e5e5e;
   text-transform: uppercase;
   margin-top: 0;
   margin-bottom: 4px;
@@ -31,7 +31,7 @@
   font-size: 14px;
   border: none !important;
   background: #fff;
-  box-shadow: 0 0 1px 1px rgba(0,0,0,0.15);
+  box-shadow: 0 0 1px 1px rgba(0, 0, 0, 0.15);
   border-radius: 20px;
   width: 260px;
   padding: 8px 16px 8px 36px;
@@ -91,11 +91,11 @@
 }
 
 .color-red {
-  color: #DC3545;
+  color: #dc3545;
 }
 
 .required-icon {
-  color: #DC3545;
+  color: #dc3545;
   margin-left: 2px;
 }
 
@@ -104,7 +104,7 @@
 .nc-modal-custom-row > span:first-child {
   font-family: var(--primary-font-bold);
   font-size: 12px;
-  color: #5E5E5E;
+  color: #5e5e5e;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   display: block;
@@ -117,13 +117,13 @@
   color: #8a9ab0;
   margin: 0;
 }
- 
+
 /* Filter tabs — All / Active / Inactive */
 .filter-tabs {
   display: flex;
   gap: 8px;
 }
- 
+
 .filter-tab-btn {
   font-family: var(--primary-font-medium);
   font-size: 13px;
@@ -138,18 +138,18 @@
   gap: 6px;
   transition: all 0.15s;
 }
- 
+
 .filter-tab-btn:hover {
   border-color: #5ac8e1;
   color: #5ac8e1;
 }
- 
+
 .filter-tab-btn.active {
   background: #5ac8e1;
   border-color: #5ac8e1;
   color: #fff;
 }
- 
+
 .tab-count {
   font-family: var(--primary-font-bold);
   font-size: 11px;
@@ -157,12 +157,11 @@
   padding: 1px 7px;
   border-radius: 20px;
 }
- 
+
 .filter-tab-btn:not(.active) .tab-count {
   background: #f0f4f8;
   color: #5ac8e1;
 }
-
 
 /* ── Add / Edit form enhancements ── */
 .truck-form-section-label {
@@ -218,8 +217,32 @@
   flex-shrink: 0;
 }
 
-.truck-status-dot.active  { background: #27ae60; }
-.truck-status-dot.inactive { background: #e74c3c; }
+.truck-status-dot.active {
+  background: #27ae60;
+}
+.truck-status-dot.active {
+  background: #27ae60;
+}
+
+.truck-status-dot.inactive {
+  background: #e74c3c;
+}
+
+.status-dot.dispatched {
+  background: #1a6fc4;
+}
+.status-dot.maintenance {
+  background: #7c3fa8;
+}
+
+.status-badge.dispatched {
+  background: #1a6fc4;
+  color: #fff;
+}
+.status-badge.maintenance {
+  background: #7c3fa8;
+  color: #fff;
+}
 
 /* ── View modal — fleet record card ── */
 .truck-view-wrapper {
@@ -345,7 +368,7 @@
 
 .breadcrumb-current {
   font-family: var(--primary-font-medium);
-  color: #5E5E5E;
+  color: #5e5e5e;
 }
 
 /* ── Sticky page header ── */
@@ -396,7 +419,7 @@
 .cancel-btn {
   font-family: var(--primary-font-medium);
   background: #ffffff;
-  color: #5E5E5E;
+  color: #5e5e5e;
   border: 1px solid #d0d7de;
   border-radius: 10px;
   padding: 9px 18px;
@@ -470,8 +493,22 @@
   border: 1px solid #fed7aa;
   color: #9a3412;
 }
-.trips-remaining { font-size: 12px; }
-.excess-warning  { color: #b45309; font-weight: 600; }
+.trips-remaining {
+  font-size: 12px;
+}
+.excess-warning {
+  color: #b45309;
+  font-weight: 600;
+}
+
+.status-badge.included {
+  background: #27ae60;
+  color: #fff;
+}
+.status-badge.excess {
+  background: #c0392b;
+  color: #fff;
+}
 
 /* Fuel info banner */
 .fuel-info-banner {
@@ -490,12 +527,16 @@
   gap: 8px;
   align-items: center;
 }
-.fuel-info-row strong { margin-left: auto; }
+.fuel-info-row strong {
+  margin-left: auto;
+}
 .fuel-excess {
   color: #b45309;
   font-weight: 600;
 }
-.fuel-ok { color: #166534; }
+.fuel-ok {
+  color: #166534;
+}
 
 /* Filter bar */
 .trip-filter-bar {
@@ -555,7 +596,9 @@
   font-size: 14px;
   cursor: pointer;
   text-decoration: none;
-  transition: background 0.15s, border-color 0.15s;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
 }
 
 .attachment-btn:hover {
@@ -656,7 +699,7 @@
 .attach-main-text {
   font-family: var(--primary-font-medium);
   font-size: 14px;
-  color: #5E5E5E;
+  color: #5e5e5e;
   margin: 0;
 }
 
@@ -673,4 +716,18 @@
   justify-content: flex-end;
   gap: 10px;
   padding-top: 16px;
+}
+
+div.nc-modal-custom-input {
+  display: flex;
+  align-items: center;
+  min-height: 38px;
+  padding: 6px 12px;
+  font-family: var(--primary-font-medium);
+  font-size: 14px;
+  color: #2d3e4e;
+  border: 1px solid #B9B9B9;
+  border-radius: 10px;
+  background: #f7fbfd;
+  margin-top: 2px;
 }

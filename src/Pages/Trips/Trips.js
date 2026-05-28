@@ -10,6 +10,7 @@ import {
   searchTrips,
   createTrip,
   updateTrip,
+  completeTrip,
   getTripDetails,
   getContractTripInfo,
   getTripSuggestions,
@@ -87,7 +88,10 @@ export default function Trips() {
   const [add_route_options, set_add_route_options] = useState([]);
   const [edit_route_options, set_edit_route_options] = useState([]);
   const [is_error, set_is_error] = useState({});
+  const [active_tab, set_active_tab] = useState("all");
+  const [filtered_trip_data, set_filtered_trip_data] = useState([]);
   const [suggestions, set_suggestions]         = useState([]);
+  const [is_completing, set_is_completing]     = useState(false);
   const [suggestion_loading, set_suggestion_loading] = useState(false);
   const [active_filter, set_active_filter]     = useState(null);
   const [date_range, set_date_range]           = useState([null, null]);
@@ -277,10 +281,17 @@ export default function Trips() {
         driver_label:  a.driver_label  || "—",
         helper_label:  a.helper_label  || "—",
         trip_date_fmt: dateFormat(a.trip_date),
+        status_badge: (
+          <span className={`status-badge ${a.status || "ongoing"}`}>
+            {a.status === "completed" ? "Completed" : "Ongoing"}
+          </span>
+        ),
       }));
       set_trip_data(result);
+      set_filtered_trip_data(apply_tab_filter(result, active_tab));
     } else {
       set_trip_data([]);
+      set_filtered_trip_data([]);
     }
     set_show_loader(false);
   }
@@ -318,6 +329,20 @@ export default function Trips() {
       } 
       set_is_clicked(false);
     }
+  }
+
+  async function handle_complete_trip() {
+    if (!selected_trip) return;
+    set_is_completing(true);
+    const res = await completeTrip(selected_trip.id);
+    if (res.data?.status === "success") {
+      toast.success("Trip marked as completed!", { style: toastStyle() });
+      set_selected_trip((prev) => ({ ...prev, status: "completed" }));
+      fetch_trips();
+    } else {
+      toast.error("Failed to complete trip.", { style: toastStyle() });
+    }
+    set_is_completing(false);
   }
 
   async function handle_suggestion_search(keyword) {
@@ -390,6 +415,21 @@ function handle_reset_filter() {
   fetch_trips({});
 }
 
+
+  function apply_tab_filter(data, tab) {
+    if (tab === "all") return data;
+    return data.filter((row) => (row.status || "ongoing") === tab);
+  }
+
+  function handle_tab_change(tab) {
+    set_active_tab(tab);
+    set_filtered_trip_data(apply_tab_filter(trip_data, tab));
+  }
+
+  function get_tab_count(tab) {
+    if (tab === "all") return trip_data.length;
+    return trip_data.filter((row) => (row.status || "ongoing") === tab).length;
+  }
 
   useEffect(() => {
     fetch_all_options();
@@ -467,28 +507,32 @@ function handle_reset_filter() {
 
   const form_fields = (form, handle_change, route_opts, set_form, is_edit = false) => (
     <div className="mt-3">
-      <div className="form-section-label">Trip Information</div>
+      <div className="biodata-section-label">Trip Information</div>
       <Row className="nc-modal-custom-row">
         <Col>
-          <div>CONTRACT <span className="required-icon">*</span></div>
-          <Form.Select
-            name="contract_id"
-            value={form.contract_id}
-            className="nc-modal-custom-select"
-            onChange={handle_change}
-            disabled={is_edit}
-          >
-            <option value="">-- Select Contract --</option>
-            {contract_options.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.customer_name || `Contract #${c.id}`} — ₱{c.monthly_rate}/mo
-              </option>
-            ))}
-          </Form.Select>
+          <div className="field-label">CONTRACT <span className="required-icon">*</span></div>
+          <Select
+            options={contract_options.map((c) => ({
+              value: c.id,
+              label: `${c.customer_name || `Contract #${c.id}`} — ₱${c.monthly_rate}/mo`,
+            }))}
+            value={contract_options.map((c) => ({
+              value: c.id,
+              label: `${c.customer_name || `Contract #${c.id}`} — ₱${c.monthly_rate}/mo`,
+            })).find((o) => String(o.value) === String(form.contract_id)) || null}
+            onChange={(selected) => {
+              const e = { target: { name: "contract_id", value: selected ? String(selected.value) : "" } };
+              handle_change(e);
+            }}
+            placeholder="-- Select Contract --"
+            isClearable
+            isDisabled={is_edit}
+            classNamePrefix="react-select"
+          />
           <InputError isValid={is_error.contract_id} message="Contract is required" />
         </Col>
         <Col>
-          <div>TRIP DATE <span className="required-icon">*</span></div>
+          <div className="field-label">TRIP DATE <span className="required-icon">*</span></div>
           <ReactDatePicker
             selected={form.trip_date ? new Date(form.trip_date) : null}
             onChange={is_edit ? handle_edit_date_change : handle_add_date_change}
@@ -504,86 +548,100 @@ function handle_reset_filter() {
 
       <Row className="nc-modal-custom-row">
         <Col>
-          <div>ROUTE <span className="required-icon">*</span></div>
-          <Form.Select
-            name="contract_route_id"
-            value={form.contract_route_id}
-            className="nc-modal-custom-select"
-            onChange={handle_change}
-            disabled={!form.contract_id}
-          >
-            <option value="">-- Select Route --</option>
-            {route_opts.map((r) => (
-              <option key={r.id} value={r.id}>
-                {r.origin} → {r.destination}
-                {r.distance_km ? ` (${r.distance_km} km)` : ""}
-              </option>
-            ))}
-          </Form.Select>
+          <div className="field-label">ROUTE <span className="required-icon">*</span></div>
+          <Select
+            options={route_opts.map((r) => ({
+              value: r.id,
+              label: `${r.origin} → ${r.destination}${r.distance_km ? ` (${r.distance_km} km)` : ""}`,
+            }))}
+            value={route_opts.map((r) => ({
+              value: r.id,
+              label: `${r.origin} → ${r.destination}${r.distance_km ? ` (${r.distance_km} km)` : ""}`,
+            })).find((o) => String(o.value) === String(form.contract_route_id)) || null}
+            onChange={(selected) => {
+              const e = { target: { name: "contract_route_id", value: selected ? String(selected.value) : "" } };
+              handle_change(e);
+            }}
+            placeholder="-- Select Route --"
+            isClearable
+            isDisabled={!form.contract_id}
+            classNamePrefix="react-select"
+          />
           <InputError isValid={is_error.contract_route_id} message="Route is required" />
         </Col>
         <Col>
-          <div>TRUCK <span className="required-icon">*</span></div>
-          <Form.Select
-            name="truck_id"
-            value={form.truck_id}
-            className="nc-modal-custom-select"
-            onChange={handle_change}
-          >
-            <option value="">-- Select Truck --</option>
-            {truck_options.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.plate_number} — {t.truck_type}
-                {t.km_per_liter ? ` (${t.km_per_liter} km/L)` : ""}
-              </option>
-            ))}
-          </Form.Select>
+          <div className="field-label">TRUCK <span className="required-icon">*</span></div>
+          <Select
+            options={truck_options.map((t) => ({
+              value: t.id,
+              label: `${t.plate_number} — ${t.truck_type}${t.km_per_liter ? ` (${t.km_per_liter} km/L)` : ""}`,
+            }))}
+            value={truck_options.map((t) => ({
+              value: t.id,
+              label: `${t.plate_number} — ${t.truck_type}${t.km_per_liter ? ` (${t.km_per_liter} km/L)` : ""}`,
+            })).find((o) => String(o.value) === String(form.truck_id)) || null}
+            onChange={(selected) => {
+              const e = { target: { name: "truck_id", value: selected ? String(selected.value) : "" } };
+              handle_change(e);
+            }}
+            placeholder="-- Select Truck --"
+            isClearable
+            classNamePrefix="react-select"
+          />
           <InputError isValid={is_error.truck_id} message="Truck is required" />
         </Col>
       </Row>
 
-      <div className="form-section-label">Personnel</div>
+      <div className="biodata-section-label">Personnel</div>
       <Row className="nc-modal-custom-row">
         <Col>
-          <div>DRIVER <span className="required-icon">*</span></div>
-          <Form.Select
-            name="driver_id"
-            value={form.driver_id}
-            className="nc-modal-custom-select"
-            onChange={handle_change}
-          >
-            <option value="">-- Select Driver --</option>
-            {driver_options.map((d) => (
-              <option key={d.id} value={d.id}>
-                {d.first_name} {d.last_name}
-              </option>
-            ))}
-          </Form.Select>
+          <div className="field-label">DRIVER <span className="required-icon">*</span></div>
+          <Select
+            options={driver_options.map((d) => ({
+              value: d.id,
+              label: `${d.first_name} ${d.last_name}`,
+            }))}
+            value={driver_options.map((d) => ({
+              value: d.id,
+              label: `${d.first_name} ${d.last_name}`,
+            })).find((o) => String(o.value) === String(form.driver_id)) || null}
+            onChange={(selected) => {
+              const e = { target: { name: "driver_id", value: selected ? String(selected.value) : "" } };
+              handle_change(e);
+            }}
+            placeholder="-- Select Driver --"
+            isClearable
+            classNamePrefix="react-select"
+          />
           <InputError isValid={is_error.driver_id} message="Driver is required" />
         </Col>
         <Col>
-          <div>HELPER</div>
-          <Form.Select
-            name="helper_id"
-            value={form.helper_id}
-            className="nc-modal-custom-select"
-            onChange={handle_change}
-          >
-            <option value="">-- No Helper --</option>
-            {helper_options.map((h) => (
-              <option key={h.id} value={h.id}>
-                {h.first_name} {h.last_name}
-              </option>
-            ))}
-          </Form.Select>
+          <div className="field-label">HELPER</div>
+          <Select
+            options={helper_options.map((h) => ({
+              value: h.id,
+              label: `${h.first_name} ${h.last_name}`,
+            }))}
+            value={helper_options.map((h) => ({
+              value: h.id,
+              label: `${h.first_name} ${h.last_name}`,
+            })).find((o) => String(o.value) === String(form.helper_id)) || null}
+            onChange={(selected) => {
+              const e = { target: { name: "helper_id", value: selected ? String(selected.value) : "" } };
+              handle_change(e);
+            }}
+            placeholder="-- No Helper --"
+            isClearable
+            classNamePrefix="react-select"
+          />
         </Col>
       </Row>
 
-      <div className="form-section-label">Fuel</div>
+      <div className="biodata-section-label">Fuel</div>
       <Row className="nc-modal-custom-row">
         {contract_trip_info && (
           <Col xs={12} md={6}>
-            <div>AGREED FUEL PRICE (from contract)</div>
+            <div className="field-label">AGREED FUEL PRICE (from contract)</div>
             <Form.Control
               type="text"
               readOnly
@@ -594,7 +652,7 @@ function handle_reset_filter() {
           </Col>
         )}
         <Col xs={12} md={6}>
-          <div>ACTUAL FUEL PRICE (₱/L) <span className="required-icon">*</span></div>
+          <div className="field-label">ACTUAL FUEL PRICE (₱/L) <span className="required-icon">*</span></div>
           <Form.Control
             type="number"
             step="0.01"
@@ -610,10 +668,10 @@ function handle_reset_filter() {
 
       {fuel_info_banner(form, route_opts)}
 
-      <div className="form-section-label">Additional</div>
+      <div className="biodata-section-label">Additional</div>
       <Row className="nc-modal-custom-row">
         <Col>
-          <div>REMARKS</div>
+          <div className="field-label">REMARKS</div>
           <Form.Control
             as="textarea"
             rows={2}
@@ -647,7 +705,22 @@ function handle_reset_filter() {
           </Col>
         </Row>
 
-        {/* Filter bar */}
+        {/* Filter tabs + Filter bar */}
+        <div className="d-flex align-items-center justify-content-between mb-3" style={{ marginTop: 8 }}>
+          <div className="filter-tabs" style={{ marginBottom: 0 }}>
+            {["all", "ongoing", "completed"].map((tab) => (
+              <button
+                key={tab}
+                className={`filter-tab-btn ${active_tab === tab ? "active" : ""}`}
+                onClick={() => handle_tab_change(tab)}
+              >
+                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                <span className="tab-count">{get_tab_count(tab)}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="trip-filter-bar mb-3">
           <Row className="g-2 align-items-center">
             <Col xs={12} md={5}>
@@ -705,6 +778,7 @@ function handle_reset_filter() {
               "HELPER",
               "EXCESS",
               "FUEL SURCHARGE",
+              "STATUS",
             ]}
             headerSelector={[
               "trip_date_fmt",
@@ -716,8 +790,9 @@ function handle_reset_filter() {
               "helper_label",
               "is_excess",
               "fuel_additional_charge",
+              "status_badge",
             ]}
-            tableData={trip_data}
+            tableData={filtered_trip_data}
             showLoader={show_loader}
             withActionData={true}
             onRowClick={(row) => handle_row_click(row)}
@@ -770,6 +845,20 @@ function handle_reset_filter() {
                 TRIP-{String(selected_trip.id).padStart(4, "0")} — Trip Details
               </span>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                {selected_trip?.status !== "completed" ? (
+                  <button
+                    className="save-btn"
+                    style={{ background: "#27ae60", borderColor: "#27ae60" }}
+                    onClick={handle_complete_trip}
+                    disabled={is_completing}
+                  >
+                    {is_completing ? "Completing..." : "✓ Mark as Delivered"}
+                  </button>
+                ) : (
+                  <span className="status-badge completed" style={{ padding: "6px 12px" }}>
+                    ✓ Delivered
+                  </span>
+                )}
                 <button
                   className="add-btn"
                   onClick={() => {

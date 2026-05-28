@@ -26,11 +26,8 @@ import {
   faEdit,
 } from "@fortawesome/free-solid-svg-icons";
 import { validateTruck } from "../../Helpers/Validation/Manage/truckValidation";
-import { toastStyle } from "../../Helpers/Utils/Common";
+import { toastStyle, dateFormat } from "../../Helpers/Utils/Common";
 import toast from "react-hot-toast";
-import moment from "moment";
-import ReactDatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
 import "../Manage/Manage.css";
 import "../../Components/Navbar/Navbar.css";
 import "../../Components/Modals/Modal.css";
@@ -91,20 +88,6 @@ const [search_value, set_search_value] = useState(null);
     set_edit_form((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handle_add_or_expiry_change = (date) => {
-    set_add_form((prev) => ({
-      ...prev,
-      or_expiry: moment(date).format("YYYY-MM-DD"),
-    }));
-  };
-
-  const handle_edit_or_expiry_change = (date) => {
-    set_edit_form((prev) => ({
-      ...prev,
-      or_expiry: moment(date).format("YYYY-MM-DD"),
-    }));
-  };
-
   function handle_select_change(e, row) {
     set_selected_row(row);
     set_edit_form(row);
@@ -140,7 +123,33 @@ const [search_value, set_search_value] = useState(null);
   }
 
   function StatusBadge(status) {
-    return <span className={`status-badge ${status}`}>{status}</span>;
+    const label = status
+      ? status.charAt(0).toUpperCase() + status.slice(1)
+      : "—";
+    return <span className={`status-badge ${status}`}>{label}</span>;
+  }
+
+  function ExpiryBadge(expiry) {
+    if (!expiry) return <span className="view-empty-value">—</span>;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const exp_date = new Date(expiry);
+    const diff_days = Math.ceil((exp_date - today) / (1000 * 60 * 60 * 24));
+    if (diff_days < 0) {
+      return (
+        <span className="status-badge" style={{ background: "#c0392b", color: "#fff", borderRadius: "12px", padding: "3px 10px", fontSize: "12px" }}>
+          {dateFormat(expiry)} (Expired)
+        </span>
+      );
+    }
+    if (diff_days <= 30) {
+      return (
+        <span className="status-badge" style={{ background: "#e0a030", color: "#fff", borderRadius: "12px", padding: "3px 10px", fontSize: "12px" }}>
+          {dateFormat(expiry)} (Expiring)
+        </span>
+      );
+    }
+    return <span style={{ color: "#2d3e4e", fontFamily: "var(--primary-font-medium)" }}>{expiry}</span>;
   }
 
   function apply_tab_filter(data, tab) {
@@ -192,6 +201,7 @@ async function fetch_trucks(filters = {}) {
       const result = response.data.data.map((a) => ({
         ...a,
         status_badge: StatusBadge(a.status),
+        expiry_badge: ExpiryBadge(a.or_expiry),
         action_btn: ActionBtn(a),
       }));
       set_truck_data(result);
@@ -289,19 +299,10 @@ async function fetch_trucks(filters = {}) {
     set_cr = set_add_cr_attachments,
   ) => (
     <div className="mt-3">
-      <p className="form-section-label">Truck Information</p>
+      <div className="biodata-section-label">Truck Information</div>
       <Row className="nc-modal-custom-row">
         <Col>
-          <div
-            style={{
-              marginBottom: "6px",
-              fontWeight: "600",
-              fontSize: "13px",
-              color: "#2d3e4e",
-            }}
-          >
-            TRUCK TYPE
-          </div>
+          <div className="field-label">TRUCK TYPE</div>
           <Form.Select
             name="truck_type"
             value={form.truck_type}
@@ -317,23 +318,19 @@ async function fetch_trucks(filters = {}) {
           </Form.Select>
         </Col>
         <Col>
-          OR EXPIRY
-          <ReactDatePicker
-            selected={form.or_expiry ? new Date(form.or_expiry) : null}
-            onChange={
-              is_edit
-                ? handle_edit_or_expiry_change
-                : handle_add_or_expiry_change
-            }
-            dateFormat="yyyy-MM-dd"
-            className="nc-modal-custom-input w-100"
-            placeholderText="Select date"
+          <div className="field-label">OR EXPIRY</div>
+          <Form.Control
+            type="date"
+            name="or_expiry"
+            value={form.or_expiry || ""}
+            className="nc-modal-custom-input"
+            onChange={is_edit ? handle_edit_change : handle_add_change}
           />
         </Col>
       </Row>
       <Row className="nc-modal-custom-row">
         <Col>
-          UNIT CODE <span className="required-icon">*</span>
+          <div className="field-label">UNIT CODE <span className="required-icon">*</span></div>
           <Form.Control
             type="text"
             name="unit_code"
@@ -348,7 +345,7 @@ async function fetch_trucks(filters = {}) {
           />
         </Col>
         <Col>
-          PLATE NUMBER <span className="required-icon">*</span>
+          <div className="field-label">PLATE NUMBER <span className="required-icon">*</span></div>
           <Form.Control
             type="text"
             name="plate_number"
@@ -365,7 +362,7 @@ async function fetch_trucks(filters = {}) {
       </Row>
       <Row className="nc-modal-custom-row">
         <Col>
-          COLOR
+          <div className="field-label">COLOR</div>
           <Form.Control
             type="text"
             name="color"
@@ -376,7 +373,7 @@ async function fetch_trucks(filters = {}) {
           />
         </Col>
         <Col>
-          CAPACITY
+          <div className="field-label">CAPACITY</div>
           <div className="input-suffix-wrap">
             <Form.Control
               type="number"
@@ -394,7 +391,7 @@ async function fetch_trucks(filters = {}) {
       {is_edit && (
         <Row className="nc-modal-custom-row">
           <Col xs={6}>
-            STATUS
+            <div className="field-label">STATUS</div>
             <div className="status-select-wrap">
               <span className={`status-dot ${form.status}`}></span>
               <Form.Select
@@ -405,18 +402,18 @@ async function fetch_trucks(filters = {}) {
               >
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
+                <option value="dispatched">Dispatched</option>
+                <option value="maintenance">Maintenance</option>
               </Form.Select>
             </div>
           </Col>
         </Row>
       )}
 
-      <p className="form-section-label" style={{ marginTop: "18px" }}>
-        Fuel Details
-      </p>
+      <div className="biodata-section-label" style={{ marginTop: "18px" }}>Fuel Details</div>
       <Row className="nc-modal-custom-row">
         <Col xs={6}>
-          KM PER LITER
+          <div className="field-label">KM PER LITER</div>
           <div className="input-suffix-wrap">
             <Form.Control
               type="number"
@@ -435,7 +432,7 @@ async function fetch_trucks(filters = {}) {
       </Row>
       <Row className="nc-modal-custom-row">
         <Col>
-          REMARKS
+          <div className="field-label">REMARKS</div>
           <Form.Control
             as="textarea"
             rows={2}
@@ -448,9 +445,7 @@ async function fetch_trucks(filters = {}) {
         </Col>
       </Row>
 
-      <p className="form-section-label" style={{ marginTop: "18px" }}>
-        Documents
-      </p>
+      <div className="biodata-section-label" style={{ marginTop: "18px" }}>Documents</div>
       {is_edit && saved_attachments.length > 0 && (
         <Row className="nc-modal-custom-row">
           <Col>
@@ -766,13 +761,13 @@ async function fetch_trucks(filters = {}) {
               className="add-btn"
               onClick={() => set_show_add_modal(true)}
             >
-              Add Truck
+              Add
             </button>
           </Col>
         </Row>
 
         <div className="filter-tabs mb-3">
-          {["all", "active", "inactive"].map((tab) => (
+          {["all", "active", "dispatched", "maintenance", "inactive"].map((tab) => (
             <button
               key={tab}
               className={`filter-tab-btn ${active_tab === tab ? "active" : ""}`}
@@ -807,7 +802,7 @@ async function fetch_trucks(filters = {}) {
               "truck_type",
               "color",
               "capacity",
-              "or_expiry",
+              "expiry_badge",
               "status_badge",
             ]}
             tableData={filtered_data}
