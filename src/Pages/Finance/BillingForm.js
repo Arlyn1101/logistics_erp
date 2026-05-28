@@ -160,7 +160,7 @@ export default function BillingForm() {
 
         {/* Step 1 — Select Contract + Cycle */}
         <div className="biodata-card mb-4">
-          <div className="biodata-section-label">Billing Setup</div>
+          <div className="biodata-section-label">Billing Information</div>
           <Row className="nc-modal-custom-row">
             <Col xs={12} md={6}>
               <div className="field-label">
@@ -213,32 +213,24 @@ export default function BillingForm() {
 
           {/* Contract info strip */}
           {selected_contract && (
-            <div className="billing-info-strip mt-3">
-              <div className="billing-info-item">
-                <span className="billing-info-label">Monthly Rate</span>
-                <span className="billing-info-value">
-                  {fmt(selected_contract.monthly_rate)}
-                </span>
-              </div>
-              <div className="billing-info-item">
-                <span className="billing-info-label">Included Trips</span>
-                <span className="billing-info-value">
-                  {selected_contract.included_trips}
-                </span>
-              </div>
-              <div className="billing-info-item">
-                <span className="billing-info-label">Excess Trip Charge</span>
-                <span className="billing-info-value">
-                  {fmt(selected_contract.excess_trip_charge)}
-                </span>
-              </div>
-              <div className="billing-info-item">
-                <span className="billing-info-label">Fuel Price/Liter</span>
-                <span className="billing-info-value">
-                  {fmt(selected_contract.fuel_price_per_liter)}
-                </span>
-              </div>
-            </div>
+            <Row className="nc-modal-custom-row mt-3">
+              <Col xs={3}>
+                <div className="field-label">MONTHLY RATE</div>
+                <div className="detail-value">{fmt(selected_contract.monthly_rate)}</div>
+              </Col>
+              <Col xs={3}>
+                <div className="field-label">INCLUDED TRIPS</div>
+                <div className="detail-value">{selected_contract.included_trips}</div>
+              </Col>
+              <Col xs={3}>
+                <div className="field-label">EXCESS TRIP CHARGE</div>
+                <div className="detail-value">{fmt(selected_contract.excess_trip_charge)}</div>
+              </Col>
+              <Col xs={3}>
+                <div className="field-label">FUEL PRICE / LITER</div>
+                <div className="detail-value">{fmt(selected_contract.fuel_price_per_liter)}</div>
+              </Col>
+            </Row>
           )}
         </div>
 
