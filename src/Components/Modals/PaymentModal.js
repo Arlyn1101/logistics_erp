@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Modal, Row, Col, Form } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faUniversity, faDownload, faTrash, faPaperclip } from "@fortawesome/free-solid-svg-icons";
@@ -46,6 +46,26 @@ export default function PaymentModal({ show, onHide, billing, on_success }) {
   const [is_clicked, set_is_clicked] = useState(false);
   const [is_error, set_is_error]           = useState({});
   const [new_attachments, set_new_attachments] = useState([]);
+
+  useEffect(() => {
+    if (billing) {
+      set_form({
+        billing_id:       billing.id || "",
+        payment_date:     moment().format("YYYY-MM-DD"),
+        payment_method:   "cash",
+        amount:           billing.balance || billing.grand_total || "",
+        reference_number: "",
+        check_number:     "",
+        check_date:       "",
+        bank_name:        "",
+        deposit_date:     "",
+        deposited_to:     "",
+        transfer_date:    "",
+        remarks:          "",
+      });
+    }
+  }, [billing]);
+
 
   const fmt = (val) =>
     `₱ ${parseFloat(val || 0).toLocaleString("en-PH", { minimumFractionDigits: 2 })}`;

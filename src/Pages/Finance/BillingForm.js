@@ -174,8 +174,7 @@ export default function BillingForm() {
                 <option value="">Select contract...</option>
                 {contracts.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.contract_number} —{" "}
-                    {c.trade_name || `${c.first_name} ${c.last_name}`}
+                    {c.contract_number} — {c.authorized_signatory || c.customer_name}
                   </option>
                 ))}
               </Form.Select>
