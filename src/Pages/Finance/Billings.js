@@ -116,7 +116,7 @@ export default function Billings() {
         </Row>
 
         <div className="filter-tabs mb-3">
-          {["all", "unpaid", "partial", "paid"].map((tab) => (
+          {["all", "unpaid", "paid"].map((tab) => (
             <button
               key={tab}
               className={`filter-tab-btn ${active_tab === tab ? "active" : ""}`}
