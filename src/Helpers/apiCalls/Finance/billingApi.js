@@ -1,43 +1,100 @@
-import { getAPICall, postAPICall } from "../axiosMethodCalls";
+import { getAPICall, postAPICall, BASE_URL } from "../axiosMethodCalls";
 
-// Get all billings
+const get_token = () => localStorage.getItem("token") || null;
+
 export const getAllBillings = async () => {
-  return await getAPICall("/api/billing/get_all");
+  try {
+    const response = await getAPICall(`${BASE_URL}/contract_billings/index`, {
+      token: get_token(),
+    });
+    return { data: response.data };
+  } catch (error) {
+    return { error: error.response };
+  }
 };
 
-// Get billing by id
-export const getBilling = async (id) => {
-  return await getAPICall(`/api/billing/get/${id}`);
+export const searchBillings = async (filters = {}) => {
+  try {
+    const response = await getAPICall(`${BASE_URL}/contract_billings/search`, {
+      token: get_token(),
+      ...filters,
+    });
+    return { data: response.data };
+  } catch (error) {
+    return { error: error.response };
+  }
 };
 
-// Get unbilled cycles for a contract
-export const getUnbilledCycles = async (contract_id) => {
-  return await getAPICall(`/api/billing/get_unbilled_cycles/${contract_id}`);
+export const getBillingDetails = async (billing_id) => {
+  try {
+    const response = await getAPICall(`${BASE_URL}/contract_billings/details`, {
+      token: get_token(),
+      billing_id,
+    });
+    return { data: response.data };
+  } catch (error) {
+    return { error: error.response };
+  }
 };
 
-// Preview trips for a contract + billing period
-export const previewBillingTrips = async (contract_id, period_start, period_end) => {
-  return await getAPICall(
-    `/api/billing/preview?contract_id=${contract_id}&period_start=${period_start}&period_end=${period_end}`
-  );
-};
-
-// Create billing
 export const createBilling = async (data) => {
-  return await postAPICall("/api/billing/create", data);
+  try {
+    const response = await postAPICall(`${BASE_URL}/contract_billings/create`, {
+      token: get_token(),
+      ...data,
+    });
+    return { data: response.data };
+  } catch (error) {
+    return { error: error.response };
+  }
 };
 
-// Get all payments
-export const getAllPayments = async () => {
-  return await getAPICall("/api/billing_payment/get_all");
+export const updateBilling = async (data) => {
+  try {
+    const response = await postAPICall(`${BASE_URL}/contract_billings/update`, {
+      token: get_token(),
+      ...data,
+    });
+    return { data: response.data };
+  } catch (error) {
+    return { error: error.response };
+  }
 };
 
-// Get payments for a specific billing
-export const getPaymentsByBilling = async (billing_id) => {
-  return await getAPICall(`/api/billing_payment/get_by_billing/${billing_id}`);
+export const deleteBilling = async (billing_id) => {
+  try {
+    const response = await postAPICall(`${BASE_URL}/contract_billings/delete`, {
+      token: get_token(),
+      billing_id,
+    });
+    return { data: response.data };
+  } catch (error) {
+    return { error: error.response };
+  }
 };
 
-// Create payment
-export const createPayment = async (data) => {
-  return await postAPICall("/api/billing_payment/create", data);
+export const getUnbilledCycles = async (contract_id) => {
+  try {
+    const response = await getAPICall(`${BASE_URL}/contract_billings/get_unbilled_cycles`, {
+      token: get_token(),
+      contract_id,
+    });
+    return { data: response.data };
+  } catch (error) {
+    return { error: error.response };
+  }
+};
+
+export const previewBillingTrips = async (contract_id, period_start, period_end) => {
+  try {
+    const response = await getAPICall(`${BASE_URL}/contract_billings/preview`, {
+      token: get_token(),
+      contract_id,
+      period_start,
+      period_end,
+    });
+    return { data: response.data };
+  } catch (error) {
+    return { error: error.response };
+  }
 };

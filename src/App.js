@@ -29,6 +29,7 @@ import Trips from "./Pages/Trips/Trips";
 import Trail from "./Pages/Trail/Trail";
 import Billings from "./Pages/Finance/Billings";
 import Payments from "./Pages/Finance/Payments";
+import BillingForm from "./Pages/Finance/BillingForm";
 
 // Auth guard — checks localStorage token
 function PrivateRoute({ children }) {
@@ -45,7 +46,7 @@ function App() {
           duration: 3000,
           style: {
             fontFamily: "var(--primary-font-medium)",
-            fontSize: "14px",
+            fontSize: "14px"
           },
         }}
       />
@@ -193,6 +194,14 @@ function App() {
           element={
             <PrivateRoute>
               <Payments />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/billings/form"
+          element={
+            <PrivateRoute>
+              <BillingForm />
             </PrivateRoute>
           }
         />
