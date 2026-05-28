@@ -57,3 +57,15 @@ export const deleteUser = async (user_id) => {
     return { error: error.response };
   }
 };
+
+export const getUserSuggestions = async (keyword) => {
+  try {
+    const response = await getAPICall(`${BASE_URL}/users/get_suggestions`, {
+      token: get_token(),
+      keyword,
+    });
+    return { data: response.data };
+  } catch (error) {
+    return { error: error.response };
+  }
+};
