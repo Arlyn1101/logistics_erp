@@ -33,35 +33,21 @@ export default function Billings() {
   }
 
   function ActionBtn(row) {
+    if (row.status !== "unpaid") return null;
     return (
-      <Form.Select
-        name="action"
-        className="PO-select-action form-select"
-        onChange={(e) => handle_select_change(e, row)}
-        value={""}
+      <button
+        type="button"
+        className="add-btn"
+        onClick={(e) => {
+          e.stopPropagation();
+          const { status_badge, action_btn, ...clean } = row;
+          set_selected_billing(clean);
+          set_show_payment_modal(true);
+        }}
       >
-        <option defaultValue selected hidden>
-          Select
-        </option>
-        <option value="view-billing" className="color-options">
-          View
-        </option>
-        <option value="add-payment" className="color-options">
-          Add Payment
-        </option>
-      </Form.Select>
+        Add Payment
+      </button>
     );
-  }
-
-  function handle_select_change(e, row) {
-    const action = e.target.value;
-    e.target.value = "";
-    if (action === "view-billing") {
-      navigate("/billings/view", { state: { billing: row } });
-    } else if (action === "add-payment") {
-      set_selected_billing(row);
-      set_show_payment_modal(true);
-    }
   }
 
   function apply_tab_filter(data, tab) {
@@ -157,7 +143,7 @@ export default function Billings() {
               "GRAND TOTAL",
               "BALANCE",
               "STATUS",
-              "ACTIONS",
+              "",
             ]}
             headerSelector={[
               "billing_number",

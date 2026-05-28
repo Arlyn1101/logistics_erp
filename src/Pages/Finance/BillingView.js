@@ -7,7 +7,6 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTrash } from "@fortawesome/free-solid-svg-icons";
 import {
   getBillingDetails,
-  deleteBilling,
 } from "../../Helpers/apiCalls/Finance/billingApi";
 import { deletePayment } from "../../Helpers/apiCalls/Finance/paymentApi";
 import { toastStyle } from "../../Helpers/Utils/Common";
@@ -56,19 +55,6 @@ export default function BillingView() {
   useEffect(() => {
     fetch_billing();
   }, []);
-
-  async function handle_delete_billing() {
-    if (!window.confirm("Are you sure you want to delete this billing?")) return;
-    set_is_deleting(true);
-    const response = await deleteBilling(passed.id);
-    if (response.data && response.data.status === "success") {
-      toast.success("Billing deleted.", { style: toastStyle() });
-      navigate("/billings");
-    } else {
-      toast.error("Failed to delete billing.", { style: toastStyle() });
-    }
-    set_is_deleting(false);
-  }
 
   async function handle_delete_payment(payment_id) {
     if (!window.confirm("Remove this payment record?")) return;
@@ -130,6 +116,7 @@ export default function BillingView() {
           </div>
           <div className="add-customer-actions">
             <button
+              type="button"
               className="cancel-btn"
               onClick={() => navigate("/billings")}
             >
@@ -137,20 +124,13 @@ export default function BillingView() {
             </button>
             {billing.status === "unpaid" && (
               <button
+                type="button"
                 className="save-btn"
                 onClick={() => set_show_payment_modal(true)}
               >
                 Record Payment
               </button>
             )}
-            <button
-              className="cancel-btn"
-              onClick={handle_delete_billing}
-              disabled={is_deleting}
-              style={{ color: "#dc3545", borderColor: "#f5c6cb" }}
-            >
-              {is_deleting ? "Deleting..." : "Delete Billing"}
-            </button>
           </div>
         </div>
 
