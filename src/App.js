@@ -27,9 +27,10 @@ import ContractForm from "./Pages/Contracts/ContractForm";
 import ContractView from "./Pages/Contracts/ContractView";
 import Trips from "./Pages/Trips/Trips";
 import Trail from "./Pages/Trail/Trail";
-import Billings    from "./Pages/Finance/Billings";
+import Billings from "./Pages/Finance/Billings";
 import BillingView from "./Pages/Finance/BillingView";
-import Payments    from "./Pages/Finance/Payments";
+import Payments from "./Pages/Finance/Payments";
+import PaymentView from "./Pages/Finance/PaymentView";
 import BillingForm from "./Pages/Finance/BillingForm";
 
 // Auth guard — checks localStorage token
@@ -47,7 +48,7 @@ function App() {
           duration: 3000,
           style: {
             fontFamily: "var(--primary-font-medium)",
-            fontSize: "14px"
+            fontSize: "14px",
           },
         }}
       />
@@ -203,6 +204,14 @@ function App() {
           element={
             <PrivateRoute>
               <Payments />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/payments/view"
+          element={
+            <PrivateRoute>
+              <PaymentView />
             </PrivateRoute>
           }
         />
