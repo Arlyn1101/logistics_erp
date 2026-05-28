@@ -855,7 +855,7 @@ function handle_reset_filter() {
                     {is_completing ? "Completing..." : "✓ Mark as Delivered"}
                   </button>
                 ) : (
-                  <span className="status-badge completed" style={{ padding: "6px 12px" }}>
+                  <span className="status-badge active" style={{ padding: "6px 12px" }}>
                     ✓ Delivered
                   </span>
                 )}

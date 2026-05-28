@@ -520,7 +520,7 @@ export default function PaymentModal({ show, onHide, billing, on_success }) {
         <Row className="nc-modal-custom-row">
           <Col>
             <div className="field-label">
-              ATTACH FILES <span className="edit-optional px-1">(Optional)</span>
+              ATTACH FILES <span className="edit-optional px-1"></span>
             </div>
             <input
               type="file"

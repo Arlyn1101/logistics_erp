@@ -6,16 +6,8 @@ import AddModal from "../../Components/Modals/AddModal";
 import EditModal from "../../Components/Modals/EditModal";
 import ViewModal from "../../Components/Modals/ViewModal";
 import InputError from "../../Components/InputError/InputError";
-import {
-  getAPICall,
-  postAPICall,
-  BASE_URL,
-} from "../../Helpers/apiCalls/axiosMethodCalls";
-import {
-  getAllUsers,
-  createUser,
-  updateUser,
-} from "../../Helpers/apiCalls/Manage/userApi";
+import { Select as AntSelect } from "antd";
+import { getAllUsers, createUser, updateUser, getUserSuggestions } from "../../Helpers/apiCalls/Manage/userApi";
 import { toastStyle } from "../../Helpers/Utils/Common";
 import toast from "react-hot-toast";
 import "../Manage/Manage.css";
@@ -26,13 +18,17 @@ export default function Users() {
   const [inactive, set_inactive] = useState(false);
   const [show_loader, set_show_loader] = useState(false);
   const [is_clicked, set_is_clicked] = useState(false);
-  const [search_text, set_search_text] = useState("");
   const [user_data, set_user_data] = useState([]);
+  const [user_data_filtered, set_user_data_filtered] = useState([]);
   const [selected_row, set_selected_row] = useState({});
 
   const [show_add_modal, set_show_add_modal] = useState(false);
   const [show_edit_modal, set_show_edit_modal] = useState(false);
-  const [show_view_modal, set_show_view_modal] = useState(false);
+  const [show_view_modal, set_show_view_modal]               = useState(false);
+  const [suggestions, set_suggestions]                       = useState([]);
+  const [suggestion_loading, set_suggestion_loading]         = useState(false);
+  const [active_filter, set_active_filter]                   = useState(null);
+  const [search_value, set_search_value]                     = useState(null);
 
   const empty_form = {
     first_name: "",
@@ -123,6 +119,7 @@ export default function Users() {
         status_badge: StatusBadge(a.role),
       }));
       set_user_data(result);
+      set_user_data_filtered(result);
     } else {
       set_user_data([]);
     }
@@ -163,6 +160,38 @@ export default function Users() {
   React.useEffect(() => {
     fetch_users();
   }, []);
+
+  async function handle_suggestion_search(keyword) {
+    if (!keyword || keyword.trim().length < 1) {
+      set_suggestions([]);
+      return;
+    }
+    set_suggestion_loading(true);
+    const res = await getUserSuggestions(keyword);
+    if (res.data?.data?.users) {
+      const options = res.data.data.users.map((item) => ({
+        value: `user_id::${item.id}`,
+        label: `👤 ${item.label}`,
+        sublabel: "User",
+      }));
+      set_suggestions(options);
+    }
+    set_suggestion_loading(false);
+  }
+
+  function handle_suggestion_select(value, option) {
+    const [type, id] = value.split("::");
+    set_active_filter({ type, id, label: option.label });
+    const filtered = user_data.filter((row) => String(row.id) === String(id));
+    set_user_data_filtered(filtered);
+  }
+
+  function handle_reset_filter() {
+    set_active_filter(null);
+    set_suggestions([]);
+    set_search_value(null);
+    set_user_data_filtered(user_data);
+  }
 
   const form_fields = (form, handle_change, for_edit = false) => (
     <div className="mt-3">
@@ -263,17 +292,43 @@ export default function Users() {
             <h1 className="page-title">Users</h1>
           </Col>
           <Col className="d-flex justify-content-end align-items-center">
-            <input
-              type="search"
-              placeholder="Search user..."
-              value={search_text}
-              onChange={(e) => set_search_text(e.target.value)}
-              className="search-bar"
-              onKeyDown={(e) => {
-                if (e.key === "Enter") fetch_users();
-              }}
+            <AntSelect
+              showSearch
+              allowClear
+              value={search_value}
+              onChange={(val) => set_search_value(val ?? null)}
+              style={{ width: 280, marginRight: 8 }}
+              placeholder="🔍 Search name, email, role..."
+              filterOption={false}
+              onSearch={handle_suggestion_search}
+              onSelect={handle_suggestion_select}
+              onClear={handle_reset_filter}
+              loading={suggestion_loading}
+              options={suggestions.map((s) => ({
+                value: s.value,
+                label: (
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
+                    <span>{s.label}</span>
+                    <span
+                      style={{ fontSize: 11, color: "#94a3b8", marginLeft: 8 }}
+                    >
+                      {s.sublabel}
+                    </span>
+                  </div>
+                ),
+              }))}
+              notFoundContent={
+                suggestion_loading ? "Searching..." : "No results"
+              }
             />
             <button
+              type="button"
               className="add-btn"
               onClick={() => set_show_add_modal(true)}
             >
@@ -295,7 +350,7 @@ export default function Users() {
             }}
             tableHeaders={["NAME", "EMAIL", "ROLE"]}
             headerSelector={["name", "email", "role"]}
-            tableData={user_data}
+            tableData={user_data_filtered}
             showLoader={show_loader}
             withActionData={true}
           />
