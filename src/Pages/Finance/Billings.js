@@ -144,9 +144,10 @@ export default function Billings() {
 
         <div className="tab-content">
           <Table
-            onRowClick={(row) =>
-              navigate("/billings/view", { state: { billing: row } })
-            }
+            onRowClick={(row) => {
+              const { status_badge, action_btn, ...clean } = row;
+              navigate("/billings/view", { state: { billing: clean } });
+            }}
             tableHeaders={[
               "BILLING NO.",
               "CUSTOMER",
