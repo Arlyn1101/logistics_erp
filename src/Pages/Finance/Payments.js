@@ -195,7 +195,6 @@ export default function Payments() {
               "AMOUNT",
               "REF / CHECK NO.",
               "BANK",
-              "REMARKS",
             ]}
             headerSelector={[
               "payment_date_fmt",
@@ -206,7 +205,6 @@ export default function Payments() {
               "amount_display",
               "ref_display",
               "bank_display",
-              "remarks_display",
             ]}
             tableData={filtered_data}
             showLoader={show_loader}
