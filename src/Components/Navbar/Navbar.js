@@ -92,11 +92,10 @@ const MENU_SECTIONS = [
 
 // Shared ref that survives navigation — tracks hover state globally
 // so re-mount doesn't reset it
-let global_is_hovered = false;
 let global_expanded = null;
 
 const Navbar = ({ onCollapse }) => {
-  const [inactive, set_inactive] = useState(!global_is_hovered);
+  const [inactive] = useState(false);
   const [expanded_index, set_expanded_index] = useState(global_expanded);
 
   function handle_expand(key) {
@@ -114,16 +113,6 @@ const Navbar = ({ onCollapse }) => {
     if (onCollapse) onCollapse(inactive);
   }, [inactive]);
 
-  function handle_mouse_enter() {
-    global_is_hovered = true;
-    set_inactive(false);
-  }
-
-  function handle_mouse_leave() {
-    global_is_hovered = false;
-    set_inactive(true);
-  }
-
   async function handle_logout() {
     removeUserSession();
     window.localStorage.clear();
@@ -138,11 +127,7 @@ const Navbar = ({ onCollapse }) => {
   }
 
   return (
-    <div
-      className={`side-menu ${inactive ? "inactive" : ""}`}
-      onMouseEnter={handle_mouse_enter}
-      onMouseLeave={handle_mouse_leave}
-    >
+    <div className={`side-menu ${inactive ? "inactive" : ""}`}>
       {/* Top: brand */}
       <div className="top-section">
         <div className="sidebar-brand">
