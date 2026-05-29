@@ -79,8 +79,12 @@ export default function DriverDetails() {
       const response = await getDriverDetails(id);
       if (response.data && response.data.data) {
         const data = response.data.data;
-        set_form(data);
-        set_original_form(data);
+        const sanitized = { ...empty_form };
+        Object.keys(empty_form).forEach((key) => {
+          sanitized[key] = data[key] ?? "";
+        });
+        set_form(sanitized);
+        set_original_form(sanitized);
       } else {
         toast.error("Failed to load driver details.", { style: toastStyle() });
         navigate("/drivers");

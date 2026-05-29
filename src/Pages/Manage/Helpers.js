@@ -114,7 +114,7 @@ export default function Helpers() {
     if (response.data && response.data.data) {
       const result = response.data.data.map((a) => ({
         ...a,
-        full_name: `${a.first_name} ${a.last_name}`,
+        full_name: [a.first_name, a.middle_name, a.last_name, a.suffix].filter(Boolean).join(" "),
         status_badge: StatusBadge(a.status),
       }));
       set_helper_data(result);

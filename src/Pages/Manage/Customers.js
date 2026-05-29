@@ -39,7 +39,7 @@ export default function Customers() {
   const [show_edit_modal, set_show_edit_modal] = useState(false);
   const [show_view_modal, set_show_view_modal] = useState(false);
 
-  const empty_contact = { name: "", number: "", role: "" };
+  const empty_contact = { first_name: "", last_name: "", middle_name: "", number: "", role: "" };
 
   const empty_form = {
     first_name: "",
@@ -432,16 +432,13 @@ export default function Customers() {
               CONTACT PERSON
               <Form.Control
                 type="text"
-                value={contact.name}
+                value={[contact.first_name, contact.last_name].filter(Boolean).join(" ")}
                 className="nc-modal-custom-input"
-                onChange={(e) =>
-                  handle_contact_change(
-                    form_setter,
-                    index,
-                    "name",
-                    e.target.value,
-                  )
-                }
+                onChange={(e) => {
+                  const parts = e.target.value.split(" ");
+                  handle_contact_change(form_setter, index, "first_name", parts[0] || "");
+                  handle_contact_change(form_setter, index, "last_name", parts.slice(1).join(" ") || "");
+                }}
               />
             </Col>
             <Col>

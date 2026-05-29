@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Col, Form, Row } from "react-bootstrap";
+import { DatePicker as AntDatePicker } from "antd";
+import dayjs from "dayjs";
 import { useNavigate, useLocation } from "react-router-dom";
 import Navbar from "../../Components/Navbar/Navbar";
 import InputError from "../../Components/InputError/InputError";
@@ -289,12 +291,14 @@ export default function HelperForm() {
           <Row className="nc-modal-custom-row">
             <Col>
               <div className="field-label">BIRTHDATE</div>
-              <Form.Control
-                type="date"
-                name="birthdate"
-                value={form.birthdate}
+              <AntDatePicker
+                value={form.birthdate ? dayjs(form.birthdate) : null}
+                onChange={(date) => set_form((prev) => ({ ...prev, birthdate: date ? date.format("YYYY-MM-DD") : "" }))}
+                format="YYYY-MM-DD"
+                placeholder="Select birthdate"
+                style={{ width: "100%" }}
                 className="nc-modal-custom-input"
-                onChange={handle_change}
+                getPopupContainer={(trigger) => trigger.parentElement}
               />
             </Col>
             <Col>

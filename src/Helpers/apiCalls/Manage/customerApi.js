@@ -47,16 +47,39 @@ export const createCustomer = async (form, attachments = []) => {
       'trade_name', 'bir_name', 'business_type',
       'bir_region', 'bir_province', 'bir_city', 'bir_barangay', 'bir_street',
       'trade_region', 'trade_province', 'trade_city', 'trade_barangay', 'trade_street',
-      'tin', 'term', 'credit_limit', 'vat_type', 'bir_2307', 'email', 'address',
+      'tin', 'term', 'credit_limit', 'vat_type', 'bir_2307', 'email',
     ];
     flat_fields.forEach((key) => {
       form_data.append(key, form[key] ?? '');
     });
 
+    const bir_address = [
+      form.bir_street,
+      form.bir_barangay_name,
+      form.bir_city_name,
+      form.bir_province_name,
+      form.bir_region_name,
+    ].filter(Boolean).join(', ');
+    form_data.append('bir_address', bir_address);
+
+    const trade_address = [
+      form.trade_street,
+      form.trade_barangay_name,
+      form.trade_city_name,
+      form.trade_province_name,
+      form.trade_region_name,
+    ].filter(Boolean).join(', ');
+    form_data.append('trade_address', trade_address);
+    form_data.append('address', trade_address);
+
     // ── HERE IS THE MERGE LOGIC ──
     // Put your hardcoded signatory object into index 0, followed cleanly by the remaining contacts
+    const signatory_contact = form.signatory && form.signatory.first_name
+      ? [{ ...form.signatory, role: 'Authorized Signatory' }]
+      : [];
+
     const combined_contacts = [
-      ...(form.signatories || []),
+      ...signatory_contact,
       ...(form.contacts || [])
     ];
 
@@ -76,18 +99,27 @@ export const createCustomer = async (form, attachments = []) => {
 
 export const updateCustomer = async (form) => {
   try {
+    const signatory_contact = form.signatory && form.signatory.first_name
+      ? [{ ...form.signatory, role: 'Authorized Signatory' }]
+      : [];
+
+    const combined_contacts = [
+      ...signatory_contact,
+      ...(form.contacts || [])
+    ];
+
     const response = await postAPICall(`${BASE_URL}/customers/update`, {
       token:          get_token(),
       customer_id:    form.id,
       trade_name:     form.trade_name,
       bir_name:       form.bir_name,
-      business_type:  form.business_type,       // ← new
-      bir_region:     form.bir_region,           // ← new
+      business_type:  form.business_type,
+      bir_region:     form.bir_region,
       bir_province:   form.bir_province,
       bir_city:       form.bir_city,
       bir_barangay:   form.bir_barangay,
       bir_street:     form.bir_street,
-      trade_region:   form.trade_region,         // ← new
+      trade_region:   form.trade_region,
       trade_province: form.trade_province,
       trade_city:     form.trade_city,
       trade_barangay: form.trade_barangay,
@@ -98,8 +130,10 @@ export const updateCustomer = async (form) => {
       vat_type:       form.vat_type,
       bir_2307:       form.bir_2307,
       email:          form.email,
-      address:        form.address,
-      contacts:       JSON.stringify(form.contacts ?? []),
+      bir_address:    [form.bir_street, form.bir_barangay_name, form.bir_city_name, form.bir_province_name, form.bir_region_name].filter(Boolean).join(', '),
+      trade_address:  [form.trade_street, form.trade_barangay_name, form.trade_city_name, form.trade_province_name, form.trade_region_name].filter(Boolean).join(', '),
+      address:        [form.trade_street, form.trade_barangay_name, form.trade_city_name, form.trade_province_name, form.trade_region_name].filter(Boolean).join(', '),
+      contacts:       JSON.stringify(combined_contacts),
     });
     return { data: response.data };
   } catch (error) {

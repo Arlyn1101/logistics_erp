@@ -61,8 +61,6 @@ export default function AddCustomer() {
       position: "",
       role: "Authorized Signatory", 
     },
-
-    contacts: [],
   };
 
   const [form, set_form] = useState({ ...empty_form });
@@ -189,12 +187,16 @@ useEffect(() => {
   const handle_same_as_bir = (checked) => {
     set_form(prev => ({
       ...prev,
-      same_as_bir:     checked,
-      trade_region:    checked ? prev.bir_region    : '',
-      trade_province:  checked ? prev.bir_province  : '',
-      trade_city:      checked ? prev.bir_city      : '',
-      trade_barangay:  checked ? prev.bir_barangay  : '',
-      trade_street:    checked ? prev.bir_street    : '',
+      same_as_bir:          checked,
+      trade_region:         checked ? prev.bir_region         : '',
+      trade_province:       checked ? prev.bir_province       : '',
+      trade_city:           checked ? prev.bir_city           : '',
+      trade_barangay:       checked ? prev.bir_barangay       : '',
+      trade_street:         checked ? prev.bir_street         : '',
+      trade_region_name:    checked ? prev.bir_region_name    : '',
+      trade_province_name:  checked ? prev.bir_province_name  : '',
+      trade_city_name:      checked ? prev.bir_city_name      : '',
+      trade_barangay_name:  checked ? prev.bir_barangay_name  : '',
     }));
     if (checked) {
       // mirror the already-loaded province/city/barangay lists
@@ -400,9 +402,10 @@ useEffect(() => {
                 <Form.Control as="select" name="bir_region" value={form.bir_region}
                   className="nc-modal-custom-input"
                   onChange={(e) => {
+                    const selected = psgc.regions.find(r => r.code === e.target.value);
                     handle_change(e);
+                    set_form(p => ({ ...p, bir_region_name: selected?.name || '', bir_province: '', bir_city: '', bir_barangay: '', bir_province_name: '', bir_city_name: '', bir_barangay_name: '' }));
                     load_provinces(e.target.value, 'bir');
-                    set_form(p => ({ ...p, bir_province: '', bir_city: '', bir_barangay: '' }));
                   }}>
                   <option value="">Select Region</option>
                   {psgc.regions.map(r => <option key={r.code} value={r.code}>{r.name}</option>)}
@@ -413,9 +416,10 @@ useEffect(() => {
                 <Form.Control as="select" name="bir_province" value={form.bir_province}
                   className="nc-modal-custom-input"
                   onChange={(e) => {
+                    const selected = psgc.bir_provinces.find(p => p.code === e.target.value);
                     handle_change(e);
+                    set_form(p => ({ ...p, bir_province_name: selected?.name || '', bir_city: '', bir_barangay: '', bir_city_name: '', bir_barangay_name: '' }));
                     load_cities(e.target.value, 'bir');
-                    set_form(p => ({ ...p, bir_city: '', bir_barangay: '' }));
                   }}>
                   <option value="">Select Province</option>
                   {psgc.bir_provinces.map(p => <option key={p.code} value={p.code}>{p.name}</option>)}
@@ -426,9 +430,10 @@ useEffect(() => {
                 <Form.Control as="select" name="bir_city" value={form.bir_city}
                   className="nc-modal-custom-input"
                   onChange={(e) => {
+                    const selected = psgc.bir_cities.find(c => c.code === e.target.value);
                     handle_change(e);
+                    set_form(p => ({ ...p, bir_city_name: selected?.name || '', bir_barangay: '', bir_barangay_name: '' }));
                     load_barangays(e.target.value, 'bir');
-                    set_form(p => ({ ...p, bir_barangay: '' }));
                   }}>
                   <option value="">Select City</option>
                   {psgc.bir_cities.map(c => <option key={c.code} value={c.code}>{c.name}</option>)}
@@ -437,7 +442,12 @@ useEffect(() => {
               <Col xs={3}>
                 <div className="field-label">BARANGAY</div>
                 <Form.Control as="select" name="bir_barangay" value={form.bir_barangay}
-                  className="nc-modal-custom-input" onChange={handle_change}>
+                  className="nc-modal-custom-input"
+                  onChange={(e) => {
+                    const selected = psgc.bir_barangays.find(b => b.code === e.target.value);
+                    handle_change(e);
+                    set_form(p => ({ ...p, bir_barangay_name: selected?.name || '' }));
+                  }}>
                   <option value="">Select Barangay</option>
                   {psgc.bir_barangays.map(b => <option key={b.code} value={b.code}>{b.name}</option>)}
                 </Form.Control>
@@ -472,9 +482,10 @@ useEffect(() => {
                   className="nc-modal-custom-input"
                   disabled={form.same_as_bir}
                   onChange={(e) => {
+                    const selected = psgc.regions.find(r => r.code === e.target.value);
                     handle_change(e);
+                    set_form(p => ({ ...p, trade_region_name: selected?.name || '', trade_province: '', trade_city: '', trade_barangay: '', trade_province_name: '', trade_city_name: '', trade_barangay_name: '' }));
                     load_provinces(e.target.value, 'trade');
-                    set_form(p => ({ ...p, trade_province: '', trade_city: '', trade_barangay: '' }));
                   }}>
                   <option value="">Select Region</option>
                   {psgc.regions.map(r => <option key={r.code} value={r.code}>{r.name}</option>)}
@@ -486,9 +497,10 @@ useEffect(() => {
                   className="nc-modal-custom-input"
                   disabled={form.same_as_bir}
                   onChange={(e) => {
+                    const selected = psgc.trade_provinces.find(p => p.code === e.target.value);
                     handle_change(e);
+                    set_form(p => ({ ...p, trade_province_name: selected?.name || '', trade_city: '', trade_barangay: '', trade_city_name: '', trade_barangay_name: '' }));
                     load_cities(e.target.value, 'trade');
-                    set_form(p => ({ ...p, trade_city: '', trade_barangay: '' }));
                   }}>
                   <option value="">Select Province</option>
                   {psgc.trade_provinces.map(p => <option key={p.code} value={p.code}>{p.name}</option>)}
@@ -500,9 +512,10 @@ useEffect(() => {
                   className="nc-modal-custom-input"
                   disabled={form.same_as_bir}
                   onChange={(e) => {
+                    const selected = psgc.trade_cities.find(c => c.code === e.target.value);
                     handle_change(e);
+                    set_form(p => ({ ...p, trade_city_name: selected?.name || '', trade_barangay: '', trade_barangay_name: '' }));
                     load_barangays(e.target.value, 'trade');
-                    set_form(p => ({ ...p, trade_barangay: '' }));
                   }}>
                   <option value="">Select City</option>
                   {psgc.trade_cities.map(c => <option key={c.code} value={c.code}>{c.name}</option>)}
@@ -513,7 +526,11 @@ useEffect(() => {
                 <Form.Control as="select" name="trade_barangay" value={form.trade_barangay}
                   className="nc-modal-custom-input"
                   disabled={form.same_as_bir}
-                  onChange={handle_change}>
+                  onChange={(e) => {
+                    const selected = psgc.trade_barangays.find(b => b.code === e.target.value);
+                    handle_change(e);
+                    set_form(p => ({ ...p, trade_barangay_name: selected?.name || '' }));
+                  }}>
                   <option value="">Select Barangay</option>
                   {psgc.trade_barangays.map(b => <option key={b.code} value={b.code}>{b.name}</option>)}
                 </Form.Control>

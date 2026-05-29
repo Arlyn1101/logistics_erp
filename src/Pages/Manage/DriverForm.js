@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Col, Form, Row } from "react-bootstrap";
+import { DatePicker as AntDatePicker } from "antd";
+import dayjs from "dayjs";
 import { useNavigate, useLocation } from "react-router-dom";
 import Navbar from "../../Components/Navbar/Navbar";
 import InputError from "../../Components/InputError/InputError";
@@ -28,6 +30,14 @@ export default function DriverForm() {
   const [is_error, set_is_error] = useState({
     first_name: false,
     last_name: false,
+    contact_number: false,
+    address: false,
+    birthdate: false,
+    gender: false,
+    emergency_contact_name: false,
+    emergency_contact_number: false,
+    emergency_contact_relationship: false,
+    emergency_contact_address: false,
   });
 
   const empty_form = {
@@ -208,6 +218,7 @@ export default function DriverForm() {
                 value={form.first_name}
                 className="nc-modal-custom-input"
                 onChange={handle_change}
+                placeholder="First Name"
               />
               <InputError
                 isValid={is_error.first_name}
@@ -222,6 +233,7 @@ export default function DriverForm() {
                 value={form.middle_name}
                 className="nc-modal-custom-input"
                 onChange={handle_change}
+                placeholder="Middle Name"
               />
             </Col>
             <Col>
@@ -234,6 +246,7 @@ export default function DriverForm() {
                 value={form.last_name}
                 className="nc-modal-custom-input"
                 onChange={handle_change}
+                placeholder="Last Name"
               />
               <InputError
                 isValid={is_error.last_name}
@@ -248,19 +261,22 @@ export default function DriverForm() {
                 value={form.suffix}
                 className="nc-modal-custom-input"
                 onChange={handle_change}
+                placeholder="e.g. Jr."
               />
             </Col>
           </Row>
           <Row className="nc-modal-custom-row">
             <Col>
-              <div className="field-label">CONTACT NUMBER</div>
+              <div className="field-label">CONTACT NUMBER <span className="required-icon">*</span></div>
               <Form.Control
                 type="text"
                 name="contact_number"
                 value={form.contact_number}
                 className="nc-modal-custom-input"
                 onChange={handle_change}
+                placeholder="e.g. 09XX-XXX-XXXX"
               />
+              <InputError isValid={is_error.contact_number} message="Contact number is required" />
             </Col>
             <Col>
               <div className="field-label">EMAIL</div>
@@ -270,6 +286,7 @@ export default function DriverForm() {
                 value={form.email}
                 className="nc-modal-custom-input"
                 onChange={handle_change}
+                placeholder="e.g. example@email.com"
               />
             </Col>
             {is_edit && (
@@ -292,7 +309,7 @@ export default function DriverForm() {
           </Row>
           <Row className="nc-modal-custom-row">
             <Col>
-              <div className="field-label">ADDRESS</div>
+              <div className="field-label">ADDRESS <span className="required-icon">*</span></div>
               <Form.Control
                 as="textarea"
                 rows={2}
@@ -300,7 +317,9 @@ export default function DriverForm() {
                 value={form.address}
                 className="nc-modal-custom-input"
                 onChange={handle_change}
+                placeholder="e.g. Purok 5, Brgy. San Jose, Cagayan de Oro City"
               />
+              <InputError isValid={is_error.address} message="Address is required" />
             </Col>
           </Row>
 
@@ -308,27 +327,31 @@ export default function DriverForm() {
           <div className="biodata-section-label">Personal Information</div>
           <Row className="nc-modal-custom-row">
             <Col>
-              <div className="field-label">BIRTHDATE</div>
-              <Form.Control
-                type="date"
-                name="birthdate"
-                value={form.birthdate}
+              <div className="field-label">BIRTHDATE <span className="required-icon">*</span></div>
+              <AntDatePicker
+                value={form.birthdate ? dayjs(form.birthdate) : null}
+                onChange={(date) => set_form((prev) => ({ ...prev, birthdate: date ? date.format("YYYY-MM-DD") : "" }))}
+                format="YYYY-MM-DD"
+                placeholder="Select birthdate"
+                style={{ width: "100%" }}
                 className="nc-modal-custom-input"
-                onChange={handle_change}
+                getPopupContainer={(trigger) => trigger.parentElement}
               />
+              <InputError isValid={is_error.birthdate} message="Birthdate is required" />
             </Col>
             <Col>
-              <div className="field-label">GENDER</div>
+              <div className="field-label">GENDER <span className="required-icon">*</span></div>
               <Form.Select
                 name="gender"
                 value={form.gender}
                 className="nc-modal-custom-input"
                 onChange={handle_change}
               >
-                <option value="">Select</option>
+                <option value="">Select gender</option>
                 <option value="male">Male</option>
                 <option value="female">Female</option>
               </Form.Select>
+              <InputError isValid={is_error.gender} message="Gender is required" />
             </Col>
             <Col>
               <div className="field-label">CIVIL STATUS</div>
@@ -354,6 +377,7 @@ export default function DriverForm() {
                 value={form.nationality}
                 className="nc-modal-custom-input"
                 onChange={handle_change}
+                placeholder="e.g. Filipino"
               />
             </Col>
             <Col>
@@ -364,6 +388,7 @@ export default function DriverForm() {
                 value={form.religion}
                 className="nc-modal-custom-input"
                 onChange={handle_change}
+                placeholder="e.g. Roman Catholic"
               />
             </Col>
           </Row>
@@ -372,39 +397,45 @@ export default function DriverForm() {
           <div className="biodata-section-label">Emergency Contact</div>
           <Row className="nc-modal-custom-row">
             <Col>
-              <div className="field-label">NAME</div>
+              <div className="field-label">NAME <span className="required-icon">*</span></div>
               <Form.Control
                 type="text"
                 name="emergency_contact_name"
                 value={form.emergency_contact_name}
                 className="nc-modal-custom-input"
                 onChange={handle_change}
+                placeholder="Name"
               />
+              <InputError isValid={is_error.emergency_contact_name} message="Emergency contact name is required" />
             </Col>
             <Col>
-              <div className="field-label">CONTACT NUMBER</div>
+              <div className="field-label">CONTACT NUMBER <span className="required-icon">*</span></div>
               <Form.Control
                 type="text"
                 name="emergency_contact_number"
                 value={form.emergency_contact_number}
                 className="nc-modal-custom-input"
                 onChange={handle_change}
+                placeholder="e.g. 09XX-XXX-XXXX"
               />
+              <InputError isValid={is_error.emergency_contact_number} message="Emergency contact number is required" />
             </Col>
             <Col>
-              <div className="field-label">RELATIONSHIP</div>
+              <div className="field-label">RELATIONSHIP <span className="required-icon">*</span></div>
               <Form.Control
                 type="text"
                 name="emergency_contact_relationship"
                 value={form.emergency_contact_relationship}
                 className="nc-modal-custom-input"
                 onChange={handle_change}
+                placeholder="e.g. Spouse, Parent, Sibling"
               />
+              <InputError isValid={is_error.emergency_contact_relationship} message="Relationship is required" />
             </Col>
           </Row>
           <Row className="nc-modal-custom-row">
             <Col>
-              <div className="field-label">ADDRESS</div>
+              <div className="field-label">ADDRESS <span className="required-icon">*</span></div>
               <Form.Control
                 as="textarea"
                 rows={2}
@@ -412,7 +443,9 @@ export default function DriverForm() {
                 value={form.emergency_contact_address}
                 className="nc-modal-custom-input"
                 onChange={handle_change}
+                placeholder="e.g. Purok 5, Brgy. San Jose, Cagayan de Oro City"
               />
+              <InputError isValid={is_error.emergency_contact_address} message="Emergency contact address is required" />
             </Col>
           </Row>
 
@@ -427,16 +460,19 @@ export default function DriverForm() {
                 value={form.license_number}
                 className="nc-modal-custom-input"
                 onChange={handle_change}
+                placeholder="e.g. A01-23-456789"
               />
             </Col>
             <Col>
               <div className="field-label">LICENSE EXPIRY</div>
-              <Form.Control
-                type="date"
-                name="license_expiry"
-                value={form.license_expiry}
+              <AntDatePicker
+                value={form.license_expiry ? dayjs(form.license_expiry) : null}
+                onChange={(date) => set_form((prev) => ({ ...prev, license_expiry: date ? date.format("YYYY-MM-DD") : "" }))}
+                format="YYYY-MM-DD"
+                placeholder="Select expiry date"
+                style={{ width: "100%" }}
                 className="nc-modal-custom-input"
-                onChange={handle_change}
+                getPopupContainer={(trigger) => trigger.parentElement}
               />
             </Col>
           </Row>

@@ -1,0 +1,25 @@
+.no-data-cont {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.no-data-cont-dashboard {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.no-data-cont img {
+    width: 25%;
+    height: 30%;
+}
+
+.no-data-cont span {
+    font-family: var(--primary-font-medium);
+    font-size: 15px;
+    line-height: 18px;
+    font-weight: 400;
+    color: #5E5E5E;
+    text-transform: uppercase;
+}

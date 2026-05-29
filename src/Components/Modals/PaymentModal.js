@@ -4,6 +4,8 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faUniversity, faDownload, faTrash, faPaperclip } from "@fortawesome/free-solid-svg-icons";
 import toast from "react-hot-toast";
 import moment from "moment";
+import { DatePicker as AntDatePicker } from "antd";
+import dayjs from "dayjs";
 import {
   createPayment,
   uploadPaymentAttachments,
@@ -218,13 +220,14 @@ export default function PaymentModal({ show, onHide, billing, on_success }) {
             <div className="field-label">
               PAYMENT DATE <span className="required-icon">*</span>
             </div>
-            <Form.Control
-              type="date"
-              name="payment_date"
-              value={form.payment_date}
+            <AntDatePicker
+              value={form.payment_date ? dayjs(form.payment_date) : null}
+              onChange={(date) => set_form((prev) => ({ ...prev, payment_date: date ? date.format("YYYY-MM-DD") : "" }))}
+              format="YYYY-MM-DD"
+              placeholder="Select date"
+              style={{ width: "100%", borderColor: is_error.payment_date ? "red" : "" }}
               className="nc-modal-custom-input"
-              onChange={handle_change}
-              style={{ borderColor: is_error.payment_date ? "red" : "" }}
+              getPopupContainer={(trigger) => trigger.parentElement}
             />
             {is_error.payment_date && (
               <small style={{ color: "red" }}>Payment date is required</small>
@@ -285,13 +288,14 @@ export default function PaymentModal({ show, onHide, billing, on_success }) {
                 <div className="field-label">
                   DEPOSIT DATE <span className="required-icon">*</span>
                 </div>
-                <Form.Control
-                  type="date"
-                  name="deposit_date"
-                  value={form.deposit_date}
+                <AntDatePicker
+                  value={form.deposit_date ? dayjs(form.deposit_date) : null}
+                  onChange={(date) => set_form((prev) => ({ ...prev, deposit_date: date ? date.format("YYYY-MM-DD") : "" }))}
+                  format="YYYY-MM-DD"
+                  placeholder="Select date"
+                  style={{ width: "100%", borderColor: is_error.deposit_date ? "red" : "" }}
                   className="nc-modal-custom-input"
-                  onChange={handle_change}
-                  style={{ borderColor: is_error.deposit_date ? "red" : "" }}
+                  getPopupContainer={(trigger) => trigger.parentElement}
                 />
                 {is_error.deposit_date && (
                   <small style={{ color: "red" }}>Deposit date is required</small>
@@ -342,13 +346,14 @@ export default function PaymentModal({ show, onHide, billing, on_success }) {
                 <div className="field-label">
                   CHECK DATE <span className="required-icon">*</span>
                 </div>
-                <Form.Control
-                  type="date"
-                  name="check_date"
-                  value={form.check_date}
+                <AntDatePicker
+                  value={form.check_date ? dayjs(form.check_date) : null}
+                  onChange={(date) => set_form((prev) => ({ ...prev, check_date: date ? date.format("YYYY-MM-DD") : "" }))}
+                  format="YYYY-MM-DD"
+                  placeholder="Select date"
+                  style={{ width: "100%", borderColor: is_error.check_date ? "red" : "" }}
                   className="nc-modal-custom-input"
-                  onChange={handle_change}
-                  style={{ borderColor: is_error.check_date ? "red" : "" }}
+                  getPopupContainer={(trigger) => trigger.parentElement}
                 />
                 {is_error.check_date && (
                   <small style={{ color: "red" }}>Check date is required</small>
@@ -377,13 +382,14 @@ export default function PaymentModal({ show, onHide, billing, on_success }) {
                 <div className="field-label">
                   DEPOSIT DATE <span className="required-icon">*</span>
                 </div>
-                <Form.Control
-                  type="date"
-                  name="deposit_date"
-                  value={form.deposit_date}
+                <AntDatePicker
+                  value={form.deposit_date ? dayjs(form.deposit_date) : null}
+                  onChange={(date) => set_form((prev) => ({ ...prev, deposit_date: date ? date.format("YYYY-MM-DD") : "" }))}
+                  format="YYYY-MM-DD"
+                  placeholder="Select date"
+                  style={{ width: "100%", borderColor: is_error.deposit_date ? "red" : "" }}
                   className="nc-modal-custom-input"
-                  onChange={handle_change}
-                  style={{ borderColor: is_error.deposit_date ? "red" : "" }}
+                  getPopupContainer={(trigger) => trigger.parentElement}
                 />
                 {is_error.deposit_date && (
                   <small style={{ color: "red" }}>Deposit date is required</small>
@@ -499,13 +505,14 @@ export default function PaymentModal({ show, onHide, billing, on_success }) {
                 <div className="field-label">
                   TRANSFER DATE <span className="required-icon">*</span>
                 </div>
-                <Form.Control
-                  type="date"
-                  name="transfer_date"
-                  value={form.transfer_date}
+                <AntDatePicker
+                  value={form.transfer_date ? dayjs(form.transfer_date) : null}
+                  onChange={(date) => set_form((prev) => ({ ...prev, transfer_date: date ? date.format("YYYY-MM-DD") : "" }))}
+                  format="YYYY-MM-DD"
+                  placeholder="Select date"
+                  style={{ width: "100%", borderColor: is_error.transfer_date ? "red" : "" }}
                   className="nc-modal-custom-input"
-                  onChange={handle_change}
-                  style={{ borderColor: is_error.transfer_date ? "red" : "" }}
+                  getPopupContainer={(trigger) => trigger.parentElement}
                 />
                 {is_error.transfer_date && (
                   <small style={{ color: "red" }}>Transfer date is required</small>

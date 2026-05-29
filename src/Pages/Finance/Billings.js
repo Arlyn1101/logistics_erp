@@ -42,7 +42,7 @@ export default function Billings() {
   }
 
   function ActionBtn(row) {
-    if (row.status !== "unpaid") return null;
+    if (row.status !== "unpaid") return "";
     return (
       <button
         type="button"
