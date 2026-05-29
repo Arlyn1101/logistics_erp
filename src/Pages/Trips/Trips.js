@@ -1081,7 +1081,25 @@ function handle_reset_filter() {
                     set_show_map_modal(false);
                     set_show_edit_modal(true);
 
+                    // NEW: Automatically fetch available assets for this scheduled time window instantly on open!
+                    if (selected_trip.expected_departure_datetime && (selected_trip.estimated_hours || 8)) {
+                      fetch_available_assets(
+                        selected_trip.expected_departure_datetime, 
+                        selected_trip.estimated_hours || 8, 
+                        selected_trip.id
+                      );
+                    }
+
                     // Hydrate fuel summary immediately upon opening
+                    if (selected_trip.fuel_additional_charge) {
+                      set_fuel_preview(selected_trip.fuel_additional_charge);
+                    } else if (selected_trip.actual_fuel_price) {
+                      const mockRouteOptions = [{
+                        id: selected_trip.contract_route_id,
+                        distance_km: selected_trip.route_distance_km || selected_trip.distance_km
+                      }];
+                      compute_fuel_preview(selected_trip.actual_fuel_price, mockRouteOptions, selected_trip);
+                    }
                     if (selected_trip.fuel_additional_charge) {
                       set_fuel_preview(selected_trip.fuel_additional_charge);
                     } else if (selected_trip.actual_fuel_price) {
