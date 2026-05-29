@@ -3,13 +3,20 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Col, Form, Row } from "react-bootstrap";
 import Navbar from "../../Components/Navbar/Navbar";
 import InputError from "../../Components/InputError/InputError";
-import { getCustomerDetails, updateCustomer } from "../../Helpers/apiCalls/Manage/customerApi";
+import { 
+  getCustomerDetails, 
+  updateCustomer, 
+  getCustomerAttachments, 
+  downloadCustomerAttachment, 
+  deleteCustomerAttachment 
+} from "../../Helpers/apiCalls/Manage/customerApi";
 import { validateCustomer } from "../../Helpers/Validation/Manage/customerValidation";
 import { toastStyle } from "../../Helpers/Utils/Common";
 import toast from "react-hot-toast";
 import { Upload } from "antd";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPlus, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faPlus, faTrash, faDownload, faEye } from "@fortawesome/free-solid-svg-icons";
+import { BASE_URL } from "../../Helpers/apiCalls/axiosMethodCalls";
 import "antd/dist/reset.css";
 import "../Manage/AddCustomer.css";
 import "../Manage/CustomerDetails.css";
@@ -79,6 +86,7 @@ export default function CustomerDetails() {
     contact_number: false,
     contact_role: false,
   });
+  const [saved_attachments, set_saved_attachments] = useState([]);
   const [attachments, set_attachments] = useState([]);
 
   // ── PSGC state ──
@@ -96,6 +104,15 @@ export default function CustomerDetails() {
       .catch(() => {});
   }, []);
 
+  async function fetch_attachments() {
+    const response = await getCustomerAttachments(id);
+    if (response.data && response.data.data) {
+      set_saved_attachments(response.data.data);
+    } else {
+      set_saved_attachments([]);
+    }
+  }
+
   // Load customer
   useEffect(() => {
     async function fetch_customer() {
@@ -105,7 +122,6 @@ export default function CustomerDetails() {
         const data = response.data.data;
         const raw_contacts = data.contacts ?? [];
 
-        // 1. Separate the Authorized Signatory from the other contacts
         const raw_signatory = raw_contacts.find((c) => c.role === "Authorized Signatory");
         const raw_general_contacts = raw_contacts.filter((c) => c.role !== "Authorized Signatory");
 
@@ -114,19 +130,17 @@ export default function CustomerDetails() {
           ...data,
           same_as_bir: false,
 
-          // 2. Map the Signatory details into its dedicated form object
           signatory: raw_signatory ? {
             first_name:  raw_signatory.first_name   ?? "",
             middle_name: raw_signatory.middle_name  ?? "",
             last_name:   raw_signatory.last_name    ?? "",
             suffix:      raw_signatory.suffix       ?? "",
-            position:    raw_signatory.position     ?? "", // Saved from option 1 database column
+            position:    raw_signatory.position     ?? "",
             number:      raw_signatory.contact_number ?? "",
             email:       raw_signatory.email        ?? "",
             role:        "Authorized Signatory",
-          } : { ...empty_form.signatory }, // Fallback if no signatory row exists yet
+          } : { ...empty_form.signatory },
 
-          // 3. Map only the generic contacts (HR, Accounting, Finance, etc.)
           contacts: raw_general_contacts.map((c) => ({
             first_name:  c.first_name      ?? "",
             middle_name: c.middle_name     ?? "",
@@ -139,13 +153,11 @@ export default function CustomerDetails() {
           })),
         };
 
-        // Ensure there's always at least one empty row for general contacts if empty
         if (!mapped.contacts.length) mapped.contacts = [{ ...empty_contact }];
 
         set_form(mapped);
         set_original_form(mapped);
 
-        // Pre-load cascading address lists
         if (data.bir_region)   load_provinces(data.bir_region,   "bir",   true);
         if (data.bir_province) load_cities(data.bir_province,    "bir",   true);
         if (data.bir_city)     { load_barangays(data.bir_city,     "bir",   true); }
@@ -159,6 +171,7 @@ export default function CustomerDetails() {
       set_is_loading(false);
     }
     fetch_customer();
+    fetch_attachments();
   }, [id]);
 
   // ── PSGC loaders ──
@@ -255,6 +268,7 @@ export default function CustomerDetails() {
   function handle_cancel_edit() {
     set_form({ ...original_form });
     set_is_error({ first_name: false, last_name: false, contact_email: false, contact_number: false, contact_role: false });
+    set_attachments([]);
     set_is_edit_mode(false);
   }
 
@@ -262,34 +276,34 @@ export default function CustomerDetails() {
     if (validateCustomer(form, set_is_error)) {
       set_is_clicked(true);
 
-      // 1. Format frontend values for backend column consistency
       const formatted_signatory = {
         ...form.signatory,
-        contact_number: form.signatory.number, // Sync phone field
+        contact_number: form.signatory.number,
       };
 
       const formatted_general_contacts = (form.contacts || []).map(c => ({
         ...c,
-        contact_number: c.number, // Sync general phone fields
+        contact_number: c.number,
       }));
 
-      // 2. Combine them into a plain JavaScript array (DO NOT STRINGIFY HERE)
       const combined_contacts = [
         formatted_signatory,
         ...formatted_general_contacts
       ];
 
-      // 3. Keep 'contacts' as a clean array in the payload
       const payload = {
         ...form,
+        id: id, 
         contacts: combined_contacts 
       };
 
-      const response = await updateCustomer(payload);
+      const response = await updateCustomer(payload, attachments);
 
       if (response.data && response.data.response) {
         toast.success("Customer updated successfully!", { style: toastStyle() });
         set_original_form({ ...form });
+        set_attachments([]);
+        fetch_attachments();
         set_is_edit_mode(false);
       } else {
         toast.error("Failed to update customer.", { style: toastStyle() });
@@ -858,15 +872,56 @@ export default function CustomerDetails() {
 
           {/* ── Attachments ── */}
           <div className="biodata-section-label">Attachments</div>
-          {is_edit_mode ? (
-            <Dragger {...upload_props}>
-              <p className="attach-icon">📎</p>
-              <p className="attach-main-text">Click, drag, or paste files here</p>
-              <p className="attach-sub-text">Any file type accepted · Max 10MB per file</p>
-            </Dragger>
-          ) : (
-            <div className="detail-attachments-empty">
-              {attachments.length === 0 ? "No attachments" : `${attachments.length} file(s) attached`}
+          
+          {saved_attachments.length === 0 && (
+            <p style={{ color: "#8a9ab0", fontSize: "13px" }}>No files attached.</p>
+          )}
+
+          {saved_attachments.map((att) => (
+            <div key={att.id} className="attachment-row">
+              <span className="attachment-name">{att.file_name}</span>
+              <div className="attachment-actions">
+                <button
+                  className="attachment-btn"
+                  title="Download"
+                  onClick={() => downloadCustomerAttachment(att.file_path, att.file_name)}
+                  type="button"
+                >
+                  <FontAwesomeIcon icon={faDownload} />
+                </button>
+                <a
+                  className="attachment-btn"
+                  title="View"
+                  href={`${BASE_URL.replace("/api", "")}/${att.file_path}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <FontAwesomeIcon icon={faEye} />
+                </a>
+                {is_edit_mode && (
+                  <button
+                    className="attachment-btn attachment-remove"
+                    title="Delete"
+                    type="button"
+                    onClick={async () => {
+                      await deleteCustomerAttachment(att.id);
+                      fetch_attachments();
+                    }}
+                  >
+                    <FontAwesomeIcon icon={faTrash} />
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+
+          {is_edit_mode && (
+            <div className="mt-3">
+              <Dragger {...upload_props}>
+                <p className="attach-icon">📎</p>
+                <p className="attach-main-text">Click, drag, or paste files here</p>
+                <p className="attach-sub-text">Any file type accepted · Max 10MB per file</p>
+              </Dragger>
             </div>
           )}
 
