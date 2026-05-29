@@ -7,7 +7,12 @@ import EditModal from "../../Components/Modals/EditModal";
 import ViewModal from "../../Components/Modals/ViewModal";
 import InputError from "../../Components/InputError/InputError";
 import { Select as AntSelect } from "antd";
-import { getAllUsers, createUser, updateUser, getUserSuggestions } from "../../Helpers/apiCalls/Manage/userApi";
+import {
+  getAllUsers,
+  createUser,
+  updateUser,
+  getUserSuggestions,
+} from "../../Helpers/apiCalls/Manage/userApi";
 import { toastStyle } from "../../Helpers/Utils/Common";
 import toast from "react-hot-toast";
 import "../Manage/Manage.css";
@@ -24,11 +29,12 @@ export default function Users() {
 
   const [show_add_modal, set_show_add_modal] = useState(false);
   const [show_edit_modal, set_show_edit_modal] = useState(false);
-  const [show_view_modal, set_show_view_modal]               = useState(false);
-  const [suggestions, set_suggestions]                       = useState([]);
-  const [suggestion_loading, set_suggestion_loading]         = useState(false);
-  const [active_filter, set_active_filter]                   = useState(null);
-  const [search_value, set_search_value]                     = useState(null);
+  const [show_view_modal, set_show_view_modal] = useState(false);
+  const [suggestions, set_suggestions] = useState([]);
+  const [suggestion_loading, set_suggestion_loading] = useState(false);
+  const [active_filter, set_active_filter] = useState(null);
+  const [search_value, set_search_value] = useState(null);
+  const [active_role_filter, set_active_role_filter] = useState("");
 
   const empty_form = {
     first_name: "",
@@ -182,7 +188,9 @@ export default function Users() {
   function handle_suggestion_select(value, option) {
     const [type, id] = value.split("::");
     set_active_filter({ type, id, label: option.label });
-    const filtered = user_data.filter((row) => String(row.id) === String(id));
+    let filtered = user_data.filter((row) => String(row.id) === String(id));
+    if (active_role_filter)
+      filtered = filtered.filter((row) => row.role === active_role_filter);
     set_user_data_filtered(filtered);
   }
 
@@ -190,7 +198,17 @@ export default function Users() {
     set_active_filter(null);
     set_suggestions([]);
     set_search_value(null);
+    set_active_role_filter("");
     set_user_data_filtered(user_data);
+  }
+
+  function handle_role_filter(role) {
+    set_active_role_filter(role);
+    const base = active_filter
+      ? user_data.filter((row) => String(row.id) === String(active_filter.id))
+      : user_data;
+    const filtered = role ? base.filter((row) => row.role === role) : base;
+    set_user_data_filtered(filtered);
   }
 
   const form_fields = (form, handle_change, for_edit = false) => (
@@ -292,6 +310,17 @@ export default function Users() {
             <h1 className="page-title">Users</h1>
           </Col>
           <Col className="d-flex justify-content-end align-items-center">
+            <Form.Select
+              value={active_role_filter}
+              onChange={(e) => handle_role_filter(e.target.value)}
+              className="nc-modal-custom-select"
+              style={{ width: 160, marginRight: 8 }}
+            >
+              <option value="">All Roles</option>
+              <option value="admin">Admin</option>
+              <option value="dispatcher">Dispatcher</option>
+              <option value="viewer">Viewer</option>
+            </Form.Select>
             <AntSelect
               showSearch
               allowClear
