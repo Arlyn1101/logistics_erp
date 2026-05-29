@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { Col, Row, Table } from "react-bootstrap";
+import { Col, Row } from "react-bootstrap";
+import FinanceTable from "../../Components/TableTemplate/FinanceTable";
 import { useNavigate, useLocation } from "react-router-dom";
 import Navbar from "../../Components/Navbar/Navbar";
 import PaymentModal from "../../Components/Modals/PaymentModal";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faTrash } from "@fortawesome/free-solid-svg-icons";
 import {
   getBillingDetails,
 } from "../../Helpers/apiCalls/Finance/billingApi";
@@ -15,6 +15,7 @@ import moment from "moment";
 import "../Manage/Manage.css";
 import "../../Components/Navbar/Navbar.css";
 import "../../Components/Modals/Modal.css";
+import "./BillingView.css";
 
 const STATUS_MAP = {
   unpaid:  "inactive",
@@ -131,6 +132,13 @@ export default function BillingView() {
                 Record Payment
               </button>
             )}
+            <button
+              type="button"
+              className="edit-btn"
+              onClick={() => window.print()}
+            >
+              Print Invoice
+            </button>
           </div>
         </div>
 
@@ -182,52 +190,16 @@ export default function BillingView() {
           <div className="biodata-section-label">
             Trip Breakdown ({trips.length} trips)
           </div>
-          {trips.length === 0 ? (
-            <p className="page-subtitle mt-2">No trips recorded for this billing period.</p>
-          ) : (
-            <div className="table-responsive mt-2">
-              <Table bordered hover size="sm">
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>TRIP DATE</th>
-                    <th>ROUTE</th>
-                    <th>TRUCK</th>
-                    <th>EXCESS?</th>
-                    <th>EXCESS CHARGE</th>
-                    <th>FUEL SURCHARGE</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {trips.map((trip, i) => (
-                    <tr
-                      key={trip.id}
-                      style={{ background: trip.is_excess ? "#fff5f5" : "inherit" }}
-                    >
-                      <td>{i + 1}</td>
-                      <td>{moment(trip.trip_date).format("MMM D, YYYY")}</td>
-                      <td>{trip.origin} → {trip.destination}</td>
-                      <td>{trip.plate_number || "—"}</td>
-                      <td>
-                        {trip.is_excess ? (
-                          <span className="status-badge excess">YES</span>
-                        ) : (
-                          <span className="status-badge included">NO</span>
-                        )}
-                      </td>
-                      <td>{trip.is_excess ? fmt(trip.excess_charge) : "—"}</td>
-                      <td>{trip.is_excess ? fmt(trip.fuel_additional_charge) : "—"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </Table>
-            </div>
-          )}
+          <FinanceTable
+            type="trips"
+            tableData={trips}
+            showLoader={is_loading}
+          />
         </div>
 
         {/* Section 3 — Computation Summary */}
         <div className="biodata-card mb-3">
-          <div className="biodata-section-label">Computation Summary</div>
+          <div className="biodata-section-label">Billing Summary</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8, maxWidth: 420 }}>
             {[
               { label: "Monthly Rate",        value: fmt(billing.monthly_rate) },
@@ -262,49 +234,12 @@ export default function BillingView() {
         {/* Section 4 — Payment History */}
         <div className="biodata-card mb-3">
           <div className="biodata-section-label">Payment History</div>
-          {payments.length === 0 ? (
-            <p className="page-subtitle mt-2">No payments recorded.</p>
-          ) : (
-            <div className="table-responsive mt-2">
-              <Table bordered hover size="sm">
-                <thead>
-                  <tr>
-                    <th>DATE</th>
-                    <th>METHOD</th>
-                    <th>AMOUNT</th>
-                    <th>REF / CHECK NO.</th>
-                    <th>BANK</th>
-                    <th>REMARKS</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {payments.map((payment) => (
-                    <tr key={payment.id}>
-                      <td>{moment(payment.payment_date).format("MMM D, YYYY")}</td>
-                      <td style={{ textTransform: "capitalize" }}>
-                        {payment.payment_method.replace("_", " ")}
-                      </td>
-                      <td>{fmt(payment.amount)}</td>
-                      <td>{get_payment_ref(payment)}</td>
-                      <td>{payment.bank_name || "—"}</td>
-                      <td>{payment.remarks || "—"}</td>
-                      <td>
-                        <button
-                          className="attachment-btn attachment-remove"
-                          type="button"
-                          title="Delete payment"
-                          onClick={() => handle_delete_payment(payment.id)}
-                        >
-                          <FontAwesomeIcon icon={faTrash} />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </Table>
-            </div>
-          )}
+          <FinanceTable
+            type="payments"
+            tableData={payments}
+            showLoader={is_loading}
+            on_delete={handle_delete_payment}
+          />
         </div>
 
       </div>

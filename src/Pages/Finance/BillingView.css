@@ -1,0 +1,13 @@
+@media print {
+  .page,
+  .add-customer-header,
+  .add-customer-breadcrumb,
+  .biodata-card:last-child {
+    display: none !important;
+  }
+
+  .manager-container {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+}

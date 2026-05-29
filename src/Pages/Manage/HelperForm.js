@@ -198,6 +198,7 @@ export default function HelperForm() {
                 value={form.first_name}
                 className="nc-modal-custom-input"
                 onChange={handle_change}
+                placeholder="First name"
               />
               <InputError isValid={is_error.first_name} message="First name is required" />
             </Col>
@@ -209,6 +210,7 @@ export default function HelperForm() {
                 value={form.middle_name}
                 className="nc-modal-custom-input"
                 onChange={handle_change}
+                placeholder="Middle name"
               />
             </Col>
             <Col>
@@ -219,6 +221,7 @@ export default function HelperForm() {
                 value={form.last_name}
                 className="nc-modal-custom-input"
                 onChange={handle_change}
+                placeholder="Last name"
               />
               <InputError isValid={is_error.last_name} message="Last name is required" />
             </Col>
@@ -230,6 +233,7 @@ export default function HelperForm() {
                 value={form.suffix}
                 className="nc-modal-custom-input"
                 onChange={handle_change}
+                placeholder="e.g. Jr., III"
               />
             </Col>
           </Row>
@@ -242,6 +246,7 @@ export default function HelperForm() {
                 value={form.contact_number}
                 className="nc-modal-custom-input"
                 onChange={handle_change}
+                placeholder="e.g. 09XX-XXX-XXXX"
               />
             </Col>
             <Col>
@@ -252,6 +257,7 @@ export default function HelperForm() {
                 value={form.email}
                 className="nc-modal-custom-input"
                 onChange={handle_change}
+                placeholder="e.g. email@example.com"
               />
             </Col>
             {is_edit && (
@@ -282,6 +288,7 @@ export default function HelperForm() {
                 value={form.address}
                 className="nc-modal-custom-input"
                 onChange={handle_change}
+                placeholder="e.g. Purok 5, Brgy. San Jose, Cagayan de Oro City"
               />
             </Col>
           </Row>
@@ -334,14 +341,15 @@ export default function HelperForm() {
               <div className="field-label">NATIONALITY</div>
               <Form.Control
                 type="text"
-                name="nationality"
-                value={form.nationality}
+                name="religion"
+                value={form.religion}
                 className="nc-modal-custom-input"
                 onChange={handle_change}
               />
             </Col>
-            <Col>
-              <div className="field-label">RELIGION</div>
+          </Row>
+
+          {/* ── Section 3: Emergency Contact
               <Form.Control
                 type="text"
                 name="religion"
@@ -363,6 +371,7 @@ export default function HelperForm() {
                 value={form.emergency_contact_name}
                 className="nc-modal-custom-input"
                 onChange={handle_change}
+                placeholder="e.g. Maria Santos"
               />
             </Col>
             <Col>
@@ -373,6 +382,7 @@ export default function HelperForm() {
                 value={form.emergency_contact_number}
                 className="nc-modal-custom-input"
                 onChange={handle_change}
+                placeholder="e.g. 09XX-XXX-XXXX"
               />
             </Col>
             <Col>
@@ -383,6 +393,7 @@ export default function HelperForm() {
                 value={form.emergency_contact_relationship}
                 className="nc-modal-custom-input"
                 onChange={handle_change}
+                placeholder="e.g. Spouse, Parent, Sibling"
               />
             </Col>
           </Row>
@@ -396,6 +407,7 @@ export default function HelperForm() {
                 value={form.emergency_contact_address}
                 className="nc-modal-custom-input"
                 onChange={handle_change}
+                placeholder="e.g. Purok 5, Brgy. San Jose, Cagayan de Oro City"
               />
             </Col>
           </Row>

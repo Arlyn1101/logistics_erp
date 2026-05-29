@@ -10,7 +10,11 @@ import {
   getContractDetails,
   getAuthorizedSignatory,
 } from "../../Helpers/apiCalls/Contracts/contractApi";
-import { getAllCustomers, getCustomerContacts } from "../../Helpers/apiCalls/Manage/customerApi";
+import {
+  getAllCustomers,
+  getCustomerContacts,
+  getCustomerDetails,
+} from "../../Helpers/apiCalls/Manage/customerApi";
 import { validateContract } from "../../Helpers/Validation/Contracts/contractValidation";
 import { toastStyle, dateFormat } from "../../Helpers/Utils/Common";
 import toast from "react-hot-toast";
@@ -44,7 +48,11 @@ const select_style = {
   option: (base, state) => ({
     ...base,
     color: "#2d3e4e",
-    backgroundColor: state.isSelected ? "#e8f0fe" : state.isFocused ? "#f5f5f5" : "#fff",
+    backgroundColor: state.isSelected
+      ? "#e8f0fe"
+      : state.isFocused
+        ? "#f5f5f5"
+        : "#fff",
   }),
   input: (base) => ({ ...base, color: "#2d3e4e" }),
 };
@@ -59,13 +67,15 @@ export default function ContractForm() {
   const [is_clicked, set_is_clicked] = useState(false);
   const [customer_options, set_customer_options] = useState([]);
   const [is_error, set_is_error] = useState({});
-const [signatory_options, set_signatory_options] = useState([]);
+  const [selected_customer_details, set_selected_customer_details] =
+    useState(null);
+  const [signatory_options, set_signatory_options] = useState([]);
 
   const empty_form = {
     customer_id: "",
     date_signed: "",
     authorized_representative: "",
-    payment_terms_days: "",          // FIX: changed to number input
+    payment_terms_days: "", // FIX: changed to number input
     monthly_rate: "",
     included_trips: "",
     excess_trip_charge: "",
@@ -86,9 +96,24 @@ const [signatory_options, set_signatory_options] = useState([]);
       set_customer_options(
         response.data.data.map((c) => ({
           value: c.id,
-          label: c.trade_name || [c.first_name, c.last_name].filter(Boolean).join(" "),
+          label:
+            c.trade_name ||
+            [c.first_name, c.last_name].filter(Boolean).join(" "),
         })),
       );
+    }
+  }
+
+  async function fetch_customer_details(customer_id) {
+    if (!customer_id) {
+      set_selected_customer_details(null);
+      return;
+    }
+    const res = await getCustomerDetails(customer_id);
+    if (res.data && res.data.data) {
+      set_selected_customer_details(res.data.data);
+    } else {
+      set_selected_customer_details(null);
     }
   }
 
@@ -99,7 +124,10 @@ const [signatory_options, set_signatory_options] = useState([]);
     }
     const res = await getAuthorizedSignatory(customer_id);
     if (res.data && res.data.data) {
-      set_form((prev) => ({ ...prev, authorized_representative: res.data.data }));
+      set_form((prev) => ({
+        ...prev,
+        authorized_representative: res.data.data,
+      }));
     } else {
       set_form((prev) => ({ ...prev, authorized_representative: "" }));
     }
@@ -205,7 +233,9 @@ const [signatory_options, set_signatory_options] = useState([]);
 
     if (response.data && response.data.response) {
       toast.success(
-        is_edit ? "Contract updated successfully!" : "Contract added successfully!",
+        is_edit
+          ? "Contract updated successfully!"
+          : "Contract added successfully!",
         { style: toastStyle() },
       );
       navigate("/contracts");
@@ -238,7 +268,10 @@ const [signatory_options, set_signatory_options] = useState([]);
       <div className={`manager-container ${inactive ? "inactive" : "active"}`}>
         {/* Breadcrumb */}
         <div className="add-customer-breadcrumb">
-          <span className="breadcrumb-link" onClick={() => navigate("/contracts")}>
+          <span
+            className="breadcrumb-link"
+            onClick={() => navigate("/contracts")}
+          >
             Contracts
           </span>
           <span className="breadcrumb-sep">›</span>
@@ -246,7 +279,6 @@ const [signatory_options, set_signatory_options] = useState([]);
             {is_edit ? "Edit Contract" : "Add New Contract"}
           </span>
         </div>
-
         {/* Sticky header */}
         <div className="add-customer-header">
           <div>
@@ -260,307 +292,394 @@ const [signatory_options, set_signatory_options] = useState([]);
             </p>
           </div>
           <div className="add-customer-actions">
-            <button className="cancel-btn" onClick={() => navigate("/contracts")} disabled={is_clicked}>
+            <button
+              className="cancel-btn"
+              onClick={() => navigate("/contracts")}
+              disabled={is_clicked}
+            >
               Cancel
             </button>
-            <button className="save-btn" onClick={handle_save} disabled={is_clicked}>
+            <button
+              className="save-btn"
+              onClick={handle_save}
+              disabled={is_clicked}
+            >
               {is_clicked ? "Saving..." : "Save Contract"}
             </button>
           </div>
         </div>
-
         <div className="biodata-card">
-        {/* ── Section 1: Customer ── */}
-        <div className="biodata-section-label">Customer</div>
-       <Row className="nc-modal-custom-row">
-          <Col xs={6}>
-            <div className="field-label">CUSTOMER <span className="required-icon">*</span></div>
-            <Select
-              classNamePrefix="react-select"
-              options={customer_options}
-              value={selected_customer}
-              onChange={(selected) => {
-                const id = selected ? selected.value : "";
-                set_form((prev) => ({ ...prev, customer_id: id }));
-                fetch_authorized_signatory(id);
-              }}
-              placeholder="Search customer..."
-              isClearable
-              styles={select_style}
-            />
-            <InputError isValid={is_error.customer_id} message="Customer is required" />
-          </Col>
-          <Col xs={6}>
-            <div className="field-label">AUTHORIZED REPRESENTATIVE</div>
-            <div className="detail-value" style={{ padding: "8px 0" }}>
-              {form.authorized_representative || "—"}
-            </div>
-          </Col>
-        </Row>
+          {/* ── Section 1: Customer ── */}
+          <div className="biodata-section-label">Customer</div>
+          <Row className="nc-modal-custom-row">
+            <Col xs={6}>
+              <div className="field-label">
+                CUSTOMER <span className="required-icon">*</span>
+              </div>
+              <Select
+                classNamePrefix="react-select"
+                options={customer_options}
+                value={selected_customer}
+                onChange={(selected) => {
+                  const id = selected ? selected.value : "";
+                  set_form((prev) => ({ ...prev, customer_id: id }));
+                  fetch_authorized_signatory(id);
+                  fetch_customer_details(id);
+                }}
+                placeholder="Search customer..."
+                isClearable
+                styles={select_style}
+              />
+              <InputError
+                isValid={is_error.customer_id}
+                message="Customer is required"
+              />
+            </Col>
+            <Col xs={6}>
+              <div className="field-label">AUTHORIZED SIGNATORY</div>
+              <div className="detail-value" style={{ padding: "8px 0" }}>
+                {form.authorized_representative || "—"}
+              </div>
+            </Col>
+          </Row>
+
+          {selected_customer_details && (
+          <div className="mb-4">
+            <Row className="nc-modal-custom-row mt-2">
+              <Col xs={12} md={4}>
+                <div className="field-label">TRADE NAME</div>
+                <div className="detail-value">{selected_customer_details.trade_name || "—"}</div>
+              </Col>
+              <Col xs={12} md={4}>
+                <div className="field-label">ADDRESS</div>
+                <div className="detail-value">{selected_customer_details.trade_address || "—"}</div>
+              </Col>
+              <Col xs={12} md={4}>
+                <div className="field-label">TIN</div>
+                <div className="detail-value">{selected_customer_details.tin || "—"}</div>
+              </Col>
+            </Row>
+          </div>
+        )}
 
         {/* ── Section 2: Contract Details ── */}
         <div className="biodata-section-label">Contract Details</div>
 
-        {is_edit && contract_number && (
+          {is_edit && contract_number && (
+            <Row className="nc-modal-custom-row">
+              <Col>
+                CONTRACT NUMBER
+                <div
+                  style={{
+                    fontFamily: "var(--primary-font-bold)",
+                    fontSize: 16,
+                    color: "#2d3e4e",
+                    padding: "6px 0",
+                  }}
+                >
+                  {contract_number}
+                </div>
+              </Col>
+            </Row>
+          )}
+
+          {/* FIX: 3 date fields in one row */}
           <Row className="nc-modal-custom-row">
             <Col>
-              CONTRACT NUMBER
-              <div style={{ fontFamily: "var(--primary-font-bold)", fontSize: 16, color: "#2d3e4e", padding: "6px 0" }}>
-                {contract_number}
+              <div className="field-label">DATE OF CONTRACT</div>
+              <AntDatePicker
+                value={form.date_signed ? dayjs(form.date_signed) : null}
+                onChange={(date) => handle_date_change("date_signed", date)}
+                format="YYYY-MM-DD"
+                placeholder="Select date"
+                style={{ width: "100%" }}
+                className="nc-modal-custom-input"
+              />
+            </Col>
+            <Col>
+              <div className="field-label">
+                START DATE <span className="required-icon">*</span>
               </div>
+              <AntDatePicker
+                value={form.start_date ? dayjs(form.start_date) : null}
+                onChange={(date) => handle_date_change("start_date", date)}
+                format="YYYY-MM-DD"
+                placeholder="Select start date"
+                style={{ width: "100%" }}
+                className="nc-modal-custom-input"
+              />
+              <InputError
+                isValid={is_error.start_date}
+                message="Start date is required"
+              />
+            </Col>
+            {/* FIX: end date is now required */}
+            <Col>
+              <div className="field-label">
+                END DATE <span className="required-icon">*</span>
+              </div>
+              <AntDatePicker
+                value={form.end_date ? dayjs(form.end_date) : null}
+                onChange={(date) => handle_date_change("end_date", date)}
+                format="YYYY-MM-DD"
+                placeholder="Select end date"
+                style={{ width: "100%" }}
+                className="nc-modal-custom-input"
+              />
+              <InputError
+                isValid={is_error.end_date}
+                message="End date is required"
+              />
             </Col>
           </Row>
-        )}
 
-        {/* FIX: 3 date fields in one row */}
-        <Row className="nc-modal-custom-row">
-          <Col>
-            <div className="field-label">DATE OF CONTRACT</div>
-            <AntDatePicker
-              value={form.date_signed ? dayjs(form.date_signed) : null}
-              onChange={(date) => handle_date_change("date_signed", date)}
-              format="YYYY-MM-DD"
-              placeholder="Select date"
-              style={{ width: "100%" }}
-              className="nc-modal-custom-input"
-            />
-          </Col>
-          <Col>
-            <div className="field-label">START DATE <span className="required-icon">*</span></div>
-            <AntDatePicker
-              value={form.start_date ? dayjs(form.start_date) : null}
-              onChange={(date) => handle_date_change("start_date", date)}
-              format="YYYY-MM-DD"
-              placeholder="Select start date"
-              style={{ width: "100%" }}
-              className="nc-modal-custom-input"
-            />
-            <InputError isValid={is_error.start_date} message="Start date is required" />
-          </Col>
-          {/* FIX: end date is now required */}
-          <Col>
-            <div className="field-label">END DATE <span className="required-icon">*</span></div>
-            <AntDatePicker
-              value={form.end_date ? dayjs(form.end_date) : null}
-              onChange={(date) => handle_date_change("end_date", date)}
-              format="YYYY-MM-DD"
-              placeholder="Select end date"
-              style={{ width: "100%" }}
-              className="nc-modal-custom-input"
-            />
-            <InputError isValid={is_error.end_date} message="End date is required" />
-          </Col>
-        </Row>
+          {is_edit && (
+            <Row className="nc-modal-custom-row">
+              <Col xs={4}>
+                <div className="field-label">STATUS</div>
+                <div className="status-select-wrap">
+                  <span className={status_dot_class}></span>
+                  <Form.Select
+                    name="status"
+                    value={form.status}
+                    className="nc-modal-custom-select"
+                    onChange={handle_change}
+                  >
+                    <option value="active">Active</option>
+                    <option value="expired">Expired</option>
+                    <option value="terminated">Terminated</option>
+                  </Form.Select>
+                </div>
+              </Col>
+            </Row>
+          )}
 
-        {is_edit && (
+          {/* ── Section 3: Rate & Billing ── */}
+          <div className="biodata-section-label">Rate & Billing</div>
           <Row className="nc-modal-custom-row">
-            <Col xs={4}>
-              <div className="field-label">STATUS</div>
-              <div className="status-select-wrap">
-                <span className={status_dot_class}></span>
-                <Form.Select
-                  name="status"
-                  value={form.status}
-                  className="nc-modal-custom-select"
-                  onChange={handle_change}
-                >
-                  <option value="active">Active</option>
-                  <option value="expired">Expired</option>
-                  <option value="terminated">Terminated</option>
-                </Form.Select>
+            <Col>
+              <div className="field-label">
+                MONTHLY RATE (₱) <span className="required-icon">*</span>
               </div>
-            </Col>
-          </Row>
-        )}
-
-        {/* ── Section 3: Rate & Billing ── */}
-        <div className="biodata-section-label">Rate & Billing</div>
-        <Row className="nc-modal-custom-row">
-          <Col>
-            <div className="field-label">MONTHLY RATE (₱) <span className="required-icon">*</span></div>
-            <Form.Control
-              type="number"
-              name="monthly_rate"
-              value={form.monthly_rate}
-              className="nc-modal-custom-input"
-              onChange={handle_change}
-              placeholder="e.g. 10000"
-            />
-            <InputError isValid={is_error.monthly_rate} message="Monthly rate is required" />
-          </Col>
-          <Col>
-            <div className="field-label">INCLUDED TRIPS / MONTH <span className="required-icon">*</span></div>
-            <Form.Control
-              type="number"
-              name="included_trips"
-              value={form.included_trips}
-              className="nc-modal-custom-input"
-              onChange={handle_change}
-              placeholder="e.g. 4"
-            />
-            <InputError isValid={is_error.included_trips} message="Included trips is required" />
-          </Col>
-        </Row>
-        <Row className="nc-modal-custom-row">
-          <Col>
-            <div className="field-label">EXCESS TRIP CHARGE (₱) <span className="required-icon">*</span></div>
-            <Form.Control
-              type="number"
-              name="excess_trip_charge"
-              value={form.excess_trip_charge}
-              className="nc-modal-custom-input"
-              onChange={handle_change}
-              placeholder="Charge per extra trip"
-            />
-            <InputError isValid={is_error.excess_trip_charge} message="Excess trip charge is required" />
-          </Col>
-          <Col>
-            <div className="field-label">AGREED FUEL PRICE / LITER (₱) <span className="required-icon">*</span></div>
-            <Form.Control
-              type="number"
-              name="fuel_price_per_liter"
-              value={form.fuel_price_per_liter}
-              className="nc-modal-custom-input"
-              onChange={handle_change}
-              placeholder="e.g. 50"
-            />
-            <InputError isValid={is_error.fuel_price_per_liter} message="Fuel price is required" />
-          </Col>
-        </Row>
-
-        {/* FIX: payment terms → number input with "days" label */}
-        <Row className="nc-modal-custom-row">
-          <Col xs={6}>
-            <div className="field-label">PAYMENT TERMS</div>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <Form.Control
                 type="number"
-                name="payment_terms_days"
-                value={form.payment_terms_days}
+                name="monthly_rate"
+                value={form.monthly_rate}
                 className="nc-modal-custom-input"
                 onChange={handle_change}
-                placeholder="e.g. 30"
-                min={1}
-                style={{ width: 120, flex: "0 0 120px" }}
+                placeholder="e.g. 10000"
               />
-              <span style={{ fontFamily: "var(--primary-font-medium)", fontSize: 14, color: "#2d3e4e", whiteSpace: "nowrap" }}>
-                days{form.payment_terms_days ? ` (Net ${form.payment_terms_days})` : ""}
-              </span>
-            </div>
-          </Col>
-        </Row>
+              <InputError
+                isValid={is_error.monthly_rate}
+                message="Monthly rate is required"
+              />
+            </Col>
+            <Col>
+              <div className="field-label">
+                INCLUDED TRIPS / MONTH <span className="required-icon">*</span>
+              </div>
+              <Form.Control
+                type="number"
+                name="included_trips"
+                value={form.included_trips}
+                className="nc-modal-custom-input"
+                onChange={handle_change}
+                placeholder="e.g. 4"
+              />
+              <InputError
+                isValid={is_error.included_trips}
+                message="Included trips is required"
+              />
+            </Col>
+          </Row>
+          <Row className="nc-modal-custom-row">
+            <Col>
+              <div className="field-label">
+                EXCESS TRIP CHARGE (₱) <span className="required-icon">*</span>
+              </div>
+              <Form.Control
+                type="number"
+                name="excess_trip_charge"
+                value={form.excess_trip_charge}
+                className="nc-modal-custom-input"
+                onChange={handle_change}
+                placeholder="Charge per extra trip"
+              />
+              <InputError
+                isValid={is_error.excess_trip_charge}
+                message="Excess trip charge is required"
+              />
+            </Col>
+            <Col>
+              <div className="field-label">
+                AGREED FUEL PRICE / LITER (₱){" "}
+                <span className="required-icon">*</span>
+              </div>
+              <Form.Control
+                type="number"
+                name="fuel_price_per_liter"
+                value={form.fuel_price_per_liter}
+                className="nc-modal-custom-input"
+                onChange={handle_change}
+                placeholder="e.g. 50"
+              />
+              <InputError
+                isValid={is_error.fuel_price_per_liter}
+                message="Fuel price is required"
+              />
+            </Col>
+          </Row>
 
-        {/* ── Section 4: Routes ── */}
-        <div
-          className="d-flex justify-content-between align-items-center mt-4"
-          style={{ marginBottom: 8 }}
-        >
-          <div className="biodata-section-label mb-0">Routes</div>
-          <button className="add-btn" onClick={add_route}>
-            <FontAwesomeIcon icon={faPlus} className="me-1" />
-            Add Route
-          </button>
-        </div>
-
-        {routes.length === 0 && (
-          <p style={{ color: "#aaa", fontSize: 13 }}>
-            No routes added yet. Click "Add Route" to define pickup and delivery points.
-          </p>
-        )}
-
-        {routes.map((route, index) => (
-          <div
-            key={index}
-            style={{
-              border: "1px solid #e0e0e0",
-              borderRadius: 8,
-              padding: "12px 16px",
-              marginBottom: 12,
-              background: "#fafafa",
-            }}
-          >
-            <div className="d-flex justify-content-between align-items-center mb-2">
-              <span style={{ fontFamily: "var(--primary-font-medium)", fontSize: 13, color: "#2d3e4e" }}>
-                Route {index + 1}
-              </span>
-              {routes.length > 1 && (
-                <button
-                  className="button-warning"
-                  style={{ width: "auto", padding: "2px 10px", fontSize: 12 }}
-                  onClick={() => remove_route(index)}
-                >
-                  <FontAwesomeIcon icon={faTrash} />
-                </button>
-              )}
-            </div>
-            <Row className="nc-modal-custom-row">
-              <Col>
-                ORIGIN <span className="required-icon">*</span>
-                <Form.Control
-                  type="text"
-                  name="origin"
-                  value={route.origin}
-                  className="nc-modal-custom-input"
-                  onChange={(e) => handle_route_change(index, e)}
-                  placeholder="Pickup location"
-                />
-              </Col>
-              <Col>
-                DESTINATION <span className="required-icon">*</span>
-                <Form.Control
-                  type="text"
-                  name="destination"
-                  value={route.destination}
-                  className="nc-modal-custom-input"
-                  onChange={(e) => handle_route_change(index, e)}
-                  placeholder="Delivery location"
-                />
-              </Col>
-              <Col xs={3}>
-                DISTANCE (km)
+          {/* FIX: payment terms → number input with "days" label */}
+          <Row className="nc-modal-custom-row">
+            <Col xs={6}>
+              <div className="field-label">PAYMENT TERMS</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <Form.Control
                   type="number"
-                  name="distance_km"
-                  value={route.distance_km}
+                  name="payment_terms_days"
+                  value={form.payment_terms_days}
                   className="nc-modal-custom-input"
-                  onChange={(e) => handle_route_change(index, e)}
-                  placeholder="km"
+                  onChange={handle_change}
+                  placeholder="e.g. 30"
+                  min={1}
+                  style={{ width: 120, flex: "0 0 120px" }}
                 />
-              </Col>
-            </Row>
-            <Row className="nc-modal-custom-row">
-              <Col>
-                REMARKS
-                <Form.Control
-                  type="text"
-                  name="remarks"
-                  value={route.remarks}
-                  className="nc-modal-custom-input"
-                  onChange={(e) => handle_route_change(index, e)}
-                  placeholder="Optional"
-                />
-              </Col>
-            </Row>
+                <span
+                  style={{
+                    fontFamily: "var(--primary-font-medium)",
+                    fontSize: 14,
+                    color: "#2d3e4e",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  days
+                  {form.payment_terms_days
+                    ? ` (Net ${form.payment_terms_days})`
+                    : ""}
+                </span>
+              </div>
+            </Col>
+          </Row>
+
+          {/* ── Section 4: Routes ── */}
+          <div
+            className="d-flex justify-content-between align-items-center mt-4"
+            style={{ marginBottom: 8 }}
+          >
+            <div className="biodata-section-label mb-0">Routes</div>
+            <button className="add-btn" onClick={add_route}>
+              <FontAwesomeIcon icon={faPlus} className="me-1" />
+              Add Route
+            </button>
           </div>
-        ))}
 
-        {/* FIX: Remarks moved to last */}
-        <div className="biodata-section-label">Remarks</div>
-        <Row className="nc-modal-custom-row">
-          <Col>
-            <Form.Control
-              as="textarea"
-              rows={2}
-              name="remarks"
-              value={form.remarks || ""}
-              className="nc-modal-custom-input"
-              onChange={handle_change}
-              placeholder="Optional notes about this contract"
-            />
-          </Col>
-        </Row>
+          {routes.length === 0 && (
+            <p style={{ color: "#aaa", fontSize: 13 }}>
+              No routes added yet. Click "Add Route" to define pickup and
+              delivery points.
+            </p>
+          )}
 
-        </div> {/* end biodata-card */}
+          {routes.map((route, index) => (
+            <div
+              key={index}
+              style={{
+                border: "1px solid #e0e0e0",
+                borderRadius: 8,
+                padding: "12px 16px",
+                marginBottom: 12,
+                background: "#fafafa",
+              }}
+            >
+              <div className="d-flex justify-content-between align-items-center mb-2">
+                <span
+                  style={{
+                    fontFamily: "var(--primary-font-medium)",
+                    fontSize: 13,
+                    color: "#2d3e4e",
+                  }}
+                >
+                  Route {index + 1}
+                </span>
+                {routes.length > 1 && (
+                  <button
+                    className="button-warning"
+                    style={{ width: "auto", padding: "2px 10px", fontSize: 12 }}
+                    onClick={() => remove_route(index)}
+                  >
+                    <FontAwesomeIcon icon={faTrash} />
+                  </button>
+                )}
+              </div>
+              <Row className="nc-modal-custom-row">
+                <Col>
+                  ORIGIN <span className="required-icon">*</span>
+                  <Form.Control
+                    type="text"
+                    name="origin"
+                    value={route.origin}
+                    className="nc-modal-custom-input"
+                    onChange={(e) => handle_route_change(index, e)}
+                    placeholder="Pickup location"
+                  />
+                </Col>
+                <Col>
+                  DESTINATION <span className="required-icon">*</span>
+                  <Form.Control
+                    type="text"
+                    name="destination"
+                    value={route.destination}
+                    className="nc-modal-custom-input"
+                    onChange={(e) => handle_route_change(index, e)}
+                    placeholder="Delivery location"
+                  />
+                </Col>
+                <Col xs={3}>
+                  DISTANCE (km)
+                  <Form.Control
+                    type="number"
+                    name="distance_km"
+                    value={route.distance_km}
+                    className="nc-modal-custom-input"
+                    onChange={(e) => handle_route_change(index, e)}
+                    placeholder="km"
+                  />
+                </Col>
+              </Row>
+              <Row className="nc-modal-custom-row">
+                <Col>
+                  REMARKS
+                  <Form.Control
+                    type="text"
+                    name="remarks"
+                    value={route.remarks}
+                    className="nc-modal-custom-input"
+                    onChange={(e) => handle_route_change(index, e)}
+                    placeholder="Optional"
+                  />
+                </Col>
+              </Row>
+            </div>
+          ))}
+
+          {/* FIX: Remarks moved to last */}
+          <div className="biodata-section-label">Remarks</div>
+          <Row className="nc-modal-custom-row">
+            <Col>
+              <Form.Control
+                as="textarea"
+                rows={2}
+                name="remarks"
+                value={form.remarks || ""}
+                className="nc-modal-custom-input"
+                onChange={handle_change}
+                placeholder="Optional notes about this contract"
+              />
+            </Col>
+          </Row>
+        </div>{" "}
+        {/* end biodata-card */}
       </div>
     </div>
   );

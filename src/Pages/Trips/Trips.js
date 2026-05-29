@@ -862,22 +862,7 @@ function handle_reset_filter() {
           </Col>
         </Row>
 
-        {/* Filter tabs + Filter bar */}
-        <div className="d-flex align-items-center justify-content-between mb-3" style={{ marginTop: 8 }}>
-          <div className="filter-tabs" style={{ marginBottom: 0 }}>
-            {["all", "scheduled", "in_transit", "completed"].map((tab) => (
-              <button
-                key={tab}
-                className={`filter-tab-btn ${active_tab === tab ? "active" : ""}`}
-                onClick={() => handle_tab_change(tab)}
-              >
-                {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                <span className="tab-count">{get_tab_count(tab)}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
+        {/* Filter bar */}
         <div className="trip-filter-bar mb-3">
           <Row className="g-2 align-items-center">
             <Col xs={12} md={5}>
@@ -913,7 +898,7 @@ function handle_reset_filter() {
                 style={{ width: "100%" }}
                 placeholder={["From date", "To date"]}
                 allowClear
-              />
+          />
             </Col>
             <Col xs="auto">
               <button className="cancel-btn" onClick={handle_reset_filter}>
@@ -921,6 +906,20 @@ function handle_reset_filter() {
               </button>
             </Col>
           </Row>
+        </div>
+
+        {/* Filter tabs */}
+        <div className="filter-tabs mb-3">
+          {["all", "scheduled", "in_transit", "completed"].map((tab) => (
+            <button
+              key={tab}
+              className={`filter-tab-btn ${active_tab === tab ? "active" : ""}`}
+              onClick={() => handle_tab_change(tab)}
+            >
+              {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              <span className="tab-count">{get_tab_count(tab)}</span>
+            </button>
+          ))}
         </div>
 
         <div className="tab-content">

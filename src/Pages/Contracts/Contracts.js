@@ -205,67 +205,73 @@ export default function Contracts() {
         />
       </div>
       <div className={`manager-container ${inactive ? "inactive" : "active"}`}>
-        <Row className="mb-4">
-          <Col>
+        <Row className="mb-3">
+          <Col xs={6}>
             <h1 className="page-title">Contracts</h1>
+          </Col>
+          <Col className="d-flex justify-content-end align-items-center">
+            <button className="add-btn" onClick={() => navigate("/contracts/form")}>
+              Add Contract
+            </button>
           </Col>
         </Row>
 
-        <div className="d-flex align-items-center justify-content-between mb-3" style={{ marginTop: 8 }}>
-          <div className="filter-tabs" style={{ marginBottom: 0 }}>
-            {["all", "active", "expired", "terminated"].map((tab) => (
-              <button
-                key={tab}
-                className={`filter-tab-btn ${active_tab === tab ? "active" : ""}`}
-                onClick={() => handle_tab_change(tab)}
-              >
-                {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                <span className="tab-count">{get_tab_count(tab)}</span>
+        <div className="trip-filter-bar mb-3">
+          <Row className="g-2 align-items-center">
+            <Col xs={12} md={5}>
+              <AntSelect
+                showSearch
+                allowClear
+                value={search_value}
+                onChange={(val) => set_search_value(val ?? null)}
+                style={{ width: "100%" }}
+                placeholder="🔍 Search customer, contract number..."
+                filterOption={false}
+                onSearch={handle_suggestion_search}
+                onSelect={handle_suggestion_select}
+                onClear={handle_reset_filter}
+                loading={suggestion_loading}
+                options={suggestions.map((s) => ({
+                  value: s.value,
+                  label: (
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span>{s.label}</span>
+                      <span style={{ fontSize: 11, color: "#94a3b8", marginLeft: 8 }}>{s.sublabel}</span>
+                    </div>
+                  ),
+                }))}
+                notFoundContent={suggestion_loading ? "Searching..." : "No results"}
+              />
+            </Col>
+            <Col xs={12} md={4}>
+              <RangePicker
+                value={date_range}
+                onChange={handle_range_change}
+                format="YYYY-MM-DD"
+                style={{ width: "100%" }}
+                placeholder={["Start from", "Start to"]}
+                allowClear
+              />
+            </Col>
+            <Col xs="auto">
+              <button className="cancel-btn" onClick={handle_reset_filter}>
+                Clear
               </button>
-            ))}
-          </div>
+            </Col>
+          </Row>
+        </div>
 
-          <div className="d-flex align-items-center gap-2">
-            <AntSelect
-              showSearch
-              allowClear
-              value={search_value}
-              onChange={(val) => set_search_value(val ?? null)}
-              style={{ width: 280 }}
-              placeholder="🔍 Search customer, contract number..."
-              filterOption={false}
-              onSearch={handle_suggestion_search}
-              onSelect={handle_suggestion_select}
-              onClear={handle_reset_filter}
-              loading={suggestion_loading}
-              size="small"
-              options={suggestions.map((s) => ({
-                value: s.value,
-                label: (
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span>{s.label}</span>
-                    <span style={{ fontSize: 11, color: "#94a3b8", marginLeft: 8 }}>{s.sublabel}</span>
-                  </div>
-                ),
-              }))}
-              notFoundContent={suggestion_loading ? "Searching..." : "No results"}
-            />
-            <RangePicker
-              value={date_range}
-              onChange={handle_range_change}
-              format="YYYY-MM-DD"
-              style={{ width: 220 }}
-              placeholder={["Start from", "Start to"]}
-              allowClear
-              size="small"
-            />
-            <button className="cancel-btn" style={{ padding: "4px 20px", fontSize: 12, minWidth: 80, height: 30 }} onClick={handle_reset_filter}>
-              Clear
+        <div className="filter-tabs mb-3">
+          {["all", "active", "expired", "terminated"].map((tab) => (
+            <button
+              key={tab}
+              className={`filter-tab-btn ${active_tab === tab ? "active" : ""}`}
+              onClick={() => handle_tab_change(tab)}
+            >
+              {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              <span className="tab-count">{get_tab_count(tab)}</span>
             </button>
-            <button className="add-btn" style={{ padding: "4px 20px", fontSize: 12, minWidth: 80, height: 30 }} onClick={() => navigate("/contracts/form")}>
-              Add
-            </button>
-          </div>
+          ))}
         </div>
 
         <div className="tab-content">

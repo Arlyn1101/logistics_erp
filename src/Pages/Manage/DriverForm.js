@@ -404,7 +404,7 @@ export default function DriverForm() {
                 value={form.emergency_contact_name}
                 className="nc-modal-custom-input"
                 onChange={handle_change}
-                placeholder="Name"
+                placeholder="Emergency contact full name"
               />
               <InputError isValid={is_error.emergency_contact_name} message="Emergency contact name is required" />
             </Col>
