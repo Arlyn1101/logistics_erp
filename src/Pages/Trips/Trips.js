@@ -123,27 +123,34 @@ export default function Trips() {
 
   // Compute fuel preview on the fly
   function compute_fuel_preview(actual_price, route_opts, form) {
-    if (!actual_price || !form.contract_route_id || !form.truck_id) {
+    if (!actual_price || !form.contract_route_id) {
       set_fuel_preview(0);
       return;
     }
-    const agreed = contract_trip_info?.fuel_price_per_liter ?? 0;
-    const route  = route_opts.find((r) => String(r.id) === String(form.contract_route_id));
-    const truck_pool = available_assets ? available_assets.trucks : truck_options;
-    const truck = truck_pool.find((t) => String(t.id) === String(form.truck_id));
-
-    if (!route || !truck || !route.distance_km || !truck.km_per_liter) {
-      set_fuel_preview(0);
-      return;
-    }
-
-    const diff = parseFloat(actual_price) - parseFloat(agreed);
+    
+    // Fallback to values saved directly inside the trip row object if the dropdown options haven't hydrated yet
+    const agreed = parseFloat(form.fuel_price_per_liter || form.agreed_fuel_price || contract_trip_info?.fuel_price_per_liter || 0);
+    const diff = parseFloat(actual_price) - agreed;
+    
     if (diff <= 0) {
       set_fuel_preview(0);
       return;
     }
 
-    const liters  = parseFloat(route.distance_km) / parseFloat(truck.km_per_liter);
+    const route = route_opts.find((r) => String(r.id) === String(form.contract_route_id));
+    const distance = route ? parseFloat(route.distance_km) : parseFloat(form.route_distance_km || form.distance_km || 0);
+    
+    // Find truck km_per_liter from pool, or fallback to the value already stored inside the selected trip row object
+    const truck_pool = available_assets ? available_assets.trucks : truck_options;
+    const truck = truck_pool.find((t) => String(t.id) === String(form.truck_id));
+    const kpl = truck ? parseFloat(truck.km_per_liter) : parseFloat(form.truck_km_per_liter || form.km_per_liter || 0);
+
+    if (distance <= 0 || kpl <= 0) {
+      set_fuel_preview(0);
+      return;
+    }
+
+    const liters  = distance / kpl;
     const preview = Math.round(diff * liters * 100) / 100;
     set_fuel_preview(preview);
   }
@@ -219,10 +226,9 @@ export default function Trips() {
       const dep   = name === "expected_departure_datetime" ? value : edit_form.expected_departure_datetime;
       const hours = name === "estimated_hours" ? value : edit_form.estimated_hours;
       if (dep && hours && hours > 0) {
-        fetch_available_assets(dep, hours, edit_form.id);
+        fetch_available_assets(dep, hours, edit_form.id); // Passes edit_form.id so it ignores its own conflict slot
       }
     }
-
   };
 
   const handle_add_datetime_change = (date) => {
@@ -613,7 +619,7 @@ function handle_reset_filter() {
                 const combined = dayjs(`${date.format("YYYY-MM-DD")} ${existing_time}:00`);
                 is_edit ? handle_edit_datetime_change(combined) : handle_add_datetime_change(combined);
               }}
-              disabled={!form.contract_id}
+              disabled={!form.contract_id || (is_edit && form.status !== "scheduled")}
               disabledDate={(current) => {
                 if (!current) return false;
                 const start = contract_date_range.start ? dayjs(contract_date_range.start).startOf('day') : null;
@@ -638,7 +644,7 @@ function handle_reset_filter() {
                 const combined = dayjs(`${existing_date} ${time.format("HH:mm")}:00`);
                 is_edit ? handle_edit_datetime_change(combined) : handle_add_datetime_change(combined);
               }}
-              disabled={!form.contract_id}
+              disabled={!form.contract_id || (is_edit && form.status !== "scheduled")}
               placeholder="Time"
               style={{ flex: 1 }}
               getPopupContainer={(trigger) => trigger.parentElement}
@@ -656,6 +662,7 @@ function handle_reset_filter() {
                 value={form.estimated_hours}
                 className="nc-modal-custom-input"
                 onChange={is_edit ? handle_edit_change : handle_add_change}
+                disabled={is_edit && form.status !== "scheduled"} // <-- Add this to gray it out
                 placeholder="e.g. 4"
             />
         </Col>
@@ -681,7 +688,7 @@ function handle_reset_filter() {
             }}
             placeholder="-- Select Route --"
             isClearable
-            isDisabled={!form.contract_id}
+            isDisabled={!form.contract_id || (is_edit && form.status !== "scheduled")}
             classNamePrefix="react-select"
           />
           <InputError isValid={is_error.contract_route_id} message="Route is required" />
@@ -717,6 +724,7 @@ function handle_reset_filter() {
             }}
             placeholder="-- Select Truck --"
             isClearable
+            isDisabled={is_edit && form.status !== "scheduled"}
             classNamePrefix="react-select"
           />
           <InputError isValid={is_error.truck_id} message="Truck is required" />
@@ -755,6 +763,7 @@ function handle_reset_filter() {
             }}
             placeholder="-- Select Driver --"
             isClearable
+            isDisabled={is_edit && form.status !== "scheduled"}
             classNamePrefix="react-select"
           />
           <InputError isValid={is_error.driver_id} message="Driver is required" />
@@ -789,6 +798,7 @@ function handle_reset_filter() {
             }}
             placeholder="-- No Helper --"
             isClearable
+            isDisabled={is_edit && form.status !== "scheduled"} // <-- Add this to gray it out
             classNamePrefix="react-select"
           />
         </Col>
@@ -979,8 +989,9 @@ function handle_reset_filter() {
 
       {/* Edit Modal */}
       <EditModal
-        title="EDIT TRIP"
-        size="lg"
+        title="TRIP"
+        size="xl" // Changes size down a tad from xl
+        dialogClassName="modal-just-right" // Applies our custom size between lg and xl
         show={show_edit_modal}
         onHide={() => {
           set_show_edit_modal(false);
@@ -991,6 +1002,25 @@ function handle_reset_filter() {
         isClicked={is_clicked}
       >
         {form_fields(edit_form, handle_edit_change, edit_route_options, set_edit_form, true)}
+        
+        {/* Live Summary Box inside Edit Modal */}
+        {fuel_preview > 0 && (
+          <div style={{ padding: "12px", background: "#f8f9fa", borderRadius: "8px", margin: "15px 0 0 0", border: "1px solid #e2e8f0" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px", fontSize: "14px" }}>
+              <span style={{ color: "#64748b" }}>Agreed fuel price:</span>
+              <strong style={{ color: "#1e293b" }}>₱{Number(edit_form.fuel_price_per_liter || edit_form.agreed_fuel_price || 0).toFixed(2)}/L</strong>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px", fontSize: "14px" }}>
+              <span style={{ color: "#64748b" }}>Route distance:</span>
+              <strong style={{ color: "#1e293b" }}>{edit_form.distance_km || edit_form.route_distance_km || 0} km</strong>
+            </div>
+            <hr style={{ margin: "8px 0", borderColor: "#cbd5e1" }} />
+            <div style={{ display: "flex", justifyContent: "space-between", color: "#d35400", fontSize: "15px" }}>
+              <span>⚠ Fuel surcharge:</span>
+              <strong>₱{Number(fuel_preview).toFixed(2)}</strong>
+            </div>
+          </div>
+        )}
       </EditModal>
 
       {/* Trip Detail / Map Modal */}
@@ -1036,14 +1066,31 @@ function handle_reset_filter() {
                     set_contract_trip_info(null);
                     set_fuel_preview(0);
                     set_edit_form({
-                      ...selected_trip,
+                      ...selected_trip, 
+                      id: selected_trip.id, 
+                      contract_id: String(selected_trip.contract_id ?? ""),
+                      contract_route_id: String(selected_trip.contract_route_id ?? ""),
+                      truck_id: String(selected_trip.truck_id ?? ""),
                       driver_id: String(selected_trip.driver_id ?? ""),
                       helper_id: String(selected_trip.helper_id ?? ""),
+                      estimated_hours: selected_trip.estimated_hours ?? 8,
                       actual_fuel_price: selected_trip.actual_fuel_price ?? "",
+                      expected_departure_datetime: selected_trip.expected_departure_datetime ?? "",
                     });
                     fetch_routes_for_edit(selected_trip.contract_id);
                     set_show_map_modal(false);
                     set_show_edit_modal(true);
+
+                    // Hydrate fuel summary immediately upon opening
+                    if (selected_trip.fuel_additional_charge) {
+                      set_fuel_preview(selected_trip.fuel_additional_charge);
+                    } else if (selected_trip.actual_fuel_price) {
+                      const mockRouteOptions = [{
+                        id: selected_trip.contract_route_id,
+                        distance_km: selected_trip.route_distance_km || selected_trip.distance_km
+                      }];
+                      compute_fuel_preview(selected_trip.actual_fuel_price, mockRouteOptions, selected_trip);
+                    }
                   }}
                 >
                   Edit
