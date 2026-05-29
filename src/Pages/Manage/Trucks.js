@@ -16,7 +16,8 @@ import {
   deleteTruckAttachment,
   getTruckSuggestions,
 } from "../../Helpers/apiCalls/Manage/truckApi";
-import { Select as AntSelect } from "antd";
+import { Select as AntSelect, DatePicker as AntDatePicker } from "antd";
+import dayjs from "dayjs";
 import { BASE_URL } from "../../Helpers/apiCalls/axiosMethodCalls";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -319,12 +320,21 @@ async function fetch_trucks(filters = {}) {
         </Col>
         <Col>
           <div className="field-label">OR EXPIRY</div>
-          <Form.Control
-            type="date"
-            name="or_expiry"
-            value={form.or_expiry || ""}
+          <AntDatePicker
+            value={form.or_expiry ? dayjs(form.or_expiry) : null}
+            onChange={(date) => {
+              const val = date ? date.format("YYYY-MM-DD") : "";
+              if (is_edit) {
+                set_edit_form((prev) => ({ ...prev, or_expiry: val }));
+              } else {
+                set_add_form((prev) => ({ ...prev, or_expiry: val }));
+              }
+            }}
+            format="YYYY-MM-DD"
+            placeholder="Select expiry date"
+            style={{ width: "100%" }}
             className="nc-modal-custom-input"
-            onChange={is_edit ? handle_edit_change : handle_add_change}
+            getPopupContainer={(trigger) => trigger.parentElement}
           />
         </Col>
       </Row>
