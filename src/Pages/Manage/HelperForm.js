@@ -30,7 +30,18 @@ export default function HelperForm() {
 
   const [inactive, set_inactive] = useState(false);
   const [is_clicked, set_is_clicked] = useState(false);
-  const [is_error, set_is_error] = useState({ first_name: false, last_name: false });
+  const [is_error, set_is_error] = useState({
+    first_name: false,
+    last_name: false,
+    contact_number: false,
+    address: false,
+    birthdate: false,
+    gender: false,
+    emergency_contact_name: false,
+    emergency_contact_number: false,
+    emergency_contact_relationship: false,
+    emergency_contact_address: false,
+  });
 
   const empty_form = {
     first_name: "",
@@ -239,7 +250,7 @@ export default function HelperForm() {
           </Row>
           <Row className="nc-modal-custom-row">
             <Col>
-              <div className="field-label">CONTACT NUMBER</div>
+              <div className="field-label">CONTACT NUMBER <span className="required-icon">*</span></div>
               <Form.Control
                 type="text"
                 name="contact_number"
@@ -248,6 +259,7 @@ export default function HelperForm() {
                 onChange={handle_change}
                 placeholder="e.g. 09XX-XXX-XXXX"
               />
+              <InputError isValid={is_error.contact_number} message="Contact number is required" />
             </Col>
             <Col>
               <div className="field-label">EMAIL</div>
@@ -280,7 +292,7 @@ export default function HelperForm() {
           </Row>
           <Row className="nc-modal-custom-row">
             <Col>
-              <div className="field-label">ADDRESS</div>
+              <div className="field-label">ADDRESS <span className="required-icon">*</span></div>
               <Form.Control
                 as="textarea"
                 rows={2}
@@ -290,6 +302,7 @@ export default function HelperForm() {
                 onChange={handle_change}
                 placeholder="e.g. Purok 5, Brgy. San Jose, Cagayan de Oro City"
               />
+              <InputError isValid={is_error.address} message="Address is required" />
             </Col>
           </Row>
 
@@ -297,7 +310,7 @@ export default function HelperForm() {
           <div className="biodata-section-label">Personal Information</div>
           <Row className="nc-modal-custom-row">
             <Col>
-              <div className="field-label">BIRTHDATE</div>
+              <div className="field-label">BIRTHDATE <span className="required-icon">*</span></div>
               <AntDatePicker
                 value={form.birthdate ? dayjs(form.birthdate) : null}
                 onChange={(date) => set_form((prev) => ({ ...prev, birthdate: date ? date.format("YYYY-MM-DD") : "" }))}
@@ -307,19 +320,21 @@ export default function HelperForm() {
                 className="nc-modal-custom-input"
                 getPopupContainer={(trigger) => trigger.parentElement}
               />
+              <InputError isValid={is_error.birthdate} message="Birthdate is required" />
             </Col>
             <Col>
-              <div className="field-label">GENDER</div>
+              <div className="field-label">GENDER <span className="required-icon">*</span></div>
               <Form.Select
                 name="gender"
                 value={form.gender}
                 className="nc-modal-custom-input"
                 onChange={handle_change}
               >
-                <option value="">Select</option>
+                <option value="">Select gender</option>
                 <option value="male">Male</option>
                 <option value="female">Female</option>
               </Form.Select>
+              <InputError isValid={is_error.gender} message="Gender is required" />
             </Col>
             <Col>
               <div className="field-label">CIVIL STATUS</div>
@@ -341,21 +356,22 @@ export default function HelperForm() {
               <div className="field-label">NATIONALITY</div>
               <Form.Control
                 type="text"
-                name="religion"
-                value={form.religion}
+                name="nationality"
+                value={form.nationality}
                 className="nc-modal-custom-input"
                 onChange={handle_change}
+                placeholder="e.g. Filipino"
               />
             </Col>
-          </Row>
-
-          {/* ── Section 3: Emergency Contact
+            <Col>
+              <div className="field-label">RELIGION</div>
               <Form.Control
                 type="text"
                 name="religion"
                 value={form.religion}
                 className="nc-modal-custom-input"
                 onChange={handle_change}
+                placeholder="e.g. Roman Catholic"
               />
             </Col>
           </Row>
@@ -364,7 +380,7 @@ export default function HelperForm() {
           <div className="biodata-section-label">Emergency Contact</div>
           <Row className="nc-modal-custom-row">
             <Col>
-              <div className="field-label">NAME</div>
+              <div className="field-label">NAME <span className="required-icon">*</span></div>
               <Form.Control
                 type="text"
                 name="emergency_contact_name"
@@ -373,9 +389,10 @@ export default function HelperForm() {
                 onChange={handle_change}
                 placeholder="e.g. Maria Santos"
               />
+              <InputError isValid={is_error.emergency_contact_name} message="Emergency contact name is required" />
             </Col>
             <Col>
-              <div className="field-label">CONTACT NUMBER</div>
+              <div className="field-label">CONTACT NUMBER <span className="required-icon">*</span></div>
               <Form.Control
                 type="text"
                 name="emergency_contact_number"
@@ -384,9 +401,10 @@ export default function HelperForm() {
                 onChange={handle_change}
                 placeholder="e.g. 09XX-XXX-XXXX"
               />
+              <InputError isValid={is_error.emergency_contact_number} message="Emergency contact number is required" />
             </Col>
             <Col>
-              <div className="field-label">RELATIONSHIP</div>
+              <div className="field-label">RELATIONSHIP <span className="required-icon">*</span></div>
               <Form.Control
                 type="text"
                 name="emergency_contact_relationship"
@@ -395,11 +413,12 @@ export default function HelperForm() {
                 onChange={handle_change}
                 placeholder="e.g. Spouse, Parent, Sibling"
               />
+              <InputError isValid={is_error.emergency_contact_relationship} message="Relationship is required" />
             </Col>
           </Row>
           <Row className="nc-modal-custom-row">
             <Col>
-              <div className="field-label">ADDRESS</div>
+              <div className="field-label">ADDRESS <span className="required-icon">*</span></div>
               <Form.Control
                 as="textarea"
                 rows={2}
@@ -409,6 +428,7 @@ export default function HelperForm() {
                 onChange={handle_change}
                 placeholder="e.g. Purok 5, Brgy. San Jose, Cagayan de Oro City"
               />
+              <InputError isValid={is_error.emergency_contact_address} message="Emergency contact address is required" />
             </Col>
           </Row>
 
