@@ -8,14 +8,15 @@ import {
   createContract,
   updateContract,
   getContractDetails,
+  getAuthorizedSignatory,
 } from "../../Helpers/apiCalls/Contracts/contractApi";
 import { getAllCustomers, getCustomerContacts } from "../../Helpers/apiCalls/Manage/customerApi";
 import { validateContract } from "../../Helpers/Validation/Contracts/contractValidation";
 import { toastStyle, dateFormat } from "../../Helpers/Utils/Common";
 import toast from "react-hot-toast";
 import moment from "moment";
-import ReactDatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
+import { DatePicker as AntDatePicker } from "antd";
+import dayjs from "dayjs";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTrash, faPlus } from "@fortawesome/free-solid-svg-icons";
 import "../Manage/Manage.css";
@@ -85,11 +86,22 @@ const [signatory_options, set_signatory_options] = useState([]);
       set_customer_options(
         response.data.data.map((c) => ({
           value: c.id,
-          label: [c.first_name, c.middle_name, c.last_name, c.suffix]
-            .filter(Boolean)
-            .join(" "),
+          label: c.trade_name || [c.first_name, c.last_name].filter(Boolean).join(" "),
         })),
       );
+    }
+  }
+
+  async function fetch_authorized_signatory(customer_id) {
+    if (!customer_id) {
+      set_form((prev) => ({ ...prev, authorized_representative: "" }));
+      return;
+    }
+    const res = await getAuthorizedSignatory(customer_id);
+    if (res.data && res.data.data) {
+      set_form((prev) => ({ ...prev, authorized_representative: res.data.data }));
+    } else {
+      set_form((prev) => ({ ...prev, authorized_representative: "" }));
     }
   }
 
@@ -147,10 +159,10 @@ const [signatory_options, set_signatory_options] = useState([]);
     set_form((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handle_date_change = (field, date) => {
+  const handle_date_change = (field, dayjsDate) => {
     set_form((prev) => ({
       ...prev,
-      [field]: date ? moment(date).format("YYYY-MM-DD") : "",
+      [field]: dayjsDate ? dayjsDate.format("YYYY-MM-DD") : "",
     }));
   };
 
@@ -267,12 +279,11 @@ const [signatory_options, set_signatory_options] = useState([]);
               classNamePrefix="react-select"
               options={customer_options}
               value={selected_customer}
-              onChange={(selected) =>
-                set_form((prev) => ({
-                  ...prev,
-                  customer_id: selected ? selected.value : "",
-                }))
-              }
+              onChange={(selected) => {
+                const id = selected ? selected.value : "";
+                set_form((prev) => ({ ...prev, customer_id: id }));
+                fetch_authorized_signatory(id);
+              }}
               placeholder="Search customer..."
               isClearable
               styles={select_style}
@@ -281,13 +292,9 @@ const [signatory_options, set_signatory_options] = useState([]);
           </Col>
           <Col xs={6}>
             <div className="field-label">AUTHORIZED REPRESENTATIVE</div>
-            <Form.Control
-              type="text"
-              name="authorized_representative"
-              value={form.authorized_representative}
-              className="nc-modal-custom-input"
-              onChange={handle_change}
-            />
+            <div className="detail-value" style={{ padding: "8px 0" }}>
+              {form.authorized_representative || "—"}
+            </div>
           </Col>
         </Row>
 
@@ -309,34 +316,37 @@ const [signatory_options, set_signatory_options] = useState([]);
         <Row className="nc-modal-custom-row">
           <Col>
             <div className="field-label">DATE OF CONTRACT</div>
-            <ReactDatePicker
-              selected={form.date_signed ? new Date(form.date_signed) : null}
+            <AntDatePicker
+              value={form.date_signed ? dayjs(form.date_signed) : null}
               onChange={(date) => handle_date_change("date_signed", date)}
-              dateFormat="yyyy-MM-dd"
-              className="nc-modal-custom-input w-100"
-              placeholderText="Select date"
+              format="YYYY-MM-DD"
+              placeholder="Select date"
+              style={{ width: "100%" }}
+              className="nc-modal-custom-input"
             />
           </Col>
           <Col>
             <div className="field-label">START DATE <span className="required-icon">*</span></div>
-            <ReactDatePicker
-              selected={form.start_date ? new Date(form.start_date) : null}
+            <AntDatePicker
+              value={form.start_date ? dayjs(form.start_date) : null}
               onChange={(date) => handle_date_change("start_date", date)}
-              dateFormat="yyyy-MM-dd"
-              className="nc-modal-custom-input w-100"
-              placeholderText="Select start date"
+              format="YYYY-MM-DD"
+              placeholder="Select start date"
+              style={{ width: "100%" }}
+              className="nc-modal-custom-input"
             />
             <InputError isValid={is_error.start_date} message="Start date is required" />
           </Col>
           {/* FIX: end date is now required */}
           <Col>
             <div className="field-label">END DATE <span className="required-icon">*</span></div>
-            <ReactDatePicker
-              selected={form.end_date ? new Date(form.end_date) : null}
+            <AntDatePicker
+              value={form.end_date ? dayjs(form.end_date) : null}
               onChange={(date) => handle_date_change("end_date", date)}
-              dateFormat="yyyy-MM-dd"
-              className="nc-modal-custom-input w-100"
-              placeholderText="Select end date"
+              format="YYYY-MM-DD"
+              placeholder="Select end date"
+              style={{ width: "100%" }}
+              className="nc-modal-custom-input"
             />
             <InputError isValid={is_error.end_date} message="End date is required" />
           </Col>

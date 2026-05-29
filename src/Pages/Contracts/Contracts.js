@@ -116,8 +116,8 @@ export default function Contracts() {
       customer_id: "",
       contract_id: "",
       ...(active_filter ? { [active_filter.type]: active_filter.id } : {}),
-      date_from: dates?.[0] ? moment(dates[0]).format("YYYY-MM-DD") : "",
-      date_to: dates?.[1] ? moment(dates[1]).format("YYYY-MM-DD") : "",
+      date_from: dates?.[0] ? dates[0].format("YYYY-MM-DD") : "",
+      date_to: dates?.[1] ? dates[1].format("YYYY-MM-DD") : "",
     };
     fetch_contracts(filters);
   }

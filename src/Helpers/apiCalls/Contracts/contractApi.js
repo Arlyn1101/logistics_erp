@@ -159,6 +159,18 @@ export const getContractTripSummary = async (contract_id) => {
   }
 };
 
+export const getAuthorizedSignatory = async (customer_id) => {
+  try {
+    const response = await getAPICall(`${BASE_URL}/contracts/get_authorized_signatory`, {
+      token: get_token(),
+      customer_id,
+    });
+    return { data: response.data };
+  } catch (error) {
+    return { error: error.response };
+  }
+};
+
 export const getContractSuggestions = async (keyword) => {
   try {
     const response = await getAPICall(`${BASE_URL}/contracts/get_suggestions`, {
