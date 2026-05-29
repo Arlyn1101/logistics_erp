@@ -216,7 +216,7 @@ export default function Users() {
       <div className="form-section-label">User Information</div>
       <Row className="nc-modal-custom-row">
         <Col>
-          FIRST NAME <span className="required-icon">*</span>
+          <div className="field-label">FIRST NAME <span className="required-icon">*</span></div>
           <Form.Control
             type="text"
             name="first_name"
@@ -230,7 +230,7 @@ export default function Users() {
           />
         </Col>
         <Col>
-          LAST NAME <span className="required-icon">*</span>
+          <div className="field-label">LAST NAME <span className="required-icon">*</span></div>
           <Form.Control
             type="text"
             name="last_name"
@@ -246,7 +246,7 @@ export default function Users() {
       </Row>
       <Row className="nc-modal-custom-row">
         <Col>
-          EMAIL <span className="required-icon">*</span>
+          <div className="field-label">EMAIL <span className="required-icon">*</span></div>
           <Form.Control
             type="email"
             name="email"
@@ -257,7 +257,7 @@ export default function Users() {
           <InputError isValid={is_error.email} message="Email is required" />
         </Col>
         <Col>
-          TYPE
+          <div className="field-label">TYPE</div>
           <Form.Select
             name="role"
             value={form.role}
@@ -273,12 +273,12 @@ export default function Users() {
       <div className="form-section-label">Security</div>
       <Row className="nc-modal-custom-row">
         <Col xs={6}>
-          PASSWORD {!for_edit && <span className="required-icon">*</span>}
-          {for_edit && (
-            <span className="field-hint">
-              Leave blank to keep current password
-            </span>
-          )}
+          <div className="field-label">
+            PASSWORD {!for_edit && <span className="required-icon">*</span>}
+            {for_edit && (
+              <span className="field-hint"> Leave blank to keep current password</span>
+            )}
+          </div>
           <Form.Control
             type="password"
             name="password"
