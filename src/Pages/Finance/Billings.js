@@ -6,7 +6,10 @@ import Table from "../../Components/TableTemplate/Table";
 import PaymentModal from "../../Components/Modals/PaymentModal";
 import Select from "react-select";
 import { DatePicker as AntDatePicker } from "antd";
-import { getAllBillings, searchBillings } from "../../Helpers/apiCalls/Finance/billingApi";
+import {
+  getAllBillings,
+  searchBillings,
+} from "../../Helpers/apiCalls/Finance/billingApi";
 import { getAllCustomers } from "../../Helpers/apiCalls/Manage/customerApi";
 import { toastStyle } from "../../Helpers/Utils/Common";
 import toast from "react-hot-toast";
@@ -18,16 +21,16 @@ const { RangePicker } = AntDatePicker;
 
 export default function Billings() {
   const navigate = useNavigate();
-  const [inactive, set_inactive]           = useState(false);
-  const [show_loader, set_show_loader]     = useState(false);
-  const [active_tab, set_active_tab]       = useState("all");
-  const [billing_data, set_billing_data]   = useState([]);
+  const [inactive, set_inactive] = useState(false);
+  const [show_loader, set_show_loader] = useState(false);
+  const [active_tab, set_active_tab] = useState("all");
+  const [billing_data, set_billing_data] = useState([]);
   const [filtered_data, set_filtered_data] = useState([]);
   const [show_payment_modal, set_show_payment_modal] = useState(false);
-  const [selected_billing, set_selected_billing]     = useState(null);
-  const [customer_options, set_customer_options]     = useState([]);
-  const [selected_customer, set_selected_customer]   = useState(null);
-  const [date_range, set_date_range]                 = useState([null, null]);
+  const [selected_billing, set_selected_billing] = useState(null);
+  const [customer_options, set_customer_options] = useState([]);
+  const [selected_customer, set_selected_customer] = useState(null);
+  const [date_range, set_date_range] = useState([null, null]);
 
   const fmt = (val) =>
     `₱ ${parseFloat(val || 0).toLocaleString("en-PH", { minimumFractionDigits: 2 })}`;
@@ -36,7 +39,11 @@ export default function Billings() {
     const map = { open_bill: "inactive", closed_bill: "active" };
     return (
       <span className={`status-badge ${map[status] || status}`}>
-        {status === "open_bill" ? "Open Invoice" : status === "closed_bill" ? "Closed Invoice" : status}
+        {status === "open_bill"
+          ? "Open Invoice"
+          : status === "closed_bill"
+            ? "Closed Invoice"
+            : status}
       </span>
     );
   }
@@ -87,7 +94,9 @@ export default function Billings() {
 
   async function fetch_billings(filters = {}) {
     set_show_loader(true);
-    const has_filter = Object.values(filters).some((v) => v !== "" && v !== null);
+    const has_filter = Object.values(filters).some(
+      (v) => v !== "" && v !== null,
+    );
     const response = has_filter
       ? await searchBillings(filters)
       : await getAllBillings();
@@ -96,11 +105,11 @@ export default function Billings() {
       const result = response.data.data.map((b) => ({
         ...b,
         billing_period_display: `${moment(b.billing_period_start).format("MMM D")} – ${moment(b.billing_period_end).format("MMM D, YYYY")}`,
-        monthly_rate_display:   fmt(b.monthly_rate),
-        grand_total_display:    fmt(b.grand_total),
-        balance_display:        fmt(b.balance),
-        status_badge:           StatusBadge(b.status),
-        action_btn:             ActionBtn(b),
+        monthly_rate_display: fmt(b.monthly_rate),
+        grand_total_display: fmt(b.grand_total),
+        balance_display: fmt(b.balance),
+        status_badge: StatusBadge(b.status),
+        action_btn: ActionBtn(b),
       }));
       set_billing_data(result);
       set_filtered_data(apply_tab_filter(result, active_tab));
@@ -114,8 +123,8 @@ export default function Billings() {
   function handle_filter_change(customer, dates) {
     const filters = {
       customer_id: customer?.value || "",
-      month_from:  dates?.[0] ? moment(dates[0]).format("YYYY-MM-DD") : "",
-      month_to:    dates?.[1] ? moment(dates[1]).format("YYYY-MM-DD") : "",
+      month_from: dates?.[0] ? dates[0].format("YYYY-MM-DD") : "",
+      month_to: dates?.[1] ? dates[1].format("YYYY-MM-DD") : "",
     };
     fetch_billings(filters);
   }
@@ -140,7 +149,6 @@ export default function Billings() {
         />
       </div>
       <div className={`manager-container ${inactive ? "inactive" : "active"}`}>
-
         <Row className="mb-4">
           <Col xs={6}>
             <h1 className="page-title">Billings</h1>
@@ -162,23 +170,23 @@ export default function Billings() {
           <Row className="g-2 align-items-center">
             <Col xs={12} md={4}>
               <Select
-              classNamePrefix="react-select"
-              placeholder="Select Customer"
-              options={customer_options}
-              value={selected_customer}
-              onChange={(val) => {
-                set_selected_customer(val);
-                handle_filter_change(val, date_range);
-              }}
-              isClearable
-              menuPortalTarget={document.body}
-              styles={{ menuPortal: (base) => ({ ...base, zIndex: 9999 }) }}
-            />
+                classNamePrefix="react-select"
+                placeholder="Select Customer"
+                options={customer_options}
+                value={selected_customer}
+                onChange={(val) => {
+                  set_selected_customer(val);
+                  handle_filter_change(val, date_range);
+                }}
+                isClearable
+                menuPortalTarget={document.body}
+                styles={{ menuPortal: (base) => ({ ...base, zIndex: 9999 }) }}
+              />
             </Col>
             <Col xs={12} md={4}>
               <RangePicker
                 value={date_range}
-                onChange={(dates) => {
+                onChange={(dates, dateStrings) => {
                   set_date_range(dates || [null, null]);
                   handle_filter_change(selected_customer, dates);
                 }}
@@ -189,7 +197,11 @@ export default function Billings() {
               />
             </Col>
             <Col xs="auto">
-              <button type="button" className="cancel-btn" onClick={handle_reset}>
+              <button
+                type="button"
+                className="cancel-btn"
+                onClick={handle_reset}
+              >
                 Clear
               </button>
             </Col>
@@ -205,7 +217,11 @@ export default function Billings() {
               className={`filter-tab-btn ${active_tab === tab ? "active" : ""}`}
               onClick={() => handle_tab_change(tab)}
             >
-              {tab === "all" ? "All" : tab === "open_bill" ? "Open Invoice" : "Closed Invoice"}
+              {tab === "all"
+                ? "All"
+                : tab === "open_bill"
+                  ? "Open Invoice"
+                  : "Closed Invoice"}
               <span className="tab-count">{get_tab_count(tab)}</span>
             </button>
           ))}
