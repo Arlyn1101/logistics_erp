@@ -33,16 +33,16 @@ export default function Billings() {
     `₱ ${parseFloat(val || 0).toLocaleString("en-PH", { minimumFractionDigits: 2 })}`;
 
   function StatusBadge(status) {
-    const map = { unpaid: "inactive", paid: "active" };
+    const map = { open_bill: "inactive", closed_bill: "active" };
     return (
       <span className={`status-badge ${map[status] || status}`}>
-        {status}
+        {status === "open_bill" ? "Open Invoice" : status === "closed_bill" ? "Closed Invoice" : status}
       </span>
     );
   }
 
   function ActionBtn(row) {
-    if (row.status !== "unpaid") return "";
+    if (row.status !== "open_bill") return "";
     return (
       <button
         type="button"
@@ -198,14 +198,14 @@ export default function Billings() {
 
         {/* Tabs */}
         <div className="filter-tabs mb-3">
-          {["all", "unpaid", "paid"].map((tab) => (
+          {["all", "open_bill", "closed_bill"].map((tab) => (
             <button
               key={tab}
               type="button"
               className={`filter-tab-btn ${active_tab === tab ? "active" : ""}`}
               onClick={() => handle_tab_change(tab)}
             >
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              {tab === "all" ? "All" : tab === "open_bill" ? "Open Invoice" : "Closed Invoice"}
               <span className="tab-count">{get_tab_count(tab)}</span>
             </button>
           ))}

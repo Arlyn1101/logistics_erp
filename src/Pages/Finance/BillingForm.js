@@ -109,6 +109,7 @@ export default function BillingForm() {
       excess_trip_total: preview.summary.excess_trip_total,
       fuel_surcharge_total: preview.summary.fuel_surcharge_total,
       grand_total: preview.summary.grand_total,
+      billing_date: moment().format("YYYY-MM-DD"),
       due_date: due_date || null,
       trip_ids: preview.trips.map((t) => t.id),
     };
@@ -302,8 +303,7 @@ export default function BillingForm() {
               </div>
               {preview.trips.length === 0 ? (
                 <p className="page-subtitle mt-2">
-                  No trips found for this billing cycle. You may still proceed —
-                  only the monthly rate will be billed.
+                  No trips found for this billing cycle.
                 </p>
               ) : (
                 <FinanceTable

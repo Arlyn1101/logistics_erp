@@ -132,13 +132,6 @@ export default function BillingView() {
                 Record Payment
               </button>
             )}
-            <button
-              type="button"
-              className="edit-btn"
-              onClick={() => window.print()}
-            >
-              Print Invoice
-            </button>
           </div>
         </div>
 
@@ -151,11 +144,25 @@ export default function BillingView() {
               <div className="detail-value">{billing.billing_number}</div>
             </Col>
             <Col xs={3}>
+              <div className="field-label">BILLING DATE</div>
+              <div className="detail-value">
+                {billing.billing_date ? moment(billing.billing_date).format("MMMM DD, YYYY") : "—"}
+              </div>
+            </Col>
+            <Col xs={3}>
+              <div className="field-label">DUE DATE</div>
+              <div className="detail-value">
+                {billing.due_date ? moment(billing.due_date).format("MMMM DD, YYYY") : "—"}
+              </div>
+            </Col>
+            <Col xs={3}>
               <div className="field-label">STATUS</div>
               <span className={`status-badge ${STATUS_MAP[billing.status] || billing.status}`}>
                 {billing.status}
               </span>
             </Col>
+          </Row>
+          <Row className="nc-modal-custom-row">
             <Col xs={3}>
               <div className="field-label">CUSTOMER</div>
               <div className="detail-value">{billing.customer_name || "—"}</div>
@@ -164,8 +171,6 @@ export default function BillingView() {
               <div className="field-label">CONTRACT NO.</div>
               <div className="detail-value">{billing.contract_number || "—"}</div>
             </Col>
-          </Row>
-          <Row className="nc-modal-custom-row">
             <Col xs={3}>
               <div className="field-label">BILLING PERIOD</div>
               <div className="detail-value">
@@ -176,13 +181,15 @@ export default function BillingView() {
               <div className="field-label">PAYMENT TERMS</div>
               <div className="detail-value">{billing.payment_terms || "—"}</div>
             </Col>
-            {billing.remarks && (
-              <Col xs={6}>
+          </Row>
+          {billing.remarks && (
+            <Row className="nc-modal-custom-row">
+              <Col xs={12}>
                 <div className="field-label">REMARKS</div>
                 <div className="detail-value">{billing.remarks}</div>
               </Col>
-            )}
-          </Row>
+            </Row>
+          )}
         </div>
 
         {/* Section 2 — Trip Breakdown */}
@@ -200,34 +207,62 @@ export default function BillingView() {
         {/* Section 3 — Computation Summary */}
         <div className="biodata-card mb-3">
           <div className="biodata-section-label">Billing Summary</div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8, maxWidth: 420 }}>
-            {[
-              { label: "Monthly Rate",        value: fmt(billing.monthly_rate) },
-              { label: "Total Trips",         value: billing.total_trips },
-              { label: "Included Trips",      value: billing.included_trips },
-              { label: "Excess Trips",        value: billing.excess_trips },
-              { label: "Excess Trip Total",   value: fmt(billing.excess_trip_total) },
-              { label: "Fuel Surcharge Total",value: fmt(billing.fuel_surcharge_total) },
-            ].map((row) => (
-              <div key={row.label} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid #f0f4f8" }}>
-                <span className="field-label" style={{ margin: 0 }}>{row.label}</span>
-                <span className="detail-value" style={{ padding: 0 }}>{row.value}</span>
-              </div>
-            ))}
-            <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderTop: "2px solid #edf0f4", marginTop: 4 }}>
-              <span style={{ fontFamily: "var(--primary-font-bold)", fontSize: 13, color: "#2d3e4e" }}>GRAND TOTAL</span>
-              <span style={{ fontFamily: "var(--primary-font-bold)", fontSize: 16, color: "#5ac8e1" }}>{fmt(billing.grand_total)}</span>
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0" }}>
-              <span className="field-label" style={{ margin: 0 }}>AMOUNT PAID</span>
-              <span className="detail-value" style={{ padding: 0, color: "#27ae60" }}>{fmt(billing.amount_paid)}</span>
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0" }}>
-              <span className="field-label" style={{ margin: 0 }}>BALANCE</span>
-              <span className="detail-value" style={{ padding: 0, color: parseFloat(billing.balance) > 0 ? "#dc3545" : "#27ae60" }}>
-                {fmt(billing.balance)}
-              </span>
-            </div>
+          <div className="table-responsive mt-3">
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr style={{ backgroundColor: "#1a2e40" }}>
+                  <th style={{ padding: "10px 12px", color: "#ffffff", fontFamily: "var(--primary-font-bold)", fontSize: 13, textTransform: "uppercase", letterSpacing: "0.04em", width: "60%" }}>
+                    Description
+                  </th>
+                  <th style={{ padding: "10px 12px", color: "#ffffff", fontFamily: "var(--primary-font-bold)", fontSize: 13, textTransform: "uppercase", letterSpacing: "0.04em", textAlign: "right" }}>
+                    Amount
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { label: "Monthly Rate",         value: fmt(billing.monthly_rate) },
+                  { label: "Total Trips",          value: billing.total_trips },
+                  { label: "Included Trips",       value: billing.included_trips },
+                  { label: "Excess Trips",         value: billing.excess_trips },
+                  { label: "Excess Trip Total",    value: fmt(billing.excess_trip_total) },
+                  { label: "Fuel Surcharge Total", value: fmt(billing.fuel_surcharge_total) },
+                ].map((row) => (
+                  <tr key={row.label}>
+                    <td style={{ padding: "8px 12px", width: "60%", borderBottom: "1px solid #f0f0f0", fontFamily: "var(--primary-font-medium)", fontSize: 13, color: "#444" }}>
+                      {row.label}
+                    </td>
+                    <td style={{ padding: "8px 12px", textAlign: "right", borderBottom: "1px solid #f0f0f0", fontFamily: "var(--primary-font-medium)", fontSize: 13, color: "#444" }}>
+                      {row.value}
+                    </td>
+                  </tr>
+                ))}
+                <tr style={{ borderTop: "2px solid #edf0f4" }}>
+                  <td style={{ padding: "10px 12px", fontFamily: "var(--primary-font-bold)", fontSize: 14, color: "#1a2e40" }}>
+                    GRAND TOTAL
+                  </td>
+                  <td style={{ padding: "10px 12px", textAlign: "right", fontFamily: "var(--primary-font-bold)", fontSize: 16, color: "#5ac8e1" }}>
+                    {fmt(billing.grand_total)}
+                  </td>
+                </tr>
+                <tr>
+                  <td style={{ padding: "8px 12px", fontFamily: "var(--primary-font-medium)", fontSize: 13, color: "#444" }}>
+                    Amount Paid
+                  </td>
+                  <td style={{ padding: "8px 12px", textAlign: "right", fontFamily: "var(--primary-font-medium)", fontSize: 13, color: "#27ae60" }}>
+                    {fmt(billing.amount_paid)}
+                  </td>
+                </tr>
+                <tr>
+                  <td style={{ padding: "8px 12px", fontFamily: "var(--primary-font-medium)", fontSize: 13, color: "#444" }}>
+                    Balance
+                  </td>
+                  <td style={{ padding: "8px 12px", textAlign: "right", fontFamily: "var(--primary-font-medium)", fontSize: 13, color: parseFloat(billing.balance) > 0 ? "#dc3545" : "#27ae60" }}>
+                    {fmt(billing.balance)}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
 

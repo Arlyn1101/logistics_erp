@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Col, Form, Row } from "react-bootstrap";
+import { Col, Row } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../../Components/Navbar/Navbar";
 import Table from "../../Components/TableTemplate/Table";
@@ -8,7 +8,6 @@ import { DatePicker as AntDatePicker } from "antd";
 import {
   getAllPayments,
   searchPayments,
-  deletePayment,
 } from "../../Helpers/apiCalls/Finance/paymentApi";
 import { getAllCustomers } from "../../Helpers/apiCalls/Manage/customerApi";
 import { toastStyle } from "../../Helpers/Utils/Common";
@@ -55,53 +54,6 @@ export default function Payments() {
     return "—";
   }
 
-  function ActionBtn(row) {
-    return (
-      <Form.Select
-        name="action"
-        className="PO-select-action form-select"
-        onChange={(e) => handle_action(e, row)}
-        value={""}
-      >
-        <option defaultValue selected hidden>
-          Select
-        </option>
-        <option value="view-billing" className="color-options">
-          View Billing
-        </option>
-        <option value="delete-payment" className="color-red">
-          Delete
-        </option>
-      </Form.Select>
-    );
-  }
-
-  async function handle_action(e, row) {
-    const action = e.target.value;
-    e.target.value = "";
-    if (action === "view-billing") {
-      navigate("/billings/view", {
-        state: {
-          billing: {
-            id: row.billing_id,
-            billing_number: row.billing_number,
-            customer_name: row.customer_name,
-            contract_number: row.contract_number,
-          },
-        },
-      });
-    } else if (action === "delete-payment") {
-      if (!window.confirm("Delete this payment record?")) return;
-      const response = await deletePayment(row.id);
-      if (response.data && response.data.status === "success") {
-        toast.success("Payment deleted.", { style: toastStyle() });
-        fetch_payments();
-      } else {
-        toast.error("Failed to delete payment.", { style: toastStyle() });
-      }
-    }
-  }
-
   async function fetch_customers() {
     const response = await getAllCustomers();
     if (response.data && response.data.data) {
@@ -131,7 +83,6 @@ export default function Payments() {
         ref_display: get_ref(p),
         bank_display: p.bank_name || "—",
         remarks_display: p.remarks || "—",
-        action_btn: ActionBtn(p),
       }));
       set_payment_data(result);
       set_filtered_data(apply_tab_filter(result, active_tab));
@@ -245,7 +196,6 @@ export default function Payments() {
               "REF / CHECK NO.",
               "BANK",
               "REMARKS",
-              "ACTIONS",
             ]}
             headerSelector={[
               "payment_date_fmt",
@@ -257,11 +207,14 @@ export default function Payments() {
               "ref_display",
               "bank_display",
               "remarks_display",
-              "action_btn",
             ]}
             tableData={filtered_data}
             showLoader={show_loader}
-            withActionData={true}
+            onRowClick={(row) =>
+              navigate("/payments/view", {
+                state: { payment: { id: row.id } },
+              })
+            }
           />
         </div>
       </div>

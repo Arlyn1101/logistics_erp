@@ -7,7 +7,6 @@ import { faDownload, faTrash } from "@fortawesome/free-solid-svg-icons";
 import {
   getPaymentDetails,
   getPaymentAttachments,
-  deletePayment,
   deletePaymentAttachment,
   downloadPaymentAttachment,
 } from "../../Helpers/apiCalls/Finance/paymentApi";
@@ -67,17 +66,6 @@ export default function PaymentView() {
     fetch_payment();
     fetch_attachments();
   }, []);
-
-  async function handle_delete_payment() {
-    if (!window.confirm("Delete this payment record? This cannot be undone.")) return;
-    const response = await deletePayment(payment.id);
-    if (response.data && response.data.status === "success") {
-      toast.success("Payment deleted.", { style: toastStyle() });
-      setTimeout(() => navigate("/payments"), 1000);
-    } else {
-      toast.error("Failed to delete payment.", { style: toastStyle() });
-    }
-  }
 
   async function handle_delete_attachment(attachment_id) {
     if (!window.confirm("Remove this attachment?")) return;
@@ -173,14 +161,6 @@ export default function PaymentView() {
             >
               View Billing
             </button>
-            <button
-              type="button"
-              className="save-btn"
-              style={{ background: "#dc3545", borderColor: "#dc3545" }}
-              onClick={handle_delete_payment}
-            >
-              Delete Payment
-            </button>
           </div>
         </div>
 
@@ -188,12 +168,13 @@ export default function PaymentView() {
         <div className="biodata-card mb-3">
           <div className="biodata-section-label">Payment Information</div>
 
+          {/* Row 1 — Who & What */}
           <Row className="nc-modal-custom-row">
-            <Col xs={3}>
-              <div className="field-label">PAYMENT ID</div>
-              <div className="detail-value">#{payment.id}</div>
+            <Col xs={12} md={4}>
+              <div className="field-label">CUSTOMER</div>
+              <div className="detail-value">{payment.customer_name || "—"}</div>
             </Col>
-            <Col xs={3}>
+            <Col xs={12} md={4}>
               <div className="field-label">BILLING NO.</div>
               <div
                 className="detail-value"
@@ -214,18 +195,15 @@ export default function PaymentView() {
                 {payment.billing_number || "—"}
               </div>
             </Col>
-            <Col xs={3}>
-              <div className="field-label">CUSTOMER</div>
-              <div className="detail-value">{payment.customer_name || "—"}</div>
-            </Col>
-            <Col xs={3}>
+            <Col xs={12} md={4}>
               <div className="field-label">CONTRACT NO.</div>
               <div className="detail-value">{payment.contract_number || "—"}</div>
             </Col>
           </Row>
 
+          {/* Row 2 — Payment core */}
           <Row className="nc-modal-custom-row">
-            <Col xs={3}>
+            <Col xs={12} md={4}>
               <div className="field-label">PAYMENT DATE</div>
               <div className="detail-value">
                 {payment.payment_date
@@ -233,13 +211,13 @@ export default function PaymentView() {
                   : "—"}
               </div>
             </Col>
-            <Col xs={3}>
+            <Col xs={12} md={4}>
               <div className="field-label">METHOD</div>
               <div className="detail-value">
                 {METHOD_LABEL[payment.payment_method] || payment.payment_method}
               </div>
             </Col>
-            <Col xs={3}>
+            <Col xs={12} md={4}>
               <div className="field-label">AMOUNT</div>
               <div
                 className="detail-value"
@@ -248,81 +226,89 @@ export default function PaymentView() {
                 {fmt(payment.amount)}
               </div>
             </Col>
-            {ref.label && (
-              <Col xs={3}>
-                <div className="field-label">{ref.label}</div>
-                <div className="detail-value">{ref.value}</div>
-              </Col>
-            )}
           </Row>
 
-          {/* Check-specific */}
+          {/* Row 3 — Method-specific details */}
+          {(is_check || is_cash || is_bank) && (
+            <Row className="nc-modal-custom-row">
+              {is_check && (
+                <>
+                  <Col xs={12} md={3}>
+                    <div className="field-label">CHECK NO.</div>
+                    <div className="detail-value">{payment.check_number || "—"}</div>
+                  </Col>
+                  <Col xs={12} md={3}>
+                    <div className="field-label">CHECK DATE</div>
+                    <div className="detail-value">
+                      {payment.check_date
+                        ? moment(payment.check_date).format("MMM D, YYYY")
+                        : "—"}
+                    </div>
+                  </Col>
+                  <Col xs={12} md={3}>
+                    <div className="field-label">ISSUING BANK</div>
+                    <div className="detail-value">{payment.bank_name || "—"}</div>
+                  </Col>
+                  <Col xs={12} md={3}>
+                    <div className="field-label">DEPOSIT DATE</div>
+                    <div className="detail-value">
+                      {payment.deposit_date
+                        ? moment(payment.deposit_date).format("MMM D, YYYY")
+                        : "—"}
+                    </div>
+                  </Col>
+                </>
+              )}
+              {is_cash && (
+                <>
+                  <Col xs={12} md={4}>
+                    <div className="field-label">DEPOSIT DATE</div>
+                    <div className="detail-value">
+                      {payment.deposit_date
+                        ? moment(payment.deposit_date).format("MMM D, YYYY")
+                        : "—"}
+                    </div>
+                  </Col>
+                  <Col xs={12} md={4}>
+                    <div className="field-label">DEPOSITED TO</div>
+                    <div className="detail-value">{payment.deposited_to || "—"}</div>
+                  </Col>
+                </>
+              )}
+              {is_bank && (
+                <>
+                  <Col xs={12} md={4}>
+                    <div className="field-label">REFERENCE NO.</div>
+                    <div className="detail-value">{payment.reference_number || "—"}</div>
+                  </Col>
+                  <Col xs={12} md={4}>
+                    <div className="field-label">BANK / PLATFORM</div>
+                    <div className="detail-value">{payment.bank_name || "—"}</div>
+                  </Col>
+                  <Col xs={12} md={4}>
+                    <div className="field-label">TRANSFER DATE</div>
+                    <div className="detail-value">
+                      {payment.transfer_date
+                        ? moment(payment.transfer_date).format("MMM D, YYYY")
+                        : "—"}
+                    </div>
+                  </Col>
+                </>
+              )}
+            </Row>
+          )}
+
+          {/* Row 4 — Deposited To (check only, kept separate so it doesn't crowd row 3) */}
           {is_check && (
             <Row className="nc-modal-custom-row">
-              <Col xs={3}>
-                <div className="field-label">CHECK DATE</div>
-                <div className="detail-value">
-                  {payment.check_date
-                    ? moment(payment.check_date).format("MMM D, YYYY")
-                    : "—"}
-                </div>
-              </Col>
-              <Col xs={3}>
-                <div className="field-label">ISSUING BANK</div>
-                <div className="detail-value">{payment.bank_name || "—"}</div>
-              </Col>
-              <Col xs={3}>
-                <div className="field-label">DEPOSIT DATE</div>
-                <div className="detail-value">
-                  {payment.deposit_date
-                    ? moment(payment.deposit_date).format("MMM D, YYYY")
-                    : "—"}
-                </div>
-              </Col>
-              <Col xs={3}>
+              <Col xs={12} md={4}>
                 <div className="field-label">DEPOSITED TO</div>
                 <div className="detail-value">{payment.deposited_to || "—"}</div>
               </Col>
             </Row>
           )}
 
-          {/* Cash-specific */}
-          {is_cash && (
-            <Row className="nc-modal-custom-row">
-              <Col xs={3}>
-                <div className="field-label">DEPOSIT DATE</div>
-                <div className="detail-value">
-                  {payment.deposit_date
-                    ? moment(payment.deposit_date).format("MMM D, YYYY")
-                    : "—"}
-                </div>
-              </Col>
-              <Col xs={3}>
-                <div className="field-label">DEPOSITED TO</div>
-                <div className="detail-value">{payment.deposited_to || "—"}</div>
-              </Col>
-            </Row>
-          )}
-
-          {/* Bank Transfer-specific */}
-          {is_bank && (
-            <Row className="nc-modal-custom-row">
-              <Col xs={3}>
-                <div className="field-label">BANK / PLATFORM</div>
-                <div className="detail-value">{payment.bank_name || "—"}</div>
-              </Col>
-              <Col xs={3}>
-                <div className="field-label">TRANSFER DATE</div>
-                <div className="detail-value">
-                  {payment.transfer_date
-                    ? moment(payment.transfer_date).format("MMM D, YYYY")
-                    : "—"}
-                </div>
-              </Col>
-            </Row>
-          )}
-
-          {/* Remarks — always last, full width if present */}
+          {/* Remarks */}
           {payment.remarks && (
             <Row className="nc-modal-custom-row">
               <Col xs={12}>
