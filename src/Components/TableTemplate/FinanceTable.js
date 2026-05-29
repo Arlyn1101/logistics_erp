@@ -83,7 +83,9 @@ function trips_columns() {
     {
       name: "FUEL SURCHARGE",
       selector: (row) =>
-        row.is_excess ? fmt(row.fuel_additional_charge) : "—",
+        parseFloat(row.fuel_additional_charge || 0) > 0
+          ? fmt(row.fuel_additional_charge)
+          : "—",
       width: "15%",
       wrap: true,
       right: true,
