@@ -11,9 +11,11 @@ import {
   createTrip,
   updateTrip,
   completeTrip,
+  startTrip,
   getTripDetails,
   getContractTripInfo,
   getTripSuggestions,
+  getAvailableAssets,
 } from "../../Helpers/apiCalls/Trips/tripApi";
 import {
   getAllContracts,
@@ -27,9 +29,8 @@ import { validateTrip } from "../../Helpers/Validation/Trips/tripValidation";
 import { toastStyle, dateFormat } from "../../Helpers/Utils/Common";
 import { Select as AntSelect, DatePicker as AntDatePicker } from "antd";
 import moment from "moment";
-import ReactDatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import dayjs from "dayjs";
 import {
   faTimes,
   faCalendarAlt,
@@ -62,10 +63,13 @@ export default function Trips() {
 
   // Dropdown options
   const [customer_options, set_customer_options] = useState([]);
-  const [contract_options, set_contract_options] = useState([]);
+  const [contracts, set_contracts] = useState([]);
   const [truck_options, set_truck_options] = useState([]);
   const [driver_options, set_driver_options] = useState([]);
   const [helper_options, set_helper_options] = useState([]);
+  const [available_assets, set_available_assets] = useState(null);
+  const [contract_date_range, set_contract_date_range] = useState({ start: null, end: null });
+  const [assets_loading, set_assets_loading]     = useState(false);
 
 
   // Contract trip info (for log trip form)
@@ -76,12 +80,13 @@ export default function Trips() {
     contract_id: "",
     contract_route_id: "",
     truck_id: "",
-    trip_date: "",
+    expected_departure_datetime: "",
+    estimated_hours: 8,
     driver_id: "",
     helper_id: "",
     actual_fuel_price: "",
     remarks: "",
-  };
+};
 
   const [add_form, set_add_form] = useState({ ...empty_form });
   const [edit_form, set_edit_form] = useState({ ...empty_form });
@@ -106,6 +111,16 @@ export default function Trips() {
     }
   }
 
+  async function fetch_available_assets(departure, hours, exclude_trip_id = null) {
+    if (!departure || !hours || hours <= 0) return;
+    set_assets_loading(true);
+    const res = await getAvailableAssets(departure, hours, exclude_trip_id);
+    if (res.data?.data) {
+      set_available_assets(res.data.data);
+    }
+    set_assets_loading(false);
+  }
+
   // Compute fuel preview on the fly
   function compute_fuel_preview(actual_price, route_opts, form) {
     if (!actual_price || !form.contract_route_id || !form.truck_id) {
@@ -114,7 +129,8 @@ export default function Trips() {
     }
     const agreed = contract_trip_info?.fuel_price_per_liter ?? 0;
     const route  = route_opts.find((r) => String(r.id) === String(form.contract_route_id));
-    const truck  = truck_options.find((t) => String(t.id) === String(form.truck_id));
+    const truck_pool = available_assets ? available_assets.trucks : truck_options;
+    const truck = truck_pool.find((t) => String(t.id) === String(form.truck_id));
 
     if (!route || !truck || !route.distance_km || !truck.km_per_liter) {
       set_fuel_preview(0);
@@ -141,17 +157,32 @@ export default function Trips() {
       const res = await getAllContractRoutes(value);
       const routes = res.data?.data ?? [];
       set_add_route_options(routes);
-      set_add_form((prev) => ({ ...prev, contract_route_id: "" }));
+      set_add_form((prev) => ({ ...prev, contract_route_id: "", expected_departure_datetime: "" }));
       set_contract_trip_info(null);
       set_fuel_preview(0);
-      if (value && updated.trip_date) {
-        fetch_contract_trip_info(value, updated.trip_date);
+      set_available_assets(null);
+
+      // Set date range from selected contract
+      const selected_contract = contracts.find((c) => String(c.id) === String(value));
+      if (selected_contract) {
+        set_contract_date_range({
+          start: selected_contract.start_date || null,
+          end:   selected_contract.end_date   || null,
+        });
+      } else {
+        set_contract_date_range({ start: null, end: null });
+      }
+
+      if (value && updated.expected_departure_datetime) {
+        fetch_contract_trip_info(value, updated.expected_departure_datetime.substring(0, 10));
       }
     }
 
-    if (name === "trip_date") {
-      if (updated.contract_id && value) {
-        fetch_contract_trip_info(updated.contract_id, value);
+    if (name === "expected_departure_datetime" || name === "estimated_hours") {
+      const dep   = name === "expected_departure_datetime" ? value : add_form.expected_departure_datetime;
+      const hours = name === "estimated_hours" ? value : add_form.estimated_hours;
+      if (dep && hours && hours > 0) {
+        fetch_available_assets(dep, hours);
       }
     }
 
@@ -183,21 +214,42 @@ export default function Trips() {
     if (name === "contract_route_id" || name === "truck_id") {
       compute_fuel_preview(updated.actual_fuel_price, edit_route_options, updated);
     }
-  };
 
-  const handle_add_date_change = (date) => {
-    const formatted = moment(date).format("YYYY-MM-DD");
-    set_add_form((prev) => ({ ...prev, trip_date: formatted }));
-    if (add_form.contract_id) {
-      fetch_contract_trip_info(add_form.contract_id, formatted);
+    if (name === "expected_departure_datetime" || name === "estimated_hours") {
+      const dep   = name === "expected_departure_datetime" ? value : edit_form.expected_departure_datetime;
+      const hours = name === "estimated_hours" ? value : edit_form.estimated_hours;
+      if (dep && hours && hours > 0) {
+        fetch_available_assets(dep, hours, edit_form.id);
+      }
     }
+
   };
 
-  const handle_edit_date_change = (date) => {
-    set_edit_form((prev) => ({
-      ...prev,
-      trip_date: moment(date).format("YYYY-MM-DD"),
-    }));
+  const handle_add_datetime_change = (date) => {
+      if (!date) {
+          set_add_form((prev) => ({ ...prev, expected_departure_datetime: "" }));
+          return;
+      }
+      const formatted = date.format("YYYY-MM-DD HH:mm:ss");
+      set_add_form((prev) => ({ ...prev, expected_departure_datetime: formatted }));
+      if (add_form.contract_id) {
+          fetch_contract_trip_info(add_form.contract_id, date.format("YYYY-MM-DD"));
+      }
+      if (add_form.estimated_hours && add_form.estimated_hours > 0) {
+          fetch_available_assets(formatted, add_form.estimated_hours);
+      }
+  };
+
+  const handle_edit_datetime_change = (date) => {
+      if (!date) {
+          set_edit_form((prev) => ({ ...prev, expected_departure_datetime: "" }));
+          return;
+      }
+      const formatted = date.format("YYYY-MM-DD HH:mm:ss");
+      set_edit_form((prev) => ({ ...prev, expected_departure_datetime: formatted }));
+      if (edit_form.estimated_hours && edit_form.estimated_hours > 0) {
+          fetch_available_assets(formatted, edit_form.estimated_hours, edit_form.id);
+      }
   };
 
   async function handle_row_click(row) {
@@ -249,7 +301,7 @@ export default function Trips() {
         getAllHelpers(),
       ]);
     if (customers_res.data?.data) set_customer_options(customers_res.data.data);
-    if (contracts_res.data?.data) set_contract_options(contracts_res.data.data);
+    if (contracts_res.data?.data) set_contracts(contracts_res.data.data);
     if (trucks_res.data?.data)
       set_truck_options(trucks_res.data.data.filter((t) => t.status === "active"));
     if (drivers_res.data?.data)
@@ -269,7 +321,7 @@ export default function Trips() {
       const result = response.data.data.map((a) => ({
         ...a,
         contract_label:  a.contract_number ? `#${a.contract_number}` : `#${a.contract_id}`,
-        customer_label:  a.customer_name   || "—",
+        customer_label:  a.trade_name || a.customer_name || "—",
         route_label:
           a.route_origin && a.route_destination
             ? `${a.route_origin} → ${a.route_destination}`
@@ -280,10 +332,13 @@ export default function Trips() {
             : `Truck #${a.truck_id}`,
         driver_label:  a.driver_label  || "—",
         helper_label:  a.helper_label  || "—",
-        trip_date_fmt: dateFormat(a.trip_date),
+        trip_date_fmt: dateFormat(a.expected_departure_datetime),
         status_badge: (
-          <span className={`status-badge ${a.status || "ongoing"}`}>
-            {a.status === "completed" ? "Completed" : "Ongoing"}
+          <span className={`status-badge ${a.status || "scheduled"}`}>
+            {a.status === "completed" ? "Completed" 
+              : a.status === "in_transit" ? "In Transit" 
+              : a.status === "cancelled" ? "Cancelled" 
+              : "Scheduled"}
           </span>
         ),
       }));
@@ -341,6 +396,20 @@ export default function Trips() {
       fetch_trips();
     } else {
       toast.error("Failed to complete trip.", { style: toastStyle() });
+    }
+    set_is_completing(false);
+  }
+
+  async function handle_start_trip() {
+    if (!selected_trip) return;
+    set_is_completing(true);
+    const res = await startTrip(selected_trip.id);
+    if (res.data?.status === "success") {
+        toast.success("Trip started!", { style: toastStyle() });
+        set_selected_trip((prev) => ({ ...prev, status: "in_transit" }));
+        fetch_trips();
+    } else {
+        toast.error("Failed to start trip.", { style: toastStyle() });
     }
     set_is_completing(false);
   }
@@ -418,7 +487,7 @@ function handle_reset_filter() {
 
   function apply_tab_filter(data, tab) {
     if (tab === "all") return data;
-    return data.filter((row) => (row.status || "ongoing") === tab);
+    return data.filter((row) => row.status === tab);
   }
 
   function handle_tab_change(tab) {
@@ -428,7 +497,7 @@ function handle_reset_filter() {
 
   function get_tab_count(tab) {
     if (tab === "all") return trip_data.length;
-    return trip_data.filter((row) => (row.status || "ongoing") === tab).length;
+    return trip_data.filter((row) => row.status === tab).length;
   }
 
   useEffect(() => {
@@ -506,41 +575,89 @@ function handle_reset_filter() {
   };
 
   const form_fields = (form, handle_change, route_opts, set_form, is_edit = false) => (
+
     <div className="mt-3">
       <div className="biodata-section-label">Trip Information</div>
       <Row className="nc-modal-custom-row">
         <Col>
           <div className="field-label">CONTRACT <span className="required-icon">*</span></div>
-          <Select
-            options={contract_options.map((c) => ({
-              value: c.id,
-              label: `${c.customer_name || `Contract #${c.id}`} — ₱${c.monthly_rate}/mo`,
-            }))}
-            value={contract_options.map((c) => ({
-              value: c.id,
-              label: `${c.customer_name || `Contract #${c.id}`} — ₱${c.monthly_rate}/mo`,
-            })).find((o) => String(o.value) === String(form.contract_id)) || null}
-            onChange={(selected) => {
-              const e = { target: { name: "contract_id", value: selected ? String(selected.value) : "" } };
-              handle_change(e);
+          <Form.Select
+            className="nc-modal-custom-input"
+            value={form.contract_id || ""}
+            onChange={(e) => {
+              const customEvent = { target: { name: "contract_id", value: e.target.value } };
+              handle_change(customEvent);
             }}
-            placeholder="-- Select Contract --"
-            isClearable
-            isDisabled={is_edit}
-            classNamePrefix="react-select"
-          />
+            disabled={is_edit}
+          >
+            <option value="">-- Select Contract --</option>
+            {contracts.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.contract_number} — {c.authorized_signatory || c.customer_name}
+              </option>
+            ))}
+          </Form.Select>
           <InputError isValid={is_error.contract_id} message="Contract is required" />
         </Col>
         <Col>
-          <div className="field-label">TRIP DATE <span className="required-icon">*</span></div>
-          <ReactDatePicker
-            selected={form.trip_date ? new Date(form.trip_date) : null}
-            onChange={is_edit ? handle_edit_date_change : handle_add_date_change}
-            dateFormat="yyyy-MM-dd"
-            className="nc-modal-custom-input w-100"
-            placeholderText="Select date"
-          />
-          <InputError isValid={is_error.trip_date} message="Trip date is required" />
+          <div className="field-label">DEPARTURE DATE & TIME <span className="required-icon">*</span></div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <AntDatePicker
+              format="YYYY-MM-DD"
+              value={form.expected_departure_datetime ? dayjs(form.expected_departure_datetime) : null}
+              onChange={(date) => {
+                if (!date) return;
+                const existing_time = form.expected_departure_datetime
+                  ? dayjs(form.expected_departure_datetime).format("HH:mm")
+                  : "00:00";
+                const combined = dayjs(`${date.format("YYYY-MM-DD")} ${existing_time}:00`);
+                is_edit ? handle_edit_datetime_change(combined) : handle_add_datetime_change(combined);
+              }}
+              disabled={!form.contract_id}
+              disabledDate={(current) => {
+                if (!current) return false;
+                const start = contract_date_range.start ? dayjs(contract_date_range.start).startOf('day') : null;
+                const end   = contract_date_range.end   ? dayjs(contract_date_range.end).endOf('day')     : null;
+                if (start && current.isBefore(start)) return true;
+                if (end   && current.isAfter(end))    return true;
+                return false;
+              }}
+              placeholder={!form.contract_id ? "Select contract first" : "Date"}
+              style={{ flex: 2 }}
+              getPopupContainer={(trigger) => trigger.parentElement}
+            />
+            <AntDatePicker.TimePicker
+              format="HH:mm"
+              minuteStep={15}
+              value={form.expected_departure_datetime ? dayjs(form.expected_departure_datetime) : null}
+              onChange={(time) => {
+                if (!time) return;
+                const existing_date = form.expected_departure_datetime
+                  ? dayjs(form.expected_departure_datetime).format("YYYY-MM-DD")
+                  : dayjs().format("YYYY-MM-DD");
+                const combined = dayjs(`${existing_date} ${time.format("HH:mm")}:00`);
+                is_edit ? handle_edit_datetime_change(combined) : handle_add_datetime_change(combined);
+              }}
+              disabled={!form.contract_id}
+              placeholder="Time"
+              style={{ flex: 1 }}
+              getPopupContainer={(trigger) => trigger.parentElement}
+            />
+          </div>
+          <InputError isValid={is_error.expected_departure_datetime} message="Departure date and time is required" />
+        </Col>
+        <Col>
+            <div className="field-label">ESTIMATED DURATION (hours) <span className="required-icon">*</span></div>
+            <Form.Control
+                type="number"
+                step="0.5"
+                min="0.5"
+                name="estimated_hours"
+                value={form.estimated_hours}
+                className="nc-modal-custom-input"
+                onChange={is_edit ? handle_edit_change : handle_add_change}
+                placeholder="e.g. 4"
+            />
         </Col>
       </Row>
 
@@ -572,14 +689,28 @@ function handle_reset_filter() {
         <Col>
           <div className="field-label">TRUCK <span className="required-icon">*</span></div>
           <Select
-            options={truck_options.map((t) => ({
-              value: t.id,
-              label: `${t.plate_number} — ${t.truck_type}${t.km_per_liter ? ` (${t.km_per_liter} km/L)` : ""}`,
-            }))}
-            value={truck_options.map((t) => ({
-              value: t.id,
-              label: `${t.plate_number} — ${t.truck_type}${t.km_per_liter ? ` (${t.km_per_liter} km/L)` : ""}`,
-            })).find((o) => String(o.value) === String(form.truck_id)) || null}
+            options={
+              (available_assets ? available_assets.trucks : truck_options)
+                .filter(t => t.status !== 'maintenance')
+                .map((t) => ({
+                  value: t.id,
+                  label: t.is_available === false
+                    ? `${t.plate_number} — ${t.truck_type} (Booked)`
+                    : `${t.plate_number} — ${t.truck_type}${t.km_per_liter ? ` (${t.km_per_liter} km/L)` : ""}`,
+                  isDisabled: t.is_available === false,
+                }))
+            }
+            value={
+              (available_assets ? available_assets.trucks : truck_options)
+                .map((t) => ({
+                  value: t.id,
+                  label: t.is_available === false
+                    ? `${t.plate_number} — ${t.truck_type} (Booked)`
+                    : `${t.plate_number} — ${t.truck_type}${t.km_per_liter ? ` (${t.km_per_liter} km/L)` : ""}`,
+                  isDisabled: t.is_available === false,
+                }))
+                .find((o) => String(o.value) === String(form.truck_id)) || null
+            }
             onChange={(selected) => {
               const e = { target: { name: "truck_id", value: selected ? String(selected.value) : "" } };
               handle_change(e);
@@ -597,14 +728,27 @@ function handle_reset_filter() {
         <Col>
           <div className="field-label">DRIVER <span className="required-icon">*</span></div>
           <Select
-            options={driver_options.map((d) => ({
-              value: d.id,
-              label: `${d.first_name} ${d.last_name}`,
-            }))}
-            value={driver_options.map((d) => ({
-              value: d.id,
-              label: `${d.first_name} ${d.last_name}`,
-            })).find((o) => String(o.value) === String(form.driver_id)) || null}
+            options={
+              (available_assets ? available_assets.drivers : driver_options)
+                .map((d) => ({
+                  value: d.id,
+                  label: d.is_available === false
+                    ? `${d.first_name} ${d.last_name} (Booked)`
+                    : `${d.first_name} ${d.last_name}`,
+                  isDisabled: d.is_available === false,
+                }))
+            }
+            value={
+              (available_assets ? available_assets.drivers : driver_options)
+                .map((d) => ({
+                  value: d.id,
+                  label: d.is_available === false
+                    ? `${d.first_name} ${d.last_name} (Booked)`
+                    : `${d.first_name} ${d.last_name}`,
+                  isDisabled: d.is_available === false,
+                }))
+                .find((o) => String(o.value) === String(form.driver_id)) || null
+            }
             onChange={(selected) => {
               const e = { target: { name: "driver_id", value: selected ? String(selected.value) : "" } };
               handle_change(e);
@@ -618,14 +762,27 @@ function handle_reset_filter() {
         <Col>
           <div className="field-label">HELPER</div>
           <Select
-            options={helper_options.map((h) => ({
-              value: h.id,
-              label: `${h.first_name} ${h.last_name}`,
-            }))}
-            value={helper_options.map((h) => ({
-              value: h.id,
-              label: `${h.first_name} ${h.last_name}`,
-            })).find((o) => String(o.value) === String(form.helper_id)) || null}
+            options={
+              (available_assets ? available_assets.helpers : helper_options)
+                .map((h) => ({
+                  value: h.id,
+                  label: h.is_available === false
+                    ? `${h.first_name} ${h.last_name} (Booked)`
+                    : `${h.first_name} ${h.last_name}`,
+                  isDisabled: h.is_available === false,
+                }))
+            }
+            value={
+              (available_assets ? available_assets.helpers : helper_options)
+                .map((h) => ({
+                  value: h.id,
+                  label: h.is_available === false
+                    ? `${h.first_name} ${h.last_name} (Booked)`
+                    : `${h.first_name} ${h.last_name}`,
+                  isDisabled: h.is_available === false,
+                }))
+                .find((o) => String(o.value) === String(form.helper_id)) || null
+            }
             onChange={(selected) => {
               const e = { target: { name: "helper_id", value: selected ? String(selected.value) : "" } };
               handle_change(e);
@@ -708,7 +865,7 @@ function handle_reset_filter() {
         {/* Filter tabs + Filter bar */}
         <div className="d-flex align-items-center justify-content-between mb-3" style={{ marginTop: 8 }}>
           <div className="filter-tabs" style={{ marginBottom: 0 }}>
-            {["all", "ongoing", "completed"].map((tab) => (
+            {["all", "scheduled", "in_transit", "completed"].map((tab) => (
               <button
                 key={tab}
                 className={`filter-tab-btn ${active_tab === tab ? "active" : ""}`}
@@ -803,7 +960,7 @@ function handle_reset_filter() {
       {/* Add Modal */}
       <AddModal
         title="LOG TRIP"
-        size="lg"
+        size="xl"
         show={show_add_modal}
         onHide={() => {
           set_show_add_modal(false);
@@ -811,6 +968,8 @@ function handle_reset_filter() {
           set_add_route_options([]);
           set_contract_trip_info(null);
           set_fuel_preview(0);
+          set_available_assets(null);
+          set_contract_date_range({ start: null, end: null });
         }}
         onSave={handle_create}
         isClicked={is_clicked}
@@ -826,6 +985,7 @@ function handle_reset_filter() {
         onHide={() => {
           set_show_edit_modal(false);
           set_fuel_preview(0);
+          set_available_assets(null);
         }}
         onSave={handle_update}
         isClicked={is_clicked}
@@ -845,7 +1005,17 @@ function handle_reset_filter() {
                 TRIP-{String(selected_trip.id).padStart(4, "0")} — Trip Details
               </span>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                {selected_trip?.status !== "completed" ? (
+                {selected_trip?.status === "scheduled" && (
+                  <button
+                    className="save-btn"
+                    style={{ background: "#2980b9", borderColor: "#2980b9" }}
+                    onClick={handle_start_trip}
+                    disabled={is_completing}
+                  >
+                    {is_completing ? "Starting..." : "▶ Start Trip"}
+                  </button>
+                )}
+                {selected_trip?.status === "in_transit" && (
                   <button
                     className="save-btn"
                     style={{ background: "#27ae60", borderColor: "#27ae60" }}
@@ -854,7 +1024,8 @@ function handle_reset_filter() {
                   >
                     {is_completing ? "Completing..." : "✓ Mark as Delivered"}
                   </button>
-                ) : (
+                )}
+                {selected_trip?.status === "completed" && (
                   <span className="status-badge active" style={{ padding: "6px 12px" }}>
                     ✓ Delivered
                   </span>
@@ -891,7 +1062,7 @@ function handle_reset_filter() {
                   <FontAwesomeIcon icon={faCalendarAlt} className="detail-icon" />
                   <div>
                     <span className="detail-label">Trip Date</span>
-                    <span className="detail-value">{dateFormat(selected_trip.trip_date)}</span>
+                    <span className="detail-value">{dateFormat(selected_trip.expected_departure_datetime)}</span>
                   </div>
                 </div>
                 <div className="trip-detail-row">
