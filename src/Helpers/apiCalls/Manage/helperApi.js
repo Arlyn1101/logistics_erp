@@ -63,6 +63,7 @@ export const createHelper = async (form, attachments = []) => {
     form_data.append("pagibig_number",                 form.pagibig_number);
     form_data.append("philhealth_number",              form.philhealth_number);
     form_data.append("tin_number",                     form.tin_number);
+    form_data.append("status",                         form.status || "active");
 
     attachments.forEach((file) => {
       const last_name = (form.last_name || "Helper").replace(/\s+/g, "");
