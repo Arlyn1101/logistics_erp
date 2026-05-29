@@ -58,7 +58,7 @@ export default function Payments() {
     const response = await getAllCustomers();
     if (response.data && response.data.data) {
       const options = response.data.data.map((c) => ({
-        label: `${c.first_name} ${c.last_name}`,
+        label: c.trade_name ,
         value: c.id,
       }));
       set_customer_options([{ label: "All Customers", value: "" }, ...options]);
@@ -96,8 +96,8 @@ export default function Payments() {
   function handle_filter_change(customer, dates) {
     const filters = {
       customer_id: customer?.value || "",
-      date_from: dates?.[0] ? moment(dates[0]).format("YYYY-MM-DD") : "",
-      date_to: dates?.[1] ? moment(dates[1]).format("YYYY-MM-DD") : "",
+      date_from: dates?.[0] ? dates[0].format("YYYY-MM-DD") : "",
+      date_to: dates?.[1] ? dates[1].format("YYYY-MM-DD") : "",
     };
     fetch_payments(filters);
   }
