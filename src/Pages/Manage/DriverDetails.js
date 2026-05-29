@@ -83,6 +83,9 @@ export default function DriverDetails() {
         Object.keys(empty_form).forEach((key) => {
           sanitized[key] = data[key] ?? "";
         });
+        
+        sanitized.id = data.id;
+
         set_form(sanitized);
         set_original_form(sanitized);
       } else {

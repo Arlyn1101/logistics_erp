@@ -62,20 +62,17 @@ export const createDriver = async (form, attachments = []) => {
     form_data.append("email", form.email);
     form_data.append("emergency_contact_name", form.emergency_contact_name);
     form_data.append("emergency_contact_number", form.emergency_contact_number);
-    form_data.append(
-      "emergency_contact_relationship",
-      form.emergency_contact_relationship,
-    );
-    form_data.append(
-      "emergency_contact_address",
-      form.emergency_contact_address,
-    );
+    form_data.append("emergency_contact_relationship", form.emergency_contact_relationship);
+    form_data.append("emergency_contact_address", form.emergency_contact_address);
     form_data.append("license_number", form.license_number);
     form_data.append("license_expiry", form.license_expiry);
     form_data.append("sss_number", form.sss_number);
     form_data.append("pagibig_number", form.pagibig_number);
     form_data.append("philhealth_number", form.philhealth_number);
     form_data.append("tin_number", form.tin_number);
+
+    // ─── THE CRITICAL FIX FOR CREATE ───
+    form_data.append("status", form.status || "active");
 
     attachments.forEach((file) => {
       const last_name = (form.last_name || "Driver").replace(/\s+/g, "");
