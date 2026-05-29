@@ -123,3 +123,30 @@ export const completeTrip = async (trip_id) => {
     return { error: error.response };
   }
 };
+
+export const getAvailableAssets = async (expected_departure_datetime, estimated_hours, exclude_trip_id = null) => {
+  try {
+    const params = {
+      token: get_token(),
+      expected_departure_datetime,
+      estimated_hours,
+    };
+    if (exclude_trip_id) params.exclude_trip_id = exclude_trip_id;
+    const response = await getAPICall(`${BASE_URL}/trips/get_available_assets`, params);
+    return { data: response.data };
+  } catch (error) {
+    return { error: error.response };
+  }
+};
+
+export const startTrip = async (trip_id) => {
+  try {
+    const response = await postAPICall(`${BASE_URL}/trips/start`, {
+      token: get_token(),
+      trip_id,
+    });
+    return { data: response.data };
+  } catch (error) {
+    return { error: error.response };
+  }
+};
