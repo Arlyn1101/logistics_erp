@@ -194,7 +194,6 @@ export default function Trips() {
       set_fuel_preview(0);
       set_available_assets(null);
 
-      // Set date range from selected contract
       const selected_contract = contracts.find(
         (c) => String(c.id) === String(value),
       );
@@ -207,11 +206,12 @@ export default function Trips() {
         set_contract_date_range({ start: null, end: null });
       }
 
-      if (value && updated.expected_departure_datetime) {
-        fetch_contract_trip_info(
-          value,
-          updated.expected_departure_datetime.substring(0, 10),
-        );
+      if (value) {
+        const targetDate = updated.expected_departure_datetime 
+          ? updated.expected_departure_datetime.substring(0, 10)
+          : dayjs().format("YYYY-MM-DD");
+          
+        fetch_contract_trip_info(value, targetDate);
       }
     }
 
@@ -287,6 +287,7 @@ export default function Trips() {
       ...prev,
       expected_departure_datetime: formatted,
     }));
+    
     if (add_form.contract_id) {
       fetch_contract_trip_info(add_form.contract_id, date.format("YYYY-MM-DD"));
     }
