@@ -334,7 +334,7 @@ async function fetch_trucks(filters = {}) {
             placeholder="Select expiry date"
             style={{ width: "100%" }}
             className="nc-modal-custom-input"
-            getPopupContainer={(trigger) => trigger.parentElement}
+            getPopupContainer={(trigger) => trigger.closest('.modal-body') || document.body}
           />
         </Col>
       </Row>

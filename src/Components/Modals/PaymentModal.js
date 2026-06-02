@@ -227,7 +227,7 @@ export default function PaymentModal({ show, onHide, billing, on_success }) {
               placeholder="Select date"
               style={{ width: "100%", borderColor: is_error.payment_date ? "red" : "" }}
               className="nc-modal-custom-input"
-              getPopupContainer={(trigger) => trigger.parentElement}
+              getPopupContainer={(trigger) => trigger.closest('.modal-body') || document.body}
             />
             {is_error.payment_date && (
               <small style={{ color: "red" }}>Payment date is required</small>
@@ -295,7 +295,7 @@ export default function PaymentModal({ show, onHide, billing, on_success }) {
                   placeholder="Select date"
                   style={{ width: "100%", borderColor: is_error.deposit_date ? "red" : "" }}
                   className="nc-modal-custom-input"
-                  getPopupContainer={(trigger) => trigger.parentElement}
+                  getPopupContainer={(trigger) => trigger.closest('.modal-body') || document.body}
                 />
                 {is_error.deposit_date && (
                   <small style={{ color: "red" }}>Deposit date is required</small>
@@ -353,7 +353,7 @@ export default function PaymentModal({ show, onHide, billing, on_success }) {
                   placeholder="Select date"
                   style={{ width: "100%", borderColor: is_error.check_date ? "red" : "" }}
                   className="nc-modal-custom-input"
-                  getPopupContainer={(trigger) => trigger.parentElement}
+                  getPopupContainer={(trigger) => trigger.closest('.modal-body') || document.body}
                 />
                 {is_error.check_date && (
                   <small style={{ color: "red" }}>Check date is required</small>
@@ -389,7 +389,7 @@ export default function PaymentModal({ show, onHide, billing, on_success }) {
                   placeholder="Select date"
                   style={{ width: "100%", borderColor: is_error.deposit_date ? "red" : "" }}
                   className="nc-modal-custom-input"
-                  getPopupContainer={(trigger) => trigger.parentElement}
+                  getPopupContainer={(trigger) => trigger.closest('.modal-body') || document.body}
                 />
                 {is_error.deposit_date && (
                   <small style={{ color: "red" }}>Deposit date is required</small>
@@ -512,7 +512,7 @@ export default function PaymentModal({ show, onHide, billing, on_success }) {
                   placeholder="Select date"
                   style={{ width: "100%", borderColor: is_error.transfer_date ? "red" : "" }}
                   className="nc-modal-custom-input"
-                  getPopupContainer={(trigger) => trigger.parentElement}
+                  getPopupContainer={(trigger) => trigger.closest('.modal-body') || document.body}
                 />
                 {is_error.transfer_date && (
                   <small style={{ color: "red" }}>Transfer date is required</small>

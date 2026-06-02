@@ -318,7 +318,7 @@ export default function HelperForm() {
                 placeholder="Select birthdate"
                 style={{ width: "100%" }}
                 className="nc-modal-custom-input"
-                getPopupContainer={(trigger) => trigger.parentElement}
+                getPopupContainer={(trigger) => trigger.closest('.modal-body') || document.body}
               />
               <InputError isValid={is_error.birthdate} message="Birthdate is required" />
             </Col>
