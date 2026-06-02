@@ -766,7 +766,7 @@ export default function Trips() {
               }}
               placeholder={!form.contract_id ? "Select contract first" : "Date"}
               style={{ flex: 2 }}
-              getPopupContainer={(trigger) => trigger.parentElement}
+              getPopupContainer={(trigger) => trigger.closest('.modal-body') || document.body}
             />
             <AntDatePicker.TimePicker
               format="HH:mm"
@@ -793,7 +793,7 @@ export default function Trips() {
               }
               placeholder="Time"
               style={{ flex: 1 }}
-              getPopupContainer={(trigger) => trigger.parentElement}
+              getPopupContainer={(trigger) => trigger.closest('.modal-body') || document.body}
             />
           </div>
           <InputError

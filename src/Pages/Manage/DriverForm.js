@@ -335,7 +335,7 @@ export default function DriverForm() {
                 placeholder="Select birthdate"
                 style={{ width: "100%" }}
                 className="nc-modal-custom-input"
-                getPopupContainer={(trigger) => trigger.parentElement}
+                getPopupContainer={(trigger) => trigger.closest('.modal-body') || document.body}
               />
               <InputError isValid={is_error.birthdate} message="Birthdate is required" />
             </Col>
@@ -472,7 +472,7 @@ export default function DriverForm() {
                 placeholder="Select expiry date"
                 style={{ width: "100%" }}
                 className="nc-modal-custom-input"
-                getPopupContainer={(trigger) => trigger.parentElement}
+                getPopupContainer={(trigger) => trigger.closest('.modal-body') || document.body}
               />
             </Col>
           </Row>
