@@ -73,13 +73,14 @@ export default function ContractForm() {
 
   const empty_form = {
     customer_id: "",
-    date_signed: "",
+    date_signed: dayjs().format("YYYY-MM-DD"),
     authorized_representative: "",
     payment_terms_days: "", // FIX: changed to number input
     monthly_rate: "",
     included_trips: "",
     excess_trip_charge: "",
     fuel_price_per_liter: "",
+    km_per_liter: "",
     start_date: "",
     end_date: "",
     status: "active",
@@ -157,6 +158,7 @@ export default function ContractForm() {
         included_trips: data.included_trips,
         excess_trip_charge: data.excess_trip_charge,
         fuel_price_per_liter: data.fuel_price_per_liter,
+        km_per_liter: data.km_per_liter || "",
         start_date: data.start_date,
         end_date: data.end_date || "",
         status: data.status,
@@ -455,12 +457,9 @@ export default function ContractForm() {
           )}
 
           {/* ── Section 3: Rate & Billing ── */}
-          <div className="biodata-section-label">Rate & Billing</div>
           <Row className="nc-modal-custom-row">
-            <Col>
-              <div className="field-label">
-                MONTHLY RATE (₱) <span className="required-icon">*</span>
-              </div>
+            <Col xs={4}>
+              <div className="field-label">MONTHLY RATE (₱) <span className="required-icon">*</span></div>
               <Form.Control
                 type="number"
                 name="monthly_rate"
@@ -469,15 +468,10 @@ export default function ContractForm() {
                 onChange={handle_change}
                 placeholder="e.g. 10000"
               />
-              <InputError
-                isValid={is_error.monthly_rate}
-                message="Monthly rate is required"
-              />
+              <InputError isValid={is_error.monthly_rate} message="Monthly rate is required" />
             </Col>
-            <Col>
-              <div className="field-label">
-                INCLUDED TRIPS / MONTH <span className="required-icon">*</span>
-              </div>
+            <Col xs={4}>
+              <div className="field-label">INCLUDED TRIPS / MONTH <span className="required-icon">*</span></div>
               <Form.Control
                 type="number"
                 name="included_trips"
@@ -486,35 +480,24 @@ export default function ContractForm() {
                 onChange={handle_change}
                 placeholder="e.g. 4"
               />
-              <InputError
-                isValid={is_error.included_trips}
-                message="Included trips is required"
-              />
+              <InputError isValid={is_error.included_trips} message="Included trips is required" />
             </Col>
-          </Row>
-          <Row className="nc-modal-custom-row">
-            <Col>
-              <div className="field-label">
-                EXCESS TRIP CHARGE (₱) <span className="required-icon">*</span>
-              </div>
+            <Col xs={4}>
+              <div className="field-label">EXCESS TRIP CHARGE (₱) <span className="required-icon">*</span></div>
               <Form.Control
                 type="number"
                 name="excess_trip_charge"
                 value={form.excess_trip_charge}
                 className="nc-modal-custom-input"
                 onChange={handle_change}
-                placeholder="Charge per extra trip"
+                placeholder="e.g. 500"
               />
-              <InputError
-                isValid={is_error.excess_trip_charge}
-                message="Excess trip charge is required"
-              />
+              <InputError isValid={is_error.excess_trip_charge} message="Excess trip charge is required" />
             </Col>
-            <Col>
-              <div className="field-label">
-                AGREED FUEL PRICE / LITER (₱){" "}
-                <span className="required-icon">*</span>
-              </div>
+          </Row>
+          <Row className="nc-modal-custom-row">
+            <Col xs={4}>
+              <div className="field-label">AGREED FUEL PRICE (₱/L) <span className="required-icon">*</span></div>
               <Form.Control
                 type="number"
                 name="fuel_price_per_liter"
@@ -523,16 +506,25 @@ export default function ContractForm() {
                 onChange={handle_change}
                 placeholder="e.g. 50"
               />
-              <InputError
-                isValid={is_error.fuel_price_per_liter}
-                message="Fuel price is required"
-              />
+              <InputError isValid={is_error.fuel_price_per_liter} message="Fuel price is required" />
+            </Col>
+            <Col xs={4}>
+              <div className="field-label">KM PER LITER</div>
+              <div className="input-suffix-wrap">
+                <Form.Control
+                  type="number"
+                  name="km_per_liter"
+                  value={form.km_per_liter || ""}
+                  className="nc-modal-custom-input"
+                  onChange={handle_change}
+                  placeholder="e.g. 4.5"
+                />
+                <span className="input-suffix">km/L</span>
+              </div>
             </Col>
           </Row>
-
-          {/* FIX: payment terms → number input with "days" label */}
           <Row className="nc-modal-custom-row">
-            <Col xs={6}>
+            <Col xs={4}>
               <div className="field-label">PAYMENT TERMS</div>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <Form.Control
@@ -543,20 +535,9 @@ export default function ContractForm() {
                   onChange={handle_change}
                   placeholder="e.g. 30"
                   min={1}
-                  style={{ width: 120, flex: "0 0 120px" }}
                 />
-                <span
-                  style={{
-                    fontFamily: "var(--primary-font-medium)",
-                    fontSize: 14,
-                    color: "#2d3e4e",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  days
-                  {form.payment_terms_days
-                    ? ` (Net ${form.payment_terms_days})`
-                    : ""}
+                <span style={{ fontFamily: "var(--primary-font-medium)", fontSize: 14, color: "#2d3e4e", whiteSpace: "nowrap" }}>
+                  {form.payment_terms_days ? `Net ${form.payment_terms_days}` : "days"}
                 </span>
               </div>
             </Col>
