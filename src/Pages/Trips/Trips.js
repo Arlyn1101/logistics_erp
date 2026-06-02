@@ -83,7 +83,7 @@ export default function Trips() {
     contract_route_id: "",
     truck_id: "",
     expected_departure_datetime: "",
-    estimated_hours: 8,
+    estimated_hours: "",
     driver_id: "",
     helper_id: "",
     actual_fuel_price: "",
@@ -427,38 +427,60 @@ export default function Trips() {
   }
 
   async function handle_create() {
-    if (validateTrip(add_form, set_is_error)) {
-      set_is_clicked(true);
-      const response = await createTrip(add_form);
-      if (response.data?.status === "success") {
-        toast.success("Trip logged successfully!", { style: toastStyle() });
-        set_show_add_modal(false);
-        set_add_form({ ...empty_form });
-        set_add_route_options([]);
-        set_contract_trip_info(null);
-        set_fuel_preview(0);
-        fetch_trips();
-      } else {
-        toast.error("Failed to log trip.", { style: toastStyle() });
-      }
-      set_is_clicked(false);
+    const { is_valid, missing_fields } = validateTrip(add_form, set_is_error);
+    
+    if (!is_valid) {
+      const message = missing_fields.length === 1 
+        ? `${missing_fields[0]} is required.`
+        : `Please fill in required fields: ${missing_fields.join(", ")}.`;
+        
+      toast.error(message, { style: toastStyle() });
+      return;
     }
+
+    set_is_clicked(true);
+    const response = await createTrip(add_form);
+    
+    if (response.data?.status === "success") {
+      toast.success("Trip logged successfully!", { style: toastStyle() });
+      set_show_add_modal(false);
+      set_add_form({ ...empty_form });
+      set_add_route_options([]);
+      set_contract_trip_info(null);
+      set_fuel_preview(0);
+      fetch_trips();
+    } else {
+      const backendError = response.data?.messages?.error || response.error?.data?.messages?.error || "Failed to log trip.";
+      toast.error(backendError, { style: toastStyle() });
+    }
+    set_is_clicked(false);
   }
 
   async function handle_update() {
-    if (validateTrip(edit_form, set_is_error)) {
-      set_is_clicked(true);
-      const response = await updateTrip(edit_form);
-      if (response.data?.status === "success") {
-        toast.success("Trip updated successfully!", { style: toastStyle() });
-        set_show_edit_modal(false);
-        set_fuel_preview(0);
-        fetch_trips();
-      } else {
-        toast.error("Failed to update trip.", { style: toastStyle() });
-      }
-      set_is_clicked(false);
+    const { is_valid, missing_fields } = validateTrip(edit_form, set_is_error);
+    
+    if (!is_valid) {
+      const message = missing_fields.length === 1 
+        ? `${missing_fields[0]} is required.`
+        : `Please fill in required fields: ${missing_fields.join(", ")}.`;
+        
+      toast.error(message, { style: toastStyle() });
+      return;
     }
+
+    set_is_clicked(true);
+    const response = await updateTrip(edit_form);
+    
+    if (response.data?.status === "success") {
+      toast.success("Trip updated successfully!", { style: toastStyle() });
+      set_show_edit_modal(false);
+      set_fuel_preview(0);
+      fetch_trips();
+    } else {
+      const backendError = response.data?.messages?.error || response.error?.data?.messages?.error || "Failed to update trip.";
+      toast.error(backendError, { style: toastStyle() });
+    }
+    set_is_clicked(false);
   }
 
   async function handle_complete_trip() {
@@ -1350,7 +1372,7 @@ export default function Trips() {
                       truck_id: String(selected_trip.truck_id ?? ""),
                       driver_id: String(selected_trip.driver_id ?? ""),
                       helper_id: String(selected_trip.helper_id ?? ""),
-                      estimated_hours: selected_trip.estimated_hours ?? 8,
+                      estimated_hours: selected_trip.estimated_hours ?? "",
                       actual_fuel_price: selected_trip.actual_fuel_price ?? "",
                       expected_departure_datetime:
                         selected_trip.expected_departure_datetime ?? "",
