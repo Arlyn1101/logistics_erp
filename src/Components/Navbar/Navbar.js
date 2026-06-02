@@ -12,6 +12,8 @@ import {
   faClipboardList,
   faUserCog,
   faSignOutAlt,
+  faChartBar,
+  faUniversity,
 } from "@fortawesome/free-solid-svg-icons";
 import toast from "react-hot-toast";
 import { getName, getType, removeUserSession, toastStyle } from "../../Helpers/Utils/Common";
@@ -67,6 +69,7 @@ const MENU_SECTIONS = [
         subMenus: [
           { name: "BILLINGS", to: "/billings" },
           { name: "PAYMENTS", to: "/payments" },
+          { name: "BANKS", to: "/banks" },
         ],
       },
     ],
@@ -75,6 +78,19 @@ const MENU_SECTIONS = [
     section: "OPERATIONS",
     items: [
       { name: "TRIPS", to: "/trips", icon: faClipboardList, subMenus: [] },
+    ],
+  },
+  {
+    section: "REPORTS",
+    items: [
+      {
+        name: "REPORTS",
+        to: "/",
+        icon: faChartBar,
+        subMenus: [
+          { name: "ACCOUNTS RECEIVABLE", to: "/reports/ar" },
+        ],
+      },
     ],
   },
   {

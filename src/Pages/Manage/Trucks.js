@@ -2,9 +2,6 @@ import React, { useState } from "react";
 import { Col, Form, Row } from "react-bootstrap";
 import Navbar from "../../Components/Navbar/Navbar";
 import Table from "../../Components/TableTemplate/Table";
-import AddModal from "../../Components/Modals/AddModal";
-import EditModal from "../../Components/Modals/EditModal";
-import ViewModal from "../../Components/Modals/ViewModal";
 import InputError from "../../Components/InputError/InputError";
 import {
   getAllTrucks,
@@ -16,6 +13,7 @@ import {
   deleteTruckAttachment,
   getTruckSuggestions,
 } from "../../Helpers/apiCalls/Manage/truckApi";
+import { useNavigate } from "react-router-dom";
 import { Select as AntSelect, DatePicker as AntDatePicker } from "antd";
 import dayjs from "dayjs";
 import { BASE_URL } from "../../Helpers/apiCalls/axiosMethodCalls";
@@ -34,6 +32,7 @@ import "../../Components/Navbar/Navbar.css";
 import "../../Components/Modals/Modal.css";
 
 export default function Trucks() {
+  const navigate = useNavigate();
   const [inactive, set_inactive] = useState(false);
   const [show_loader, set_show_loader] = useState(false);
   const [is_clicked, set_is_clicked] = useState(false);
@@ -46,10 +45,6 @@ const [search_value, set_search_value] = useState(null);
   const [truck_data, set_truck_data] = useState([]);
   const [filtered_data, set_filtered_data] = useState([]);
   const [selected_row, set_selected_row] = useState({});
-
-  const [show_add_modal, set_show_add_modal] = useState(false);
-  const [show_edit_modal, set_show_edit_modal] = useState(false);
-  const [show_view_modal, set_show_view_modal] = useState(false);
 
   const empty_form = {
     unit_code: "",
@@ -91,13 +86,8 @@ const [search_value, set_search_value] = useState(null);
 
   function handle_select_change(e, row) {
     set_selected_row(row);
-    set_edit_form(row);
-    if (e.target.value === "edit-truck") {
-      fetch_attachments(row.id);
-      set_show_edit_modal(true);
-    } else if (e.target.value === "view-truck") {
-      fetch_attachments(row.id);
-      set_show_view_modal(true);
+    if (e.target.value === "edit-truck" || e.target.value === "view-truck") {
+      navigate(`/trucks/${row.id}`);
     }
     e.target.value = "";
   }
@@ -243,7 +233,6 @@ async function fetch_trucks(filters = {}) {
       );
       if (response.data && response.data.status === "success") {
         toast.success("Truck added successfully!", { style: toastStyle() });
-        set_show_add_modal(false);
         set_add_form({ ...empty_form });
         set_add_or_attachments([]);
         set_add_cr_attachments([]);
@@ -273,7 +262,6 @@ async function fetch_trucks(filters = {}) {
       );
       if (response.data && response.data.status === "success") {
         toast.success("Truck updated successfully!", { style: toastStyle() });
-        set_show_edit_modal(false);
         set_edit_or_attachments([]);
         set_edit_cr_attachments([]);
         set_or_editing(false);
@@ -769,7 +757,7 @@ async function fetch_trucks(filters = {}) {
             />
             <button
               className="add-btn"
-              onClick={() => set_show_add_modal(true)}
+              onClick={() => navigate("/trucks/new")}
             >
               Add
             </button>
@@ -791,12 +779,7 @@ async function fetch_trucks(filters = {}) {
 
         <div className="tab-content">
           <Table
-            onRowClick={(row) => {
-              set_selected_row(row);
-              set_edit_form(row);
-              fetch_attachments(row.id);
-              set_show_view_modal(true);
-            }}
+            onRowClick={(row) => navigate(`/trucks/${row.id}`)}
             tableHeaders={[
               "UNIT CODE",
               "PLATE NO.",
@@ -821,57 +804,6 @@ async function fetch_trucks(filters = {}) {
           />
         </div>
       </div>
-
-      <AddModal
-        title="TRUCK"
-        size="lg"
-        show={show_add_modal}
-        onHide={() => {
-          set_show_add_modal(false);
-          set_add_form({ ...empty_form });
-        }}
-        onSave={handle_create}
-        isClicked={is_clicked}
-      >
-        {form_fields(add_form, handle_add_change)}
-      </AddModal>
-
-      <EditModal
-        title="TRUCK"
-        size="lg"
-        show={show_edit_modal}
-        onHide={() => {
-          set_show_edit_modal(false);
-          set_or_editing(false);
-          set_cr_editing(false);
-          set_pending_delete_or_id(null);
-          set_pending_delete_cr_id(null);
-        }}
-        onSave={handle_update}
-        isClicked={is_clicked}
-      >
-        {form_fields(
-          edit_form,
-          handle_edit_change,
-          true,
-          set_edit_or_attachments,
-          set_edit_cr_attachments,
-        )}
-      </EditModal>
-
-      <ViewModal
-        title="TRUCK DETAILS"
-        size="lg"
-        withButtons
-        show={show_view_modal}
-        onHide={() => set_show_view_modal(false)}
-        onEdit={() => {
-          set_show_edit_modal(true);
-          set_show_view_modal(false);
-        }}
-      >
-        {view_content(edit_form)}
-      </ViewModal>
     </div>
   );
 }

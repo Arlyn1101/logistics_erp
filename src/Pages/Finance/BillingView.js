@@ -177,10 +177,6 @@ export default function BillingView() {
                 {moment(billing.billing_period_start).format("MMM D")} – {moment(billing.billing_period_end).format("MMM D, YYYY")}
               </div>
             </Col>
-            <Col xs={3}>
-              <div className="field-label">PAYMENT TERMS</div>
-              <div className="detail-value">{billing.payment_terms || "—"}</div>
-            </Col>
           </Row>
           {billing.remarks && (
             <Row className="nc-modal-custom-row">
@@ -190,6 +186,25 @@ export default function BillingView() {
               </Col>
             </Row>
           )}
+        </div>
+
+        {/* Customer Details */}
+        <div className="biodata-card mb-3">
+          <div className="biodata-section-label">Customer Details</div>
+          <Row className="nc-modal-custom-row mt-2">
+            <Col xs={12} md={4}>
+              <div className="field-label">TRADE NAME</div>
+              <div className="detail-value">{billing.trade_name || billing.customer_name || "—"}</div>
+            </Col>
+            <Col xs={12} md={4}>
+              <div className="field-label">ADDRESS</div>
+              <div className="detail-value">{billing.trade_address || "—"}</div>
+            </Col>
+            <Col xs={12} md={4}>
+              <div className="field-label">TIN</div>
+              <div className="detail-value">{billing.tin || "—"}</div>
+            </Col>
+          </Row>
         </div>
 
         {/* Section 2 — Trip Breakdown */}
@@ -222,9 +237,6 @@ export default function BillingView() {
               <tbody>
                 {[
                   { label: "Monthly Rate",         value: fmt(billing.monthly_rate) },
-                  { label: "Total Trips",          value: billing.total_trips },
-                  { label: "Included Trips",       value: billing.included_trips },
-                  { label: "Excess Trips",         value: billing.excess_trips },
                   { label: "Excess Trip Total",    value: fmt(billing.excess_trip_total) },
                   { label: "Fuel Surcharge Total", value: fmt(billing.fuel_surcharge_total) },
                 ].map((row) => (

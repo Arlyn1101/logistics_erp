@@ -76,6 +76,7 @@ function Table({
   showLoader,
   withActionData,
   onRowClick,
+  cellRenderers,
 }) {
   if (showLoader) {
     return (
@@ -89,6 +90,9 @@ function Table({
     name: header,
     selector: (row) => row[headerSelector[index]],
     cell: (row) => {
+      if (cellRenderers && cellRenderers[headerSelector[index]]) {
+        return cellRenderers[headerSelector[index]](row);
+      }
       const value = row[headerSelector[index]];
       if (value === null || value === undefined) return "—";
       return value;
@@ -125,6 +129,7 @@ Table.defaultProps = {
   showLoader: false,
   withActionData: false,
   onRowClick: null,
+  cellRenderers: null,
 };
 
 export default Table;

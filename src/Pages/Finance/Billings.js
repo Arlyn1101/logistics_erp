@@ -4,13 +4,12 @@ import { useNavigate } from "react-router-dom";
 import Navbar from "../../Components/Navbar/Navbar";
 import Table from "../../Components/TableTemplate/Table";
 import PaymentModal from "../../Components/Modals/PaymentModal";
-import Select from "react-select";
-import { DatePicker as AntDatePicker } from "antd";
+import { Select as AntSelect, DatePicker as AntDatePicker } from "antd";
 import {
   getAllBillings,
   searchBillings,
+  getBillingSuggestions,
 } from "../../Helpers/apiCalls/Finance/billingApi";
-import { getAllCustomers } from "../../Helpers/apiCalls/Manage/customerApi";
 import { toastStyle } from "../../Helpers/Utils/Common";
 import toast from "react-hot-toast";
 import moment from "moment";
@@ -28,9 +27,11 @@ export default function Billings() {
   const [filtered_data, set_filtered_data] = useState([]);
   const [show_payment_modal, set_show_payment_modal] = useState(false);
   const [selected_billing, set_selected_billing] = useState(null);
-  const [customer_options, set_customer_options] = useState([]);
-  const [selected_customer, set_selected_customer] = useState(null);
   const [date_range, set_date_range] = useState([null, null]);
+  const [suggestions, set_suggestions] = useState([]);
+  const [suggestion_loading, set_suggestion_loading] = useState(false);
+  const [search_value, set_search_value] = useState(null);
+  const [active_filter, set_active_filter] = useState({});
 
   const fmt = (val) =>
     `₱ ${parseFloat(val || 0).toLocaleString("en-PH", { minimumFractionDigits: 2 })}`;
@@ -68,28 +69,19 @@ export default function Billings() {
 
   function apply_tab_filter(data, tab) {
     if (tab === "all") return data;
+    if (tab === "partial") return data.filter((row) => row.status === "open_bill" && parseFloat(row.amount_paid) > 0);
     return data.filter((row) => row.status === tab);
   }
 
   function get_tab_count(tab) {
     if (tab === "all") return billing_data.length;
+    if (tab === "partial") return billing_data.filter((row) => row.status === "open_bill" && parseFloat(row.amount_paid) > 0).length;
     return billing_data.filter((row) => row.status === tab).length;
   }
 
   function handle_tab_change(tab) {
     set_active_tab(tab);
     set_filtered_data(apply_tab_filter(billing_data, tab));
-  }
-
-  async function fetch_customers() {
-    const response = await getAllCustomers();
-    if (response.data && response.data.data) {
-      const options = response.data.data.map((c) => ({
-        label: c.trade_name || `${c.first_name} ${c.last_name}`,
-        value: c.id,
-      }));
-      set_customer_options([{ label: "All Customers", value: "" }, ...options]);
-    }
   }
 
   async function fetch_billings(filters = {}) {
@@ -120,23 +112,42 @@ export default function Billings() {
     set_show_loader(false);
   }
 
-  function handle_filter_change(customer, dates) {
-    const filters = {
-      customer_id: customer?.value || "",
-      month_from: dates?.[0] ? dates[0].format("YYYY-MM-DD") : "",
-      month_to: dates?.[1] ? dates[1].format("YYYY-MM-DD") : "",
-    };
-    fetch_billings(filters);
+  async function handle_suggestion_search(keyword) {
+    if (!keyword) { set_suggestions([]); return; }
+    set_suggestion_loading(true);
+    const res = await getBillingSuggestions(keyword);
+    if (res.data && res.data.data && res.data.data.suggestions) {
+      set_suggestions(res.data.data.suggestions);
+    } else {
+      set_suggestions([]);
+    }
+    set_suggestion_loading(false);
+  }
+
+  function handle_suggestion_select(value, option) {
+    const new_filter = option.match_type === "billing"
+      ? { billing_number: option.billing_number }
+      : { customer_id: option.customer_id };
+    set_active_filter(new_filter);
+    fetch_billings({ ...new_filter, month_from: date_range?.[0] ? date_range[0].format("YYYY-MM-DD") : "", month_to: date_range?.[1] ? date_range[1].format("YYYY-MM-DD") : "" });
+  }
+
+  function handle_reset_filter() {
+    set_search_value(null);
+    set_suggestions([]);
+    set_active_filter({});
+    fetch_billings({ month_from: date_range?.[0] ? date_range[0].format("YYYY-MM-DD") : "", month_to: date_range?.[1] ? date_range[1].format("YYYY-MM-DD") : "" });
   }
 
   function handle_reset() {
-    set_selected_customer(null);
+    set_search_value(null);
+    set_suggestions([]);
+    set_active_filter({});
     set_date_range([null, null]);
     fetch_billings({});
   }
 
   useEffect(() => {
-    fetch_customers();
     fetch_billings();
   }, []);
 
@@ -169,26 +180,41 @@ export default function Billings() {
         <div className="trip-filter-bar mb-3">
           <Row className="g-2 align-items-center">
             <Col xs={12} md={4}>
-              <Select
-                classNamePrefix="react-select"
-                placeholder="Select Customer"
-                options={customer_options}
-                value={selected_customer}
-                onChange={(val) => {
-                  set_selected_customer(val);
-                  handle_filter_change(val, date_range);
-                }}
-                isClearable
-                menuPortalTarget={document.body}
-                styles={{ menuPortal: (base) => ({ ...base, zIndex: 9999 }) }}
+              <AntSelect
+                showSearch
+                allowClear
+                value={search_value}
+                onChange={(val) => set_search_value(val ?? null)}
+                style={{ width: "100%" }}
+                placeholder="🔍 Search customer or billing no."
+                filterOption={false}
+                onSearch={handle_suggestion_search}
+                onSelect={handle_suggestion_select}
+                onClear={handle_reset_filter}
+                loading={suggestion_loading}
+                options={suggestions.map((s) => ({
+                  value: s.billing_number || s.customer_id,
+                  label: s.billing_number
+                    ? `${s.billing_number} — ${s.customer_name}`
+                    : s.customer_name,
+                  billing_number: s.billing_number,
+                  customer_id: s.customer_id,
+                  match_type: s.match_type,
+                }))}
+                notFoundContent={suggestion_loading ? "Searching..." : "No results"}
               />
             </Col>
             <Col xs={12} md={4}>
               <RangePicker
                 value={date_range}
-                onChange={(dates, dateStrings) => {
-                  set_date_range(dates || [null, null]);
-                  handle_filter_change(selected_customer, dates);
+                onChange={(dates) => {
+                  const d = dates || [null, null];
+                  set_date_range(d);
+                  fetch_billings({
+                    ...active_filter,
+                    month_from: d[0] ? d[0].format("YYYY-MM-DD") : "",
+                    month_to: d[1] ? d[1].format("YYYY-MM-DD") : "",
+                  });
                 }}
                 format="YYYY-MM-DD"
                 style={{ width: "100%" }}
@@ -210,7 +236,7 @@ export default function Billings() {
 
         {/* Tabs */}
         <div className="filter-tabs mb-3">
-          {["all", "open_bill", "closed_bill"].map((tab) => (
+          {["all", "open_bill", "partial", "closed_bill"].map((tab) => (
             <button
               key={tab}
               type="button"
@@ -221,7 +247,9 @@ export default function Billings() {
                 ? "All"
                 : tab === "open_bill"
                   ? "Open Invoice"
-                  : "Closed Invoice"}
+                  : tab === "partial"
+                    ? "Partial"
+                    : "Closed Invoice"}
               <span className="tab-count">{get_tab_count(tab)}</span>
             </button>
           ))}

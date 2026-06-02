@@ -21,6 +21,8 @@ import Helpers from "./Pages/Manage/Helpers";
 import HelperForm from "./Pages/Manage/HelperForm";
 import HelperDetails from "./Pages/Manage/HelperDetails";
 import Trucks from "./Pages/Manage/Trucks";
+import AddTruck from "./Pages/Manage/AddTruck";
+import TruckDetails from "./Pages/Manage/TruckDetails";
 import Users from "./Pages/Manage/Users";
 import Contracts from "./Pages/Contracts/Contracts";
 import ContractForm from "./Pages/Contracts/ContractForm";
@@ -32,6 +34,7 @@ import BillingView from "./Pages/Finance/BillingView";
 import Payments from "./Pages/Finance/Payments";
 import PaymentView from "./Pages/Finance/PaymentView";
 import BillingForm from "./Pages/Finance/BillingForm";
+import AccountsReceivable from "./Pages/Reports/AccountsReceivable";
 
 // Auth guard — checks localStorage token
 function PrivateRoute({ children }) {
@@ -148,6 +151,22 @@ function App() {
           }
         />
         <Route
+          path="/trucks/new"
+          element={
+            <PrivateRoute>
+              <AddTruck />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/trucks/:id"
+          element={
+            <PrivateRoute>
+              <TruckDetails />
+            </PrivateRoute>
+          }
+        />
+        <Route
           path="/users"
           element={
             <PrivateRoute>
@@ -230,6 +249,16 @@ function App() {
           element={
             <PrivateRoute>
               <Trips />
+            </PrivateRoute>
+          }
+        />
+
+        {/* Reports */}
+        <Route
+          path="/reports/ar"
+          element={
+            <PrivateRoute>
+              <AccountsReceivable />
             </PrivateRoute>
           }
         />

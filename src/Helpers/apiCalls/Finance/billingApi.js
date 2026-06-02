@@ -85,6 +85,44 @@ export const getUnbilledCycles = async (contract_id) => {
   }
 };
 
+export const getContractsWithUnbilled = async (customer_id, period_start, period_end) => {
+  try {
+    const response = await getAPICall(`${BASE_URL}/contract_billings/get_contracts_with_unbilled`, {
+      token: get_token(),
+      customer_id,
+      period_start,
+      period_end,
+    });
+    return { data: response.data };
+  } catch (error) {
+    return { error: error.response };
+  }
+};
+
+export const createBatchBilling = async (data) => {
+  try {
+    const response = await postAPICall(`${BASE_URL}/contract_billings/create_batch`, {
+      token: get_token(),
+      ...data,
+    });
+    return { data: response.data };
+  } catch (error) {
+    return { error: error.response };
+  }
+};
+
+export const getBillingSuggestions = async (keyword) => {
+  try {
+    const response = await getAPICall(`${BASE_URL}/contract_billings/get_suggestions`, {
+      token: get_token(),
+      keyword,
+    });
+    return { data: response.data };
+  } catch (error) {
+    return { error: error.response };
+  }
+};
+
 export const previewBillingTrips = async (contract_id, period_start, period_end) => {
   try {
     const response = await getAPICall(`${BASE_URL}/contract_billings/preview`, {

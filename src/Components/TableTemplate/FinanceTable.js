@@ -52,30 +52,33 @@ function trips_columns() {
     },
     {
       name: "ROUTE",
-      selector: (row) => `${row.origin} → ${row.destination}`,
-      width: "30%",
+      selector: (row) =>
+        row.distance_km
+          ? `${row.origin} → ${row.destination} (${row.distance_km} km)`
+          : `${row.origin} → ${row.destination}`,
+      width: "28%",
       wrap: true,
     },
     {
       name: "TRUCK",
       selector: (row) => row.plate_number || "—",
-      width: "13%",
-      wrap: true,
-    },
-    {
-      name: "EXCESS?",
-      cell: (row) =>
-        row.is_excess ? (
-          <span className="status-badge excess">YES</span>
-        ) : (
-          <span className="status-badge included">NO</span>
-        ),
       width: "10%",
       wrap: true,
     },
     {
-      name: "EXCESS CHARGE",
-      selector: (row) => (row.is_excess ? fmt(row.excess_charge) : "—"),
+      name: "TRIP CHARGE",
+      selector: (row) =>
+        parseFloat(row.excess_charge || 0) > 0 ? fmt(row.excess_charge) : "—",
+      width: "15%",
+      wrap: true,
+      right: true,
+    },
+    {
+      name: "ACTUAL FUEL PRICE",
+      selector: (row) =>
+        parseFloat(row.actual_fuel_price || 0) > 0
+          ? fmt(row.actual_fuel_price)
+          : "—",
       width: "15%",
       wrap: true,
       right: true,
