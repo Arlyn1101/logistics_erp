@@ -127,17 +127,15 @@ export default function Trips() {
     set_assets_loading(false);
   }
 
-  // Compute fuel preview on the fly
   function compute_fuel_preview(actual_price, route_opts, form) {
-    if (!actual_price || !form.contract_route_id) {
+    if (!actual_price || actual_price === "" || parseFloat(actual_price) <= 0 || !form.contract_route_id) {
       set_fuel_preview(0);
       return;
     }
 
-    // Fallback to values saved directly inside the trip row object if the dropdown options haven't hydrated yet
     const agreed = parseFloat(
-      form.fuel_price_per_liter ||
-        form.agreed_fuel_price ||
+      form.agreed_fuel_price ||
+        form.fuel_price_per_liter ||
         contract_trip_info?.fuel_price_per_liter ||
         0,
     );
@@ -154,13 +152,12 @@ export default function Trips() {
     const distance = route
       ? parseFloat(route.distance_km)
       : parseFloat(form.route_distance_km || form.distance_km || 0);
-
-    // Find truck km_per_liter from pool, or fallback to the value already stored inside the selected trip row object
-    const truck_pool = available_assets
-      ? available_assets.trucks
-      : truck_options;
+    
     const kpl = parseFloat(
-      contract_trip_info?.km_per_liter || form.contract_km_per_liter || 0
+      form.contract_km_per_liter || 
+      form.truck_km_per_liter ||
+      contract_trip_info?.km_per_liter || 
+      0
     );
 
     if (distance <= 0 || kpl <= 0) {
@@ -191,7 +188,6 @@ export default function Trips() {
       set_fuel_preview(0);
       set_available_assets(null);
 
-      // Set date range from selected contract
       const selected_contract = contracts.find(
         (c) => String(c.id) === String(value),
       );
@@ -204,11 +200,12 @@ export default function Trips() {
         set_contract_date_range({ start: null, end: null });
       }
 
-      if (value && updated.expected_departure_datetime) {
-        fetch_contract_trip_info(
-          value,
-          updated.expected_departure_datetime.substring(0, 10),
-        );
+      if (value) {
+        const targetDate = updated.expected_departure_datetime 
+          ? updated.expected_departure_datetime.substring(0, 10)
+          : dayjs().format("YYYY-MM-DD");
+          
+        fetch_contract_trip_info(value, targetDate);
       }
     }
 
@@ -284,6 +281,7 @@ export default function Trips() {
       ...prev,
       expected_departure_datetime: formatted,
     }));
+    
     if (add_form.contract_id) {
       fetch_contract_trip_info(add_form.contract_id, date.format("YYYY-MM-DD"));
     }
@@ -385,35 +383,124 @@ export default function Trips() {
       : await getAllTrips();
 
     if (response.data?.data) {
-      const result = response.data.data.map((a) => ({
-        ...a,
-        contract_label: a.contract_number
-          ? `#${a.contract_number}`
-          : `#${a.contract_id}`,
-        customer_label: a.trade_name || a.customer_name || "—",
-        route_label:
-          a.route_origin && a.route_destination
-            ? `${a.route_origin} → ${a.route_destination}`
-            : `Route #${a.contract_route_id}`,
-        truck_label:
-          a.truck_unit_code && a.truck_plate_number
-            ? `${a.truck_unit_code} — ${a.truck_plate_number}`
-            : `Truck #${a.truck_id}`,
-        driver_label: a.driver_label || "—",
-        helper_label: a.helper_label || "—",
-        trip_date_fmt: dateFormat(a.expected_departure_datetime),
-        status_badge: (
-          <span className={`status-badge ${a.status || "scheduled"}`}>
-            {a.status === "completed"
-              ? "Completed"
-              : a.status === "in_transit"
-                ? "In Transit"
-                : a.status === "cancelled"
-                  ? "Cancelled"
-                  : "Scheduled"}
-          </span>
-        ),
-      }));
+      const result = response.data.data.map((a) => {
+        const hasActualFuelPrice = 
+          a.actual_fuel_price !== null && 
+          a.actual_fuel_price !== undefined && 
+          a.actual_fuel_price !== "" && 
+          parseFloat(a.actual_fuel_price) !== 0;
+
+        const currencyFormatter = new Intl.NumberFormat('en-PH', {
+          style: 'currency',
+          currency: 'PHP',
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        });
+
+        const isExcessTrip = parseInt(a.is_excess) === 1;
+
+        return {
+          ...a,
+          contract_label: a.contract_number
+            ? `#${a.contract_number}`
+            : `#${a.contract_id}`,
+          customer_label: a.trade_name || a.customer_name || "—",
+          route_label:
+            a.route_origin && a.route_destination
+              ? `${a.route_origin} → ${a.route_destination}`
+              : `Route #${a.contract_route_id}`,
+          truck_label:
+            a.truck_unit_code && a.truck_plate_number
+              ? `${a.truck_unit_code} — ${a.truck_plate_number}`
+              : `Truck #${a.truck_id}`,
+          driver_label: a.driver_label || "—",
+          helper_label: a.helper_label || "—",
+          trip_date_fmt: dateFormat(a.expected_departure_datetime),
+          
+          trip_type_badge: (
+            <span className={`trip-type-pill ${isExcessTrip ? "excess-trip" : "included-trip"}`}>
+              {isExcessTrip ? "Excess" : "Standard"}
+            </span>
+          ),
+
+          fuel_additional_charge: hasActualFuelPrice ? (
+            <div style={{ textAlign: "right", width: "100%", paddingRight: "10px" }}>
+              <strong>{currencyFormatter.format(parseFloat(a.fuel_additional_charge ?? 0))}</strong>
+            </div>
+          ) : (
+            <div style={{ textAlign: "right", width: "100%", paddingRight: "10px" }}>
+              <button 
+                className="add-fuel-badge"
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  
+                  set_selected_trip(a);
+                  
+                  const res = await getTripDetails(a.id);
+                  if (res.data?.data) {
+                    const detail = res.data.data;
+                    
+                    let calculated_hours = "";
+                    if (a.expected_departure_datetime && a.expected_arrival_datetime) {
+                      const dep = dayjs(a.expected_departure_datetime);
+                      const arr = dayjs(a.expected_arrival_datetime);
+                      const diffMinutes = arr.diff(dep, 'minute');
+                      calculated_hours = (diffMinutes / 60).toString();
+                    }
+
+                    set_edit_form({
+                      ...a,
+                      id: a.id,
+                      contract_id: String(a.contract_id ?? ""),
+                      contract_route_id: String(a.contract_route_id ?? ""),
+                      truck_id: String(a.truck_id ?? ""),
+                      driver_id: detail.driver?.driver_id ?? "",
+                      helper_id: detail.helper?.helper_id ?? "",
+                      estimated_hours: calculated_hours || "8",
+                      actual_fuel_price: "", // Keep blank for fresh input
+                      expected_departure_datetime: a.expected_departure_datetime ?? "",
+                    });
+
+                    await fetch_routes_for_edit(a.contract_id);
+                    
+                    const targetDate = a.expected_departure_datetime 
+                      ? a.expected_departure_datetime.substring(0, 10) 
+                      : dayjs().format("YYYY-MM-DD");
+                      
+                    await fetch_contract_trip_info(a.contract_id, targetDate);
+
+                    if (a.expected_departure_datetime) {
+                      await fetch_available_assets(
+                        a.expected_departure_datetime,
+                        detail.estimated_hours || 8,
+                        a.id
+                      );
+                    }
+
+                    set_show_edit_modal(true);
+                  } else {
+                    toast.error("Failed to load trip details.", { style: toastStyle() });
+                  }
+                }}
+              >
+                + Add Fuel Price
+              </button>
+            </div>
+          ),
+
+          status_badge: (
+            <span className={`status-badge ${a.status || "scheduled"}`}>
+              {a.status === "completed"
+                ? "Completed"
+                : a.status === "in_transit"
+                  ? "In Transit"
+                  : a.status === "cancelled"
+                    ? "Cancelled"
+                    : "Scheduled"}
+            </span>
+          ),
+        };
+      });
       set_trip_data(result);
       set_filtered_trip_data(apply_tab_filter(result, active_tab));
     } else {
@@ -622,7 +709,7 @@ export default function Trips() {
       (t) => String(t.id) === String(form.truck_id),
     );
     const distance_km = route ? parseFloat(route.distance_km ?? 0) : 0;
-    const kpl = truck ? parseFloat(truck.km_per_liter ?? 0) : 0;
+    const kpl = parseFloat(contract_trip_info.km_per_liter ?? 0);
     const liters =
       kpl > 0 && distance_km > 0 ? (distance_km / kpl).toFixed(2) : "—";
 
@@ -638,9 +725,9 @@ export default function Trips() {
             <strong>{distance_km} km</strong>
           </div>
         )}
-        {truck && kpl > 0 && (
+        {kpl > 0 && (
           <div className="fuel-info-row">
-            <span>Truck fuel efficiency:</span>
+            <span>Contract fuel efficiency:</span>
             <strong>
               {kpl} km/L → ~{liters} L needed
             </strong>
@@ -1023,21 +1110,24 @@ export default function Trips() {
 
       <div className="biodata-section-label">Fuel</div>
       <Row className="nc-modal-custom-row">
-        {contract_trip_info && (
-          <Col xs={12} md={6}>
-            <div className="field-label">AGREED FUEL PRICE (from contract)</div>
-            <Form.Control
-              type="text"
-              readOnly
-              value={`₱${parseFloat(contract_trip_info.fuel_price_per_liter ?? 0).toFixed(2)} / L`}
-              className="nc-modal-custom-input"
-              style={{ background: "#f5f5f5", color: "#888" }}
-            />
-          </Col>
-        )}
+        <Col xs={12} md={6}>
+          <div className="field-label">AGREED FUEL PRICE (from contract)</div>
+          <Form.Control
+            type="text"
+            readOnly
+            value={`₱${parseFloat(
+              contract_trip_info?.fuel_price_per_liter ?? 
+              form.fuel_price_per_liter ?? 
+              form.agreed_fuel_price ?? 
+              0
+            ).toFixed(2)} / L`}
+            className="nc-modal-custom-input"
+            style={{ background: "#f5f5f5", color: "#888" }}
+          />
+        </Col>
         <Col xs={12} md={6}>
           <div className="field-label">
-            ACTUAL FUEL PRICE (₱/L) <span className="required-icon">*</span>
+            ACTUAL FUEL PRICE (₱/L) <span className="required-icon"></span>
           </div>
           <Form.Control
             type="number"
@@ -1048,14 +1138,10 @@ export default function Trips() {
             onChange={handle_change}
             placeholder="e.g. 62.50"
           />
-          <InputError
-            isValid={is_error.actual_fuel_price}
-            message="Actual fuel price is required"
-          />
         </Col>
       </Row>
 
-      {fuel_info_banner(form, route_opts)}
+      {!is_edit && fuel_info_banner(form, route_opts)}
 
       <div className="biodata-section-label">Additional</div>
       <Row className="nc-modal-custom-row">
@@ -1183,7 +1269,7 @@ export default function Trips() {
               "TRUCK",
               "DRIVER",
               "HELPER",
-              "EXCESS",
+              "TRIP TYPE",
               "FUEL SURCHARGE",
               "STATUS",
             ]}
@@ -1195,7 +1281,7 @@ export default function Trips() {
               "truck_label",
               "driver_label",
               "helper_label",
-              "is_excess",
+              "trip_type_badge",
               "fuel_additional_charge",
               "status_badge",
             ]}
@@ -1359,6 +1445,14 @@ export default function Trips() {
                   onClick={() => {
                     set_contract_trip_info(null);
                     set_fuel_preview(0);
+                    let calculated_hours = "";
+                    if (selected_trip.expected_departure_datetime && selected_trip.expected_arrival_datetime) {
+                      const dep = dayjs(selected_trip.expected_departure_datetime);
+                      const arr = dayjs(selected_trip.expected_arrival_datetime);
+                      const diffMinutes = arr.diff(dep, 'minute');
+                      calculated_hours = (diffMinutes / 60).toString();
+                    }
+
                     set_edit_form({
                       ...selected_trip,
                       id: selected_trip.id,
@@ -1369,7 +1463,7 @@ export default function Trips() {
                       truck_id: String(selected_trip.truck_id ?? ""),
                       driver_id: String(selected_trip.driver_id ?? ""),
                       helper_id: String(selected_trip.helper_id ?? ""),
-                      estimated_hours: selected_trip.estimated_hours ?? "",
+                      estimated_hours: calculated_hours,
                       actual_fuel_price: selected_trip.actual_fuel_price ?? "",
                       expected_departure_datetime:
                         selected_trip.expected_departure_datetime ?? "",
