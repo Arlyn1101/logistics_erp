@@ -16,11 +16,15 @@ import {
   getContractTripInfo,
   getTripSuggestions,
   getAvailableAssets,
+  getTripAttachments,  
+  downloadTripAttachment,   
+  deleteTripAttachment      
 } from "../../Helpers/apiCalls/Trips/tripApi";
 import {
   getAllContracts,
   getAllContractRoutes,
 } from "../../Helpers/apiCalls/Contracts/contractApi";
+import { BASE_URL } from "../../Helpers/apiCalls/axiosMethodCalls";
 import { getAllTrucks } from "../../Helpers/apiCalls/Manage/truckApi";
 import { getAllDrivers } from "../../Helpers/apiCalls/Manage/driverApi";
 import { getAllHelpers } from "../../Helpers/apiCalls/Manage/helperApi";
@@ -41,6 +45,9 @@ import {
   faUsers,
   faGasPump,
   faExclamationTriangle,
+  faDownload,
+  faEye,     
+  faTrash,
 } from "@fortawesome/free-solid-svg-icons";
 import Select from "react-select";
 import toast from "react-hot-toast";
@@ -60,6 +67,9 @@ export default function Trips() {
   const [show_add_modal, set_show_add_modal] = useState(false);
   const [show_edit_modal, set_show_edit_modal] = useState(false);
   const [show_map_modal, set_show_map_modal] = useState(false);
+  const [saved_attachments, set_saved_attachments] = useState([]);
+  const [uploaded_files, set_uploaded_files] = useState([]);
+  const [replacing, set_replacing] = useState(false);
 
   // Dropdown options
   const [customer_options, set_customer_options] = useState([]);
@@ -462,6 +472,9 @@ export default function Trips() {
                     });
 
                     await fetch_routes_for_edit(a.contract_id);
+
+                    const attsRes = await getTripAttachments(a.id);
+                    if (attsRes.data?.data) set_saved_attachments(attsRes.data.data);
                     
                     const targetDate = a.expected_departure_datetime 
                       ? a.expected_departure_datetime.substring(0, 10) 
@@ -523,7 +536,7 @@ export default function Trips() {
     }
 
     set_is_clicked(true);
-    const response = await createTrip(add_form);
+    const response = await createTrip(add_form, uploaded_files);
     
     if (response.data?.status === "success") {
       toast.success("Trip logged successfully!", { style: toastStyle() });
@@ -553,7 +566,7 @@ export default function Trips() {
     }
 
     set_is_clicked(true);
-    const response = await updateTrip(edit_form);
+    const response = await updateTrip(edit_form, uploaded_files);
     
     if (response.data?.status === "success") {
       toast.success("Trip updated successfully!", { style: toastStyle() });
@@ -1143,6 +1156,76 @@ export default function Trips() {
 
       {!is_edit && fuel_info_banner(form, route_opts)}
 
+      <div className="biodata-section-label mt-3">Receipt Documents</div>
+      
+      {is_edit && saved_attachments.length > 0 && saved_attachments.map((att) => (
+        <div key={att.id} className="attachment-row mb-2">
+          <span className="attachment-name">{att.file_name}</span>
+          <div className="attachment-actions">
+            <button
+              className="attachment-btn"
+              title="Download Receipt"
+              type="button"
+              onClick={() => downloadTripAttachment(att.file_path, att.file_name)}
+            >
+              <FontAwesomeIcon icon={faDownload} />
+            </button>
+            <a
+              className="attachment-btn"
+              title="View Raw Receipt File"
+              href={`${BASE_URL.replace("/api", "")}/${att.file_path}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              <FontAwesomeIcon icon={faEye} />
+            </a>
+            <button
+              className="attachment-btn attachment-remove"
+              title="Delete Receipt File"
+              type="button"
+              onClick={async () => {
+                await deleteTripAttachment(att.id);
+                const freshAtts = await getTripAttachments(form.id);
+                if (freshAtts.data?.data) set_saved_attachments(freshAtts.data.data);
+                toast.success("Receipt attachment removed.", { style: toastStyle() });
+              }}
+            >
+              <FontAwesomeIcon icon={faTrash} />
+            </button>
+          </div>
+        </div>
+      ))}
+
+      {(!is_edit || saved_attachments.length === 0 || replacing) && (
+        <div className="mt-2 mb-3">
+          <div className="field-label">UPLOAD FUEL RECEIPT (OPTIONAL)</div>
+          <input
+            type="file"
+            accept=".pdf,.jpg,.jpeg,.png"
+            className="nc-modal-custom-input"
+            onChange={(e) => {
+              const file = e.target.files[0];
+              if (file) set_uploaded_files([file]);
+            }}
+          />
+          
+          {uploaded_files.length > 0 && (
+            <div className="attachment-row mt-2">
+              <span className="attachment-name">📎 Staged: {uploaded_files[0].name}</span>
+              <div className="attachment-actions">
+                <button
+                  className="attachment-btn attachment-remove"
+                  type="button"
+                  onClick={() => set_uploaded_files([])}
+                >
+                  <FontAwesomeIcon icon={faTrash} />
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="biodata-section-label">Additional</div>
       <Row className="nc-modal-custom-row">
         <Col>
@@ -1154,6 +1237,7 @@ export default function Trips() {
             value={form.remarks || ""}
             className="nc-modal-custom-input"
             onChange={handle_change}
+            placeholder="Enter any structural observations or delivery trip milestones here..."
           />
         </Col>
       </Row>
@@ -1306,6 +1390,7 @@ export default function Trips() {
           set_fuel_preview(0);
           set_available_assets(null);
           set_contract_date_range({ start: null, end: null });
+          set_uploaded_files([]);
         }}
         onSave={handle_create}
         isClicked={is_clicked}
@@ -1329,6 +1414,9 @@ export default function Trips() {
           set_show_edit_modal(false);
           set_fuel_preview(0);
           set_available_assets(null);
+          set_uploaded_files([]);      
+          set_saved_attachments([]); 
+          set_replacing(false);
         }}
         onSave={handle_update}
         isClicked={is_clicked}
@@ -1442,7 +1530,7 @@ export default function Trips() {
                 )}
                 <button
                   className="add-btn"
-                  onClick={() => {
+                  onClick={async () => {
                     set_contract_trip_info(null);
                     set_fuel_preview(0);
                     let calculated_hours = "";
@@ -1470,6 +1558,10 @@ export default function Trips() {
                     });
                     fetch_routes_for_edit(selected_trip.contract_id);
                     set_show_map_modal(false);
+
+                    const attsRes = await getTripAttachments(selected_trip.id);
+                    if (attsRes.data?.data) set_saved_attachments(attsRes.data.data);
+                    
                     set_show_edit_modal(true);
 
                     // NEW: Automatically fetch available assets for this scheduled time window instantly on open!
