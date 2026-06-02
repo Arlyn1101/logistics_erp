@@ -159,12 +159,9 @@ export default function Trips() {
     const truck_pool = available_assets
       ? available_assets.trucks
       : truck_options;
-    const truck = truck_pool.find(
-      (t) => String(t.id) === String(form.truck_id),
+    const kpl = parseFloat(
+      contract_trip_info?.km_per_liter || form.contract_km_per_liter || 0
     );
-    const kpl = truck
-      ? parseFloat(truck.km_per_liter)
-      : parseFloat(form.truck_km_per_liter || form.km_per_liter || 0);
 
     if (distance <= 0 || kpl <= 0) {
       set_fuel_preview(0);
