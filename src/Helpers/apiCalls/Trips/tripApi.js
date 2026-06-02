@@ -1,3 +1,4 @@
+import axios from "axios";
 import { getAPICall, postAPICall, BASE_URL } from "../axiosMethodCalls";
 
 const get_token = () => localStorage.getItem("token") || null;
@@ -50,11 +51,23 @@ export const getContractTripInfo = async (contract_id, trip_date) => {
   }
 };
 
-export const createTrip = async (form) => {
+export const createTrip = async (form, attachments = []) => {
   try {
-    const response = await postAPICall(`${BASE_URL}/trips/create`, {
-      token: get_token(),
-      ...form,
+    const form_data = new FormData();
+    form_data.append("token", localStorage.getItem("token"));
+    Object.keys(form).forEach(key => form_data.append(key, form[key] ?? ""));
+
+    attachments.forEach((file) => {
+      const ext = file.name.split(".").pop();
+      const renamed = new File([file], `Receipt_Upload.${ext}`, { type: file.type });
+      form_data.append("attachments[]", renamed);
+    });
+
+    const response = await axios.post(`${BASE_URL}/trips/create`, form_data, {
+      headers: {
+        "api-key": "logistics-erp-api-key",
+        "user-key": localStorage.getItem("user_id"),
+      },
     });
     return { data: response.data };
   } catch (error) {
@@ -62,12 +75,24 @@ export const createTrip = async (form) => {
   }
 };
 
-export const updateTrip = async (form) => {
+export const updateTrip = async (form, attachments = []) => {
   try {
-    const response = await postAPICall(`${BASE_URL}/trips/update`, {
-      token: get_token(),
-      trip_id: form.id,
-      ...form,
+    const form_data = new FormData();
+    form_data.append("token", localStorage.getItem("token"));
+    form_data.append("trip_id", form.id);
+    Object.keys(form).forEach(key => form_data.append(key, form[key] ?? ""));
+
+    attachments.forEach((file) => {
+      const ext = file.name.split(".").pop();
+      const renamed = new File([file], `Receipt_Upload.${ext}`, { type: file.type });
+      form_data.append("attachments[]", renamed);
+    });
+
+    const response = await axios.post(`${BASE_URL}/trips/update`, form_data, {
+      headers: {
+        "api-key": "logistics-erp-api-key",
+        "user-key": localStorage.getItem("user_id"),
+      },
     });
     return { data: response.data };
   } catch (error) {
@@ -144,6 +169,36 @@ export const startTrip = async (trip_id) => {
     const response = await postAPICall(`${BASE_URL}/trips/start`, {
       token: get_token(),
       trip_id,
+    });
+    return { data: response.data };
+  } catch (error) {
+    return { error: error.response };
+  }
+};
+
+export const getTripAttachments = async (trip_id) => {
+  try {
+    const response = await getAPICall(`${BASE_URL}/trips/get_attachments`, {
+      token: localStorage.getItem("token") || null,
+      trip_id,
+    });
+    return { data: response.data };
+  } catch (error) {
+    return { error: error.response };
+  }
+};
+
+export const downloadTripAttachment = (file_path, file_name) => {
+  const token = localStorage.getItem("token") || null;
+  const url = `${BASE_URL}/trips/download_attachment?token=${token}&file_path=${encodeURIComponent(file_path)}&file_name=${encodeURIComponent(file_name)}`;
+  window.open(url, "_blank");
+};
+
+export const deleteTripAttachment = async (attachment_id) => {
+  try {
+    const response = await postAPICall(`${BASE_URL}/trips/delete_attachment`, {
+      token: localStorage.getItem("token") || null,
+      attachment_id,
     });
     return { data: response.data };
   } catch (error) {
